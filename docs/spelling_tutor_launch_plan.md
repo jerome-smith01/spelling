@@ -3,23 +3,25 @@
 
 ---
 
+<a id="overall-status"></a>
 ## Overall Status
 
 | Phase | Title | Status | Model | Tool | Depends On |
 |-------|-------|--------|-------|------|------------|
-| 0 | Infrastructure & Repo Setup | ✅ Complete | Gemini 3.8 Flash | Antigravity | None |
-| 1 | Standalone React App (Vite + PWA shell) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
-| 2 | Core Spelling Features (all 7 from spec) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
-| 3 | Cloudflare Backend API + D1 Schema | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
-| 4 | Auth Integration + User Data Sync | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
-| 5 | AI Struggling-Areas Engine (Global Quota) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 4 |
-| 6 | Astro Landing Page + Proxy Worker | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 1 |
-| 7 | Android (Capacitor) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
-| 8 | Apps Hub + Docs | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
+| 0 | [Infrastructure & Repo Setup](#phase-0) | ✅ Complete | Gemini 3.8 Flash | Antigravity | None |
+| 1 | [Standalone React App (Vite + PWA shell)](#phase-1) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
+| 2 | [Core Spelling Features (all 7 from spec)](#phase-2) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
+| 3 | [Cloudflare Backend API + D1 Schema](#phase-3) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
+| 4 | [Auth Integration + User Data Sync](#phase-4) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
+| 5 | [AI Struggling-Areas Engine (Global Quota)](#phase-5) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 4 |
+| 6 | [Astro Landing Page + Proxy Worker](#phase-6) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 1 |
+| 7 | [Android (Capacitor)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
+| 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 
 ---
 
 ## Architecture Overview
+[↑ Back to Table of Contents](#overall-status)
 
 ```mermaid
 flowchart TD
@@ -72,6 +74,7 @@ flowchart TD
 ---
 
 ## Open Questions (for you to answer before each phase)
+[↑ Back to Table of Contents](#overall-status)
 
 > [!IMPORTANT]
 > **Before Phase 0:** Please create the GitHub repo at `jerome-smith01/spelling-tutor` (you already had the create page open). Leave it empty — I will push the first commit. Confirm when done.
@@ -87,7 +90,9 @@ flowchart TD
 
 ---
 
+<a id="phase-0"></a>
 ## Phase 0 — Infrastructure & Repo Setup
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Create the Git repo, establish the file structure, connect to Cloudflare, and wire up the proxy so future phases have a deploy target from day one.
 
@@ -222,7 +227,9 @@ npx wrangler deploy spelling-proxy-worker.js --config spelling-proxy-wrangler.to
 
 ---
 
+<a id="phase-1"></a>
 ## Phase 1 — Standalone React App Shell (Vite + PWA)
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Build the complete React app skeleton with routing, theme system (dark/light), shared layout, and the global CSS design system wired in — but no actual spelling features yet. This establishes every pattern the subsequent phases will follow.
 
@@ -271,7 +278,9 @@ export function useAuth() {
 
 ---
 
+<a id="phase-2"></a>
 ## Phase 2 — Core Spelling Features
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Implement all 7 features from the product spec as React components. Data stays in LocalStorage at this phase — no backend calls.
 
@@ -383,7 +392,9 @@ bounce
 
 ---
 
+<a id="phase-3"></a>
 ## Phase 3 — Cloudflare Backend API + D1 Schema
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Create the Hono Worker API and D1 database with all tables for user word lists, practice sessions, and the AI scoring engine. Deploy and verify the API is live — no frontend wiring yet.
 
@@ -511,7 +522,9 @@ npx wrangler deploy
 
 ---
 
+<a id="phase-4"></a>
 ## Phase 4 — Auth Integration + User Data Sync
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Wire the React app's word lists and practice results to the Cloudflare API. Users who are logged in get cloud sync; anonymous users stay on LocalStorage.
 
@@ -558,7 +571,9 @@ On session complete (user finishes practicing a list):
 
 ---
 
+<a id="phase-5"></a>
 ## Phase 5 — AI Struggling-Areas Engine
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Implement the friction-score algorithm (identical to Flashy Cards' Leech Hunter, adapted for spelling) and auto-generate AI coaching tips for words the student is repeatedly getting wrong.
 
@@ -626,7 +641,9 @@ Keep language simple (3rd grade level). No markdown, just the JSON object.
 
 ---
 
+<a id="phase-6"></a>
 ## Phase 6 — Astro Landing Page + Proxy Worker Deploy
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Create the `goodplusfast.com/spelling` landing page in the Astro main site (modeled after `/bible/`), and verify the full proxy pipeline is live in production.
 
@@ -695,7 +712,9 @@ export const ALL: APIRoute = async ({ request, url }) => {
 
 ---
 
+<a id="phase-7"></a>
 ## Phase 7 — Android App (Capacitor)
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Wrap the production React PWA in Capacitor to generate an Android APK — same codebase, no React Native rewrite.
 
@@ -763,7 +782,9 @@ pause
 
 ---
 
+<a id="phase-8"></a>
 ## Phase 8 — Apps Hub Update + Documentation
+[↑ Back to Table of Contents](#overall-status)
 
 **Goal:** Add the Spelling Tutor card to the `/apps` page, update `WEBSITE_PAGES.md`, and write the action plan docs.
 
@@ -786,6 +807,7 @@ pause
 ---
 
 ## Architecture Docs to Update After Each Phase
+[↑ Back to Table of Contents](#overall-status)
 
 | After Phase | Doc to Update |
 |---|---|
@@ -799,6 +821,7 @@ pause
 ---
 
 ## Cloudflare vs. Supabase — Strategic Advisory
+[↑ Back to Table of Contents](#overall-status)
 
 > [!NOTE]
 > You asked about the long-term direction. Here is the full analysis for future reference.
@@ -818,6 +841,7 @@ pause
 ---
 
 ## Commit Message Format (for GitHub Desktop)
+[↑ Back to Table of Contents](#overall-status)
 
 Each phase should be committed with this format:
 ```
