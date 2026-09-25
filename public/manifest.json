@@ -1,0 +1,22 @@
+{
+  "name": "Spelling Tutor",
+  "short_name": "SpellingTutor",
+  "start_url": "/spelling/app/",
+  "scope": "/spelling/app/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#00008B",
+  "description": "Practice spelling words with syllable-by-syllable guidance",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
