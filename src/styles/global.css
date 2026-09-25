@@ -1,0 +1,77 @@
+@import './design-tokens.css';
+
+/* Global Reset & Base Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-color: var(--background);
+  color-scheme: light dark;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg-gradient, var(--background));
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* Global Animated Text Gradient / App Title */
+.text-gradient-animated,
+.app-title {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(
+    270deg,
+    #a78bfa,
+    #60a5fa,
+    #34d399,
+    #fbbf24,
+    #f472b6,
+    #818cf8,
+    #a78bfa
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleColorFlow 45s ease infinite;
+}
+
+@keyframes titleColorFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Global Button Press Visual Cue */
+button:active,
+.btn-action:active,
+.btn-action-icon:active {
+  transform: scale(0.96) !important;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Focus Outline for Accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

@@ -8,7 +8,7 @@
 | Phase | Title | Status | Model | Tool | Depends On |
 |-------|-------|--------|-------|------|------------|
 | 0 | Infrastructure & Repo Setup | ✅ Complete | Gemini 3.8 Flash | Antigravity | None |
-| 1 | Standalone React App (Vite + PWA shell) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 0 |
+| 1 | Standalone React App (Vite + PWA shell) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 2 | Core Spelling Features (all 7 from spec) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 3 | Cloudflare Backend API + D1 Schema | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 4 | Auth Integration + User Data Sync | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |

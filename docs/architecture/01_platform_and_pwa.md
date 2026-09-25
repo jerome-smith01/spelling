@@ -28,7 +28,13 @@ PWA support is enabled via `vite-plugin-pwa`:
 
 ---
 
-## 3. Mobile Container Strategy (Capacitor)
-In Phase 7, the app will be wrapped with `@capacitor/core` and `@capacitor/android`. 
-* Uses the exact same web build (`dist/`).
 * Provides native Android packaging without requiring a rewrite in Flutter or React Native.
+
+---
+
+## 4. App Shell & Local-First Prototype Architecture (Phase 1)
+* **Design System & Tokens:** Uses CSS variables in [`src/styles/design-tokens.css`](../../src/styles/design-tokens.css) mirroring Good Plus Fast's `theme.css` tokens (`--background`, `--foreground`, `--muted`, `--muted-foreground`).
+* **Theme Management:** Managed by [`src/hooks/useTheme.js`](../../src/hooks/useTheme.js), reading system preference and storing preference in `localStorage` under `spelling_tutor_theme`.
+* **State-Based Navigation:** Uses a lightweight state-based view switcher (`activePage: 'practice' | 'progress'`) managed in `App.jsx`, avoiding extra routing overhead during the initial prototype phases.
+* **Local-First Persistence:** Runs completely client-side in Phase 1 with guest/local profile support before connecting to the Cloudflare API in Phase 4.
+
