@@ -1,0 +1,21 @@
+# Phase 3 Task List — Cloudflare Backend API + D1 Schema
+
+- [x] Create D1 database `spelling-tutor-db` (`ca99dabc-2c02-401e-8871-d2cd70bc99aa`)
+- [x] Update `wrangler.jsonc` with database ID and D1 bindings
+- [x] Install `@hono/zod-validator` dependency
+- [x] Write complete D1 schema migration (`0001_initial_schema.sql`)
+  - [x] `users` (shadow user table)
+  - [x] `word_lists` (custom imported lists)
+  - [x] `attempts` (per-letter practice history)
+  - [x] `word_scores` (friction engine scores + AI fields)
+- [x] Implement Hono Worker API in `apps/spelling-tutor-api/src/index.ts`
+  - [x] CORS middleware with allowed origins
+  - [x] Unauthenticated health check endpoint (`/api/spelling/health`)
+  - [x] GPF Session verification & user upsert middleware
+  - [x] Word lists endpoints (`GET`, `POST`, `DELETE`)
+  - [x] Batch attempts logging endpoint (`POST /attempts`)
+  - [x] Server-side friction scoring engine
+  - [x] Score inquiry endpoints (`GET /scores`, `GET /scores/hardest`)
+- [x] Apply migrations to remote Cloudflare D1 database
+- [x] Deploy Worker to Cloudflare (`https://spelling-tutor-api.good-plus-fast.workers.dev`)
+- [x] Verify API live status and authentication enforcement
