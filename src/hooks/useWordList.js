@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 export const DEFAULT_RAW_WORDS = `lov-ing
 joy-ful
 pret-ty (prit-tee)
-hand-some (han-sum)
+hand-some (hand-sum)
 kit-ten
 pup-py`;
 
-const STORAGE_KEY = 'spelling_tutor_words_v3';
+const STORAGE_KEY = 'spelling_tutor_words_v4';
 
 /**
  * Parses raw hyphenated text into word objects with syllable breakdowns
@@ -92,8 +92,13 @@ export function parseWordList(rawText) {
 export function useWordList() {
   const [rawList, setRawList] = useState(() => {
     try {
-      const v3 = localStorage.getItem(STORAGE_KEY);
-      if (v3 && v3.trim()) return v3;
+      const v4 = localStorage.getItem(STORAGE_KEY);
+      if (v4 && v4.trim()) return v4;
+
+      const v3 = localStorage.getItem('spelling_tutor_words_v3');
+      if (v3) {
+        return v3.replace(/hand-some\s*\(\s*han-sum\s*\)/g, 'hand-some (hand-sum)');
+      }
 
       const v2 = localStorage.getItem('spelling_tutor_words_v2');
       if (v2) {

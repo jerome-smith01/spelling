@@ -72,7 +72,7 @@ export function applyPhoneticRules(syllableText) {
  */
 const IRREGULAR_WORD_MAP = {
   pretty: ['prit', 'tee'],
-  handsome: ['han', 'sum'],
+  handsome: ['hand', 'sum'],
   busy: ['biz', 'ee'],
   business: ['biz', 'nes'],
   women: ['wim', 'in'],

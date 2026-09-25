@@ -9,7 +9,7 @@ Example output:
 lov-ing
 joy-ful
 pret-ty (prit-tee)
-hand-some (han-sum)
+hand-some (hand-sum)
 kit-ten
 pup-py`;
 
@@ -180,7 +180,7 @@ export default function ImportSection({
           rows={6}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="lov-ing&#10;joy-ful&#10;pret-ty (prit-tee)&#10;hand-some (han-sum)&#10;kit-ten&#10;pup-py"
+          placeholder="lov-ing&#10;joy-ful&#10;pret-ty (prit-tee)&#10;hand-some (hand-sum)&#10;kit-ten&#10;pup-py"
           style={{
             width: '100%',
             padding: '0.75rem',
