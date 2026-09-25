@@ -18,8 +18,9 @@ This document outlines the core architectural principles, invariants, and patter
 |---|---|---|
 | Platform, Routing & PWA | [`01_platform_and_pwa.md`](./01_platform_and_pwa.md) | `VitePWA`, `spelling-proxy-worker.js` |
 | Syllable Parsing & Hiding Engine | [`02_syllable_engine.md`](./02_syllable_engine.md) | `useWordList`, `useHiding` |
-| Cloudflare API & Session Sync | `03_auth_and_sync.md` *(Phase 3 & 4)* | `apiService`, `storageService` |
-| AI Struggle Engine (Leech Hunter) | `04_ai_engine.md` *(Phase 5)* | `calculateFrictionScore`, Workers AI |
+| Cloudflare API & D1 Schema | [`03_backend_and_schema.md`](./03_backend_and_schema.md) | `spelling-tutor-api`, `spelling_db` |
+| Auth & User Data Sync | `04_auth_and_sync.md` *(Phase 4)* | `apiService`, `storageService` |
+| AI Struggle Engine (Leech Hunter) | `05_ai_engine.md` *(Phase 5)* | `calculateFrictionScore`, Workers AI |
 | Android & Mobile Packaging | `05_mobile_capacitor.md` *(Phase 7)* | Capacitor Android Bridge |
 
 ---
