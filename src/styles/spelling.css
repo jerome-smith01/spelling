@@ -1,0 +1,187 @@
+/* Spelling Practice Styles */
+
+:root {
+  --selected-color: #10b981;
+  --selected-color-bg: rgba(16, 185, 129, 0.15);
+  --selected-color-border: #059669;
+}
+
+/* Word Cards Grid */
+.spelling-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .spelling-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Word Card */
+.word-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.word-card:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Card Header (Speaker Button & Word Meta) */
+.word-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.speaker-btn {
+  background-color: var(--muted);
+  border: 1px solid var(--card-border);
+  color: var(--foreground);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.speaker-btn:hover {
+  background-color: var(--selected-color-bg);
+  color: var(--selected-color-border);
+}
+
+/* Syllables Container */
+.syllables-wrapper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.syllable-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  background-color: var(--muted);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+}
+
+.syllable-separator {
+  color: var(--muted-foreground);
+  font-weight: 700;
+  font-size: 1.25rem;
+  user-select: none;
+}
+
+/* Letter Boxes */
+.letter-box {
+  width: 2.25rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--foreground);
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+/* Hidden Letter Input Box */
+.letter-box.input-mode {
+  padding: 0;
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  /* Selected color dashed underline as specified by user */
+  border-bottom: 3px dashed var(--selected-color);
+}
+
+.letter-input {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  color: var(--foreground);
+  outline: none;
+  caret-color: var(--selected-color);
+  font-family: inherit;
+}
+
+/* Validation Feedback States */
+.letter-box.correct {
+  background-color: var(--selected-color-bg) !important;
+  border: 2px solid var(--selected-color-border) !important;
+  color: var(--foreground);
+}
+
+.letter-box.incorrect {
+  background-color: transparent !important;
+  border: 2px solid var(--selected-color) !important;
+  color: var(--foreground);
+}
+
+/* Card Controls */
+.word-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid var(--card-border);
+  padding-top: 0.75rem;
+}
+
+.btn-secondary-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background-color: var(--muted);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary-sm:hover {
+  background-color: var(--card-border);
+}
+
+.btn-verify {
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--selected-color-border);
+  background-color: var(--selected-color);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.btn-verify:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}

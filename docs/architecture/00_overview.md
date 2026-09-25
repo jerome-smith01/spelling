@@ -17,7 +17,7 @@ This document outlines the core architectural principles, invariants, and patter
 | Topic / Feature | Primary Architecture Doc | Key Class / Hook |
 |---|---|---|
 | Platform, Routing & PWA | [`01_platform_and_pwa.md`](./01_platform_and_pwa.md) | `VitePWA`, `spelling-proxy-worker.js` |
-| Syllable Parsing & Hiding Engine | `02_syllable_engine.md` *(Phase 2)* | `useWordList`, `useHiding` |
+| Syllable Parsing & Hiding Engine | [`02_syllable_engine.md`](./02_syllable_engine.md) | `useWordList`, `useHiding` |
 | Cloudflare API & Session Sync | `03_auth_and_sync.md` *(Phase 3 & 4)* | `apiService`, `storageService` |
 | AI Struggle Engine (Leech Hunter) | `04_ai_engine.md` *(Phase 5)* | `calculateFrictionScore`, Workers AI |
 | Android & Mobile Packaging | `05_mobile_capacitor.md` *(Phase 7)* | Capacitor Android Bridge |
