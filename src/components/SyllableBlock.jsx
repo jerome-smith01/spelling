@@ -9,13 +9,16 @@ export default function SyllableBlock({
   onInputChange,
   inputRefs,
   hiddenSequence,
-  word
+  word,
+  activeSyllableIndex = null
 }) {
   return (
     <div className="syllables-wrapper">
-      {syllables.map((syllableLetters, sylIdx) => (
-        <React.Fragment key={sylIdx}>
-          <div className="syllable-group">
+      {syllables.map((syllableLetters, sylIdx) => {
+        const isSyllableActive = activeSyllableIndex === sylIdx;
+        return (
+          <React.Fragment key={sylIdx}>
+            <div className={`syllable-group ${isSyllableActive ? 'syllable-group-active' : ''}`}>
             {syllableLetters.map(item => {
               const isHidden = hiddenIndices.has(item.index);
 
@@ -70,7 +73,8 @@ export default function SyllableBlock({
             </span>
           )}
         </React.Fragment>
-      ))}
+        );
+      })}
     </div>
   );
 }

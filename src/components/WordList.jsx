@@ -6,7 +6,9 @@ export default function WordList({
   hiddenMap,
   onHideWord,
   onShowWord,
-  onSpeak
+  onSpeak,
+  onSpeakSyllables,
+  activePlayback
 }) {
   if (!words || words.length === 0) {
     return (
@@ -38,6 +40,8 @@ export default function WordList({
           onHide={onHideWord}
           onShow={onShowWord}
           onSpeak={onSpeak}
+          onSpeakSyllables={onSpeakSyllables}
+          activePlayback={activePlayback}
         />
       ))}
     </div>

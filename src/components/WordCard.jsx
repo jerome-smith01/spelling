@@ -1,16 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SyllableBlock from './SyllableBlock';
+import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 
 export default function WordCard({
   word,
   hiddenIndices = new Set(),
   onHide,
   onShow,
-  onSpeak
+  onSpeak,
+  onSpeakSyllables,
+  activePlayback
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
   const inputRefs = useRef({});
+
+  // Active speech playback states
+  const isCardSpeakingSlow = activePlayback?.wordId === word.id && activePlayback?.isSlow;
+  const isCardSpeakingNormal = activePlayback?.wordId === word.id && !activePlayback?.isSlow;
+  const activeSyllableIndex = isCardSpeakingSlow ? activePlayback.activeSyllableIndex : null;
 
   // Clear inputs and validation results when hidden configuration changes
   useEffect(() => {
@@ -65,15 +73,31 @@ export default function WordCard({
     <article className="word-card" aria-label={`Spelling card for ${word.word}`}>
       {/* Header: Pronunciation & Word info */}
       <div className="word-card-header">
-        <button
-          type="button"
-          onClick={() => onSpeak(word.word)}
-          className="speaker-btn"
-          aria-label={`Hear ${word.word}`}
-          title={`Hear ${word.word}`}
-        >
-          🔊
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <button
+            type="button"
+            onClick={() => onSpeak(word.id, word.word)}
+            className={`speaker-btn ${isCardSpeakingNormal ? 'active' : ''}`}
+            aria-label={isCardSpeakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}
+            title={isCardSpeakingNormal ? 'Stop audio' : `Hear ${word.word} (normal speed)`}
+          >
+            {isCardSpeakingNormal ? '⏹️' : '🔊'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const syllableTexts = buildPronunciationSyllables(word);
+              if (onSpeakSyllables) {
+                onSpeakSyllables(word.id, syllableTexts);
+              }
+            }}
+            className={`speaker-btn ${isCardSpeakingSlow ? 'active' : ''}`}
+            aria-label={isCardSpeakingSlow ? `Stop audio for ${word.word}` : `Hear ${word.word} syllable by syllable`}
+            title={isCardSpeakingSlow ? 'Stop audio' : `Hear ${word.word} syllable by syllable`}
+          >
+            {isCardSpeakingSlow ? '⏹️' : '🐢'}
+          </button>
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {isAllCorrect && (
@@ -108,6 +132,7 @@ export default function WordCard({
         inputRefs={inputRefs}
         hiddenSequence={hiddenSequence}
         word={word.word}
+        activeSyllableIndex={activeSyllableIndex}
       />
 
       {/* Footer Controls: Hide, Show, and Verify Button */}

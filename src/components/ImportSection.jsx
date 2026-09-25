@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 
 const AI_PROMPT_TEMPLATE = `You are a spelling assistant. I will give you a list of spelling words, a photo of a spelling worksheet, or raw text.
 Return ONLY the words segmented into syllables using hyphens, one word per line, inside a single plain text code block.
-No numbers, no explanations, no markdown or punctuation other than hyphens.
+For words where text-to-speech might mispronounce isolated syllables, you may optionally append phonetic pronunciation in parentheses: e.g. "pret-ty (prit-tee)".
+No numbers, no explanations, no markdown or punctuation other than hyphens and optional phonetic parentheses.
 
 Example output:
 lov-ing
 joy-ful
-pret-ty
-hand-some
+pret-ty (prit-tee)
+hand-some (han-sum)
 kit-ten
 pup-py`;
 
@@ -172,14 +173,14 @@ export default function ImportSection({
             marginBottom: '0.4rem'
           }}
         >
-          Words (use hyphens for syllables, one word per line):
+          Words (hyphens for syllables; optional (phonetics) for tricky words):
         </label>
         <textarea
           id="inline-words-input"
           rows={6}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="lov-ing&#10;joy-ful&#10;pret-ty&#10;hand-some&#10;kit-ten&#10;pup-py"
+          placeholder="lov-ing&#10;joy-ful&#10;pret-ty (prit-tee)&#10;hand-some (han-sum)&#10;kit-ten&#10;pup-py"
           style={{
             width: '100%',
             padding: '0.75rem',

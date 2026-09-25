@@ -8,6 +8,12 @@ import ColorPicker from '../components/ColorPicker';
 import ImportSection from '../components/ImportSection';
 import '../styles/spelling.css';
 
+const SPEED_CONFIGS = {
+  normal: { rate: 0.80, pauseDurationMs: 400 },
+  slower: { rate: 0.70, pauseDurationMs: 650 },
+  slowest: { rate: 0.60, pauseDurationMs: 900 }
+};
+
 export default function PracticePage() {
   const { rawList, words, importWords, resetToDefault } = useWordList();
   const {
@@ -20,8 +26,29 @@ export default function PracticePage() {
     showAllWords
   } = useHiding(words);
 
-  const { speak } = useSpeech();
+  const { speak, speakSyllables, activePlayback } = useSpeech();
   const [isImportExpanded, setIsImportExpanded] = useState(false);
+  const [speedPreset, setSpeedPreset] = useState(() => {
+    try {
+      return localStorage.getItem('spelling_tutor_speed_preset_v1') || 'normal';
+    } catch {
+      return 'normal';
+    }
+  });
+
+  const handleSpeedPresetChange = (preset) => {
+    setSpeedPreset(preset);
+    try {
+      localStorage.setItem('spelling_tutor_speed_preset_v1', preset);
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  };
+
+  const handleSpeakSyllables = (wordId, syllableTexts) => {
+    const config = SPEED_CONFIGS[speedPreset] || SPEED_CONFIGS.normal;
+    speakSyllables(wordId, syllableTexts, config);
+  };
 
   return (
     <div style={{
@@ -68,6 +95,39 @@ export default function PracticePage() {
               backgroundColor: 'var(--card-border)'
             }} />
             <ColorPicker />
+            <div style={{
+              height: '1.5rem',
+              width: '1px',
+              backgroundColor: 'var(--card-border)'
+            }} />
+            {/* Syllable Speed Preset Dropdown */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <label
+                htmlFor="syllable-speed-select"
+                style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: 'var(--muted-foreground)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>🐢</span> Syllables:
+              </label>
+              <select
+                id="syllable-speed-select"
+                value={speedPreset}
+                onChange={(e) => handleSpeedPresetChange(e.target.value)}
+                className="speed-preset-select"
+                aria-label="Syllable pronunciation speed preset"
+              >
+                <option value="normal">Normal (0.4s pause)</option>
+                <option value="slower">Slower (0.65s pause)</option>
+                <option value="slowest">Slowest (0.9s pause)</option>
+              </select>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -110,6 +170,8 @@ export default function PracticePage() {
         onHideWord={hideNextLettersForWord}
         onShowWord={showAllLettersForWord}
         onSpeak={speak}
+        onSpeakSyllables={handleSpeakSyllables}
+        activePlayback={activePlayback}
       />
     </div>
   );

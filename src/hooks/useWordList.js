@@ -2,16 +2,22 @@ import { useState, useEffect } from 'react';
 
 export const DEFAULT_RAW_WORDS = `lov-ing
 joy-ful
-pret-ty
-hand-some
+pret-ty (prit-tee)
+hand-some (han-sum)
 kit-ten
 pup-py`;
 
-const STORAGE_KEY = 'spelling_tutor_words_v2';
+const STORAGE_KEY = 'spelling_tutor_words_v3';
 
 /**
  * Parses raw hyphenated text into word objects with syllable breakdowns
  * and linear letter indices for straightforward focus and verification.
+ *
+ * Supports optional phonetic override syntax for syllable-by-syllable audio:
+ *   pret-ty (prit-tee)
+ * The part in parentheses is spoken by the turtle (🐢) button in place of
+ * the raw spelling syllables. Syllable count must match the spelling part.
+ * If omitted, the auto-phonetics engine corrects common patterns automatically.
  */
 export function parseWordList(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
@@ -28,13 +34,31 @@ export function parseWordList(rawText) {
 
     if (!cleanLine) continue;
 
-    // Split on hyphens to isolate syllables
-    const rawSyllables = cleanLine
+    // Extract optional phonetic override: "pret-ty (prit-tee)"
+    // Group 1 = spelling part, Group 2 = phonetics part (inside parens)
+    const phoneticMatch = cleanLine.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    const spellingPart = phoneticMatch ? phoneticMatch[1].trim() : cleanLine;
+    const phoneticPart = phoneticMatch ? phoneticMatch[2].trim() : null;
+
+    if (!spellingPart) continue;
+
+    // Split spelling part on hyphens to isolate syllables
+    const rawSyllables = spellingPart
       .split('-')
       .map(s => s.trim())
       .filter(Boolean);
 
     if (rawSyllables.length === 0) continue;
+
+    // Split phonetic part on hyphens (must match syllable count to be valid)
+    const rawPhoneticSyllables = phoneticPart
+      ? phoneticPart.split('-').map(s => s.trim()).filter(Boolean)
+      : null;
+
+    const pronunciationSyllables =
+      rawPhoneticSyllables && rawPhoneticSyllables.length === rawSyllables.length
+        ? rawPhoneticSyllables
+        : null;
 
     let globalLetterIndex = 0;
     const syllables = rawSyllables.map((syl, sylIdx) => {
@@ -56,7 +80,8 @@ export function parseWordList(rawText) {
       id: `w_${fullWord}_${Math.random().toString(36).substring(2, 9)}`,
       raw: cleanLine,
       word: fullWord,
-      syllables, // array of letter arrays: [[{index, char}], ...]
+      syllables,            // array of letter arrays: [[{index, char}], ...]
+      pronunciationSyllables, // string[] | null — teacher override for TTS
       letterCount: globalLetterIndex
     });
   }
@@ -67,8 +92,18 @@ export function parseWordList(rawText) {
 export function useWordList() {
   const [rawList, setRawList] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved && saved.trim() ? saved : DEFAULT_RAW_WORDS;
+      const v3 = localStorage.getItem(STORAGE_KEY);
+      if (v3 && v3.trim()) return v3;
+
+      const v2 = localStorage.getItem('spelling_tutor_words_v2');
+      if (v2) {
+        const oldDefault = `lov-ing\njoy-ful\npret-ty\nhand-some\nkit-ten\npup-py`;
+        if (v2.trim() === oldDefault.trim()) {
+          return DEFAULT_RAW_WORDS;
+        }
+        return v2;
+      }
+      return DEFAULT_RAW_WORDS;
     } catch {
       return DEFAULT_RAW_WORDS;
     }
