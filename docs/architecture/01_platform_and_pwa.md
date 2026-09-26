@@ -28,6 +28,16 @@ PWA support is enabled via `vite-plugin-pwa`:
 
 ---
 
+## 3. Landing Page & Proxy Layers (Phase 6)
+* **Landing page:** `Astro Project/jerome-portfolio/src/pages/spelling/index.astro` at `goodplusfast.com/spelling/` (prerendered; uses the site `Layout`, theme tokens and `astro-icon`). Its "Open App" buttons link to `/spelling/app/`. Progress Tracking and AI Coaching cards are marked "Coming soon" until Phases 4-5 ship.
+* **Two proxy layers for `/spelling/app/*`** (same pattern as Pray the Bible):
+  1. Edge Worker `spelling-proxy` (routes `goodplusfast.com/spelling/app*` and `www.`), the primary path in production.
+  2. Astro SSR route `spelling/app/[...path].ts`, a fallback that behaves identically.
+* **One-port local dev:** with `npm run dev` running in both projects, `http://localhost:4321/spelling/` is the landing page and `http://localhost:4321/spelling/app/` is the local Vite app (the Astro route forwards to `localhost:5173` when `import.meta.env.DEV`). `vite.config.js` sets `server.hmr.clientPort = 5173` so hot reload connects directly to Vite.
+* **Public assets:** reference them as `/file` in `index.html` (Vite prepends the base); never write `/spelling/app/file` there or the base is doubled.
+
+---
+
 * Provides native Android packaging without requiring a rewrite in Flutter or React Native.
 
 ---

@@ -14,7 +14,7 @@
 | 3 | [Cloudflare Backend API + D1 Schema](#phase-3) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 4 | [Auth Integration + User Data Sync](#phase-4) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
 | 5 | [AI Struggling-Areas Engine (Global Quota)](#phase-5) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 4 |
-| 6 | [Astro Landing Page + Proxy Worker](#phase-6) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 1 |
+| 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 7 | [Android (Capacitor)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 

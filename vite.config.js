@@ -33,5 +33,8 @@ export default defineConfig({
       }
     })
   ],
-  base: '/spelling/app/'
+  base: '/spelling/app/',
+  // Lets the app be viewed through the Astro dev server (localhost:4321/spelling/app/)
+  // while hot reload still connects straight to Vite.
+  server: { hmr: { host: 'localhost', clientPort: 5173 } }
 });
