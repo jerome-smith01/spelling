@@ -1,4 +1,5 @@
 import React from 'react';
+import UserMenu from './UserMenu';
 
 export default function Header({ activePage, onNavigate, theme, onToggleTheme }) {
   return (
@@ -28,8 +29,11 @@ export default function Header({ activePage, onNavigate, theme, onToggleTheme })
             fontSize: '1.5rem',
             margin: 0,
             cursor: 'pointer'
-          }} onClick={() => onNavigate('practice')}>
-            Spelling Tutor
+          }}>
+            {/* Full page load back to the Astro landing page (outside the SPA base path) */}
+            <a href="/spelling/" style={{ color: 'inherit', textDecoration: 'none' }}>
+              Spelling Tutor
+            </a>
           </h1>
           <span style={{
             fontSize: '0.7rem',
@@ -94,15 +98,9 @@ export default function Header({ activePage, onNavigate, theme, onToggleTheme })
           </button>
         </nav>
 
-        {/* Actions: Theme Toggle & Guest Mode Badge */}
+        {/* Actions: Account menu & Theme Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{
-            fontSize: '0.8rem',
-            color: 'var(--muted-foreground)',
-            fontWeight: 500
-          }}>
-            Local Mode
-          </span>
+          <UserMenu />
           <button
             type="button"
             onClick={onToggleTheme}

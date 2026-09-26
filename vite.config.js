@@ -36,5 +36,10 @@ export default defineConfig({
   base: '/spelling/app/',
   // Lets the app be viewed through the Astro dev server (localhost:4321/spelling/app/)
   // while hot reload still connects straight to Vite.
-  server: { hmr: { host: 'localhost', clientPort: 5173 } }
+  server: {
+    hmr: { host: 'localhost', clientPort: 5173 },
+    // Dev only: forward same-origin API/auth calls to the local Astro site
+    // (`ADAPTER=node npx astro dev` in jerome-portfolio, port 4321).
+    proxy: { '/api': 'http://localhost:4321' }
+  }
 });
