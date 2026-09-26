@@ -1,7 +1,9 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import UserMenu from './UserMenu';
 
-export default function Header({ activePage, onNavigate, theme, onToggleTheme }) {
+export default function Header({ theme, onToggleTheme }) {
+  const { pathname } = useLocation();
   return (
     <header style={{
       borderBottom: '1px solid var(--card-border)',
@@ -35,21 +37,9 @@ export default function Header({ activePage, onNavigate, theme, onToggleTheme })
               Spelling Tutor
             </a>
           </h1>
-          <span style={{
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            padding: '0.2rem 0.5rem',
-            borderRadius: '9999px',
-            backgroundColor: 'var(--muted)',
-            color: 'var(--muted-foreground)'
-          }}>
-            PWA
-          </span>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs (real routes, so every screen has its own URL) */}
         <nav style={{
           display: 'flex',
           alignItems: 'center',
@@ -58,44 +48,29 @@ export default function Header({ activePage, onNavigate, theme, onToggleTheme })
           padding: '0.25rem',
           borderRadius: '9999px'
         }} aria-label="Main Navigation">
-          <button
-            type="button"
-            onClick={() => onNavigate('practice')}
-            aria-current={activePage === 'practice' ? 'page' : undefined}
-            style={{
-              padding: '0.35rem 0.9rem',
-              borderRadius: '9999px',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              backgroundColor: activePage === 'practice' ? 'var(--card-bg)' : 'transparent',
-              color: activePage === 'practice' ? 'var(--foreground)' : 'var(--muted-foreground)',
-              boxShadow: activePage === 'practice' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Practice
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate('progress')}
-            aria-current={activePage === 'progress' ? 'page' : undefined}
-            style={{
-              padding: '0.35rem 0.9rem',
-              borderRadius: '9999px',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              backgroundColor: activePage === 'progress' ? 'var(--card-bg)' : 'transparent',
-              color: activePage === 'progress' ? 'var(--foreground)' : 'var(--muted-foreground)',
-              boxShadow: activePage === 'progress' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Progress
-          </button>
+          {[
+            { to: '/', label: 'Practice', active: pathname === '/' || pathname.startsWith('/lists') },
+            { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') }
+          ].map(({ to, label, active }) => (
+            <Link
+              key={to}
+              to={to}
+              aria-current={active ? 'page' : undefined}
+              style={{
+                padding: '0.35rem 0.9rem',
+                borderRadius: '9999px',
+                textDecoration: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                backgroundColor: active ? 'var(--card-bg)' : 'transparent',
+                color: active ? 'var(--foreground)' : 'var(--muted-foreground)',
+                boxShadow: active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
 
         {/* Actions: Account menu & Theme Toggle */}

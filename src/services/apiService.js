@@ -32,7 +32,7 @@ export class NetworkError extends Error {
 
 const TIMEOUT_MS = 10000;
 
-export async function apiFetch(path, { method = 'GET', body, headers } = {}) {
+export async function apiFetch(path, { method = 'GET', body, headers, keepalive } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -43,7 +43,8 @@ export async function apiFetch(path, { method = 'GET', body, headers } = {}) {
       credentials: 'include',
       headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...headers },
       body: body ? JSON.stringify(body) : undefined,
-      signal: controller.signal
+      signal: controller.signal,
+      keepalive
     });
   } catch {
     throw new NetworkError();

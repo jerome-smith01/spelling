@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useWordList } from '../hooks/useWordList';
 import { useHiding } from '../hooks/useHiding';
 import { useSpeech } from '../hooks/useSpeech';
@@ -6,6 +7,12 @@ import WordList from '../components/WordList';
 import HideControls from '../components/HideControls';
 import ColorPicker from '../components/ColorPicker';
 import ImportSection from '../components/ImportSection';
+import WordListManager from '../components/WordListManager';
+import NotFoundPage from './NotFoundPage';
+import { useLists } from '../hooks/useLists';
+import { enqueue } from '../services/attemptQueue';
+import { saveLastListId } from '../services/storageService';
+import { usePageTitle } from '../hooks/usePageTitle';
 import '../styles/spelling.css';
 
 const SPEED_CONFIGS = {
@@ -14,8 +21,47 @@ const SPEED_CONFIGS = {
   slowest: { rate: 0.60, pauseDurationMs: 900 }
 };
 
+// Server-side validation is /^[a-z][a-z' -]{0,39}$/; skip anything it would reject
+const VALID_WORD = /^[a-z][a-z' -]{0,39}$/;
+
+/** Route: /lists/:listId — resolves the list (local first, then account) and renders it. */
 export default function PracticePage() {
-  const { rawList, words, importWords, resetToDefault } = useWordList();
+  const { listId } = useParams();
+  const { getList, ready } = useLists();
+  const list = getList(listId);
+
+  if (!list) {
+    if (!ready) return <p role="status" style={{ color: 'var(--muted-foreground)' }}>Loading your lists…</p>;
+    return (
+      <NotFoundPage
+        title="List not found"
+        message="This list doesn't exist, or it belongs to a different account or device."
+      />
+    );
+  }
+  return <PracticeView key={listId} listId={listId} />;
+}
+
+function PracticeView({ listId }) {
+  const navigate = useNavigate();
+  const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
+  usePageTitle(list ? `${list.name} — Practice` : 'Practice');
+
+  useEffect(() => {
+    saveLastListId(listId);
+  }, [listId]);
+
+  const handleAttempts = (word, attempts) => {
+    if (!VALID_WORD.test(word)) return;
+    enqueue(attempts.map(a => ({ word, ...a })));
+  };
+
+  const handleImport = (text) => {
+    const result = importWords(text);
+    // Editing the built-in default creates a real list with its own URL
+    if (result.success && result.listId !== listId) navigate(`/lists/${result.listId}`, { replace: true });
+    return result;
+  };
   const {
     denominator,
     setDenominator,
@@ -24,7 +70,7 @@ export default function PracticePage() {
     showAllLettersForWord,
     hideAllWords,
     showAllWords
-  } = useHiding(words);
+  } = useHiding(words, listId);
 
   const { speak, speakSyllables, activePlayback } = useSpeech();
   const [isImportExpanded, setIsImportExpanded] = useState(false);
@@ -69,6 +115,11 @@ export default function PracticePage() {
         flexDirection: 'column',
         transition: 'all 0.3s ease'
       }} aria-label="Spelling Practice Controls">
+        {/* List selector (each list has its own URL) */}
+        <div style={{ marginBottom: '0.9rem' }}>
+          <WordListManager listId={listId} />
+        </div>
+
         {/* Main Controls Row */}
         <div style={{
           display: 'flex',
@@ -158,7 +209,7 @@ export default function PracticePage() {
           isExpanded={isImportExpanded}
           onClose={() => setIsImportExpanded(false)}
           currentRaw={rawList}
-          onImport={importWords}
+          onImport={handleImport}
           onResetDefault={resetToDefault}
         />
       </section>
@@ -172,6 +223,7 @@ export default function PracticePage() {
         onSpeak={speak}
         onSpeakSyllables={handleSpeakSyllables}
         activePlayback={activePlayback}
+        onAttempts={handleAttempts}
       />
     </div>
   );

@@ -1,19 +1,14 @@
 import React from 'react';
 import Header from './Header';
 
-export default function AppShell({ activePage, onNavigate, theme, onToggleTheme, children }) {
+export default function AppShell({ theme, onToggleTheme, children }) {
   return (
     <div style={{
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <Header
-        activePage={activePage}
-        onNavigate={onNavigate}
-        theme={theme}
-        onToggleTheme={onToggleTheme}
-      />
+      <Header theme={theme} onToggleTheme={onToggleTheme} />
       <main style={{
         flex: 1,
         padding: '2rem 1rem',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const COLOR_STORAGE_KEY = 'spelling_tutor_success_color_v1';
 const CUSTOM_COLORS_STORAGE_KEY = 'spelling_tutor_custom_colors_v1';
@@ -25,6 +25,126 @@ export function hexToRgba(hex, alpha = 0.15) {
   const g = (num >> 8) & 255;
   const b = num & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+const HEX_RE = /^#[0-9a-f]{6}$/i;
+
+export function hexToHsl(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  const l = (max + min) / 2;
+  let h = 0;
+  if (d) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  const sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+  return { h: Math.round(h), s: Math.round(sat * 100), l: Math.round(l * 100) };
+}
+
+export function hslToHex({ h, s, l }) {
+  const sat = s / 100, lig = l / 100;
+  const a = sat * Math.min(lig, 1 - lig);
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    const c = lig - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(255 * c).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+// Same on every device (the native <input type="color"> on Android only offers a short fixed palette)
+function ColorEditor({ color, onChange, onClose }) {
+  const [hsl, setHsl] = useState(() => hexToHsl(color));
+  const [hexText, setHexText] = useState(color);
+
+  const update = (patch) => {
+    const next = { ...hsl, ...patch };
+    const hex = hslToHex(next);
+    setHsl(next);
+    setHexText(hex);
+    onChange(hex);
+  };
+
+  const onHexInput = (e) => {
+    let v = e.target.value.trim();
+    if (v && !v.startsWith('#')) v = `#${v}`;
+    setHexText(v);
+    if (HEX_RE.test(v)) {
+      setHsl(hexToHsl(v));
+      onChange(v.toLowerCase());
+    }
+  };
+
+  const slider = (label, key, max, track) => (
+    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+      <span style={{ width: '1.25rem' }}>{label}</span>
+      <input
+        type="range"
+        min="0"
+        max={max}
+        value={hsl[key]}
+        onChange={(e) => update({ [key]: Number(e.target.value) })}
+        aria-label={`${label === 'H' ? 'Hue' : label === 'S' ? 'Saturation' : 'Lightness'}`}
+        style={{ flex: 1, height: '1.5rem', accentColor: 'var(--selected-color)', background: track, borderRadius: '9999px' }}
+      />
+    </label>
+  );
+
+  return (
+    <div
+      role="dialog"
+      aria-label="Customize color"
+      style={{
+        position: 'absolute',
+        top: 'calc(100% + 0.5rem)',
+        left: 0,
+        zIndex: 60,
+        width: 'min(16rem, calc(100vw - 2rem))',
+        padding: '0.75rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.6rem',
+        backgroundColor: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-xl)',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
+      }}
+    >
+      <div style={{ height: '2rem', borderRadius: '0.5rem', backgroundColor: hslToHex(hsl), border: '1px solid var(--card-border)' }} />
+      {slider('H', 'h', 360, 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)')}
+      {slider('S', 's', 100, `linear-gradient(to right,${hslToHex({ ...hsl, s: 0 })},${hslToHex({ ...hsl, s: 100 })})`)}
+      {slider('L', 'l', 100, `linear-gradient(to right,#000,${hslToHex({ ...hsl, l: 50 })},#fff)`)}
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <input
+          type="text"
+          value={hexText}
+          onChange={onHexInput}
+          maxLength={7}
+          spellCheck={false}
+          aria-label="Hex color"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '0.4rem 0.5rem',
+            fontFamily: 'monospace',
+            fontSize: '1rem',
+            color: 'var(--foreground)',
+            backgroundColor: 'var(--muted)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '0.5rem'
+          }}
+        />
+        <button type="button" className="btn-secondary-sm" onClick={onClose} style={{ fontWeight: 700 }}>
+          Done
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function applyColorTokens(colorHex) {
@@ -81,6 +201,24 @@ export default function ColorPicker() {
       // Ignore
     }
   }, [customColors]);
+
+  const [editingIdx, setEditingIdx] = useState(null);
+  const editorRef = useRef(null);
+
+  // Close the editor on outside click or Escape
+  useEffect(() => {
+    if (editingIdx === null) return undefined;
+    const onDown = (e) => {
+      if (editorRef.current && !editorRef.current.contains(e.target)) setEditingIdx(null);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setEditingIdx(null); };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [editingIdx]);
 
   const handleUpdateCustomColor = (index, newHex) => {
     const updated = [...customColors];
@@ -175,15 +313,20 @@ export default function ColorPicker() {
                 }}
               />
 
-              {/* Edit Trigger (Opens Native Color Picker) */}
-              <label
+              {/* Edit Trigger (opens the in-app color editor) */}
+              <button
+                type="button"
+                onClick={() => setEditingIdx(editingIdx === idx ? null : idx)}
                 title={`Customize Color ${idx + 1}`}
+                aria-label={`Customize Custom Color ${idx + 1}`}
+                aria-expanded={editingIdx === idx}
                 style={{
                   position: 'absolute',
-                  bottom: '-3px',
-                  right: '-3px',
-                  width: '12px',
-                  height: '12px',
+                  bottom: '-5px',
+                  right: '-5px',
+                  width: '16px',
+                  height: '16px',
+                  padding: 0,
                   borderRadius: '50%',
                   backgroundColor: 'var(--card-bg)',
                   border: '1px solid var(--card-border)',
@@ -191,30 +334,22 @@ export default function ColorPicker() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  overflow: 'hidden',
+                  fontSize: '9px',
+                  lineHeight: 1,
                   boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                 }}
               >
-                <span style={{ fontSize: '7px', lineHeight: 1, pointerEvents: 'none' }}>
-                  ✏️
-                </span>
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => handleUpdateCustomColor(idx, e.target.value)}
-                  style={{
-                    position: 'absolute',
-                    opacity: 0,
-                    width: '100%',
-                    height: '100%',
-                    cursor: 'pointer',
-                    padding: 0,
-                    margin: 0,
-                    border: 'none'
-                  }}
-                  aria-label={`Change Custom Color ${idx + 1} value`}
-                />
-              </label>
+                ✏️
+              </button>
+              {editingIdx === idx && (
+                <div ref={editorRef}>
+                  <ColorEditor
+                    color={color}
+                    onChange={(hex) => handleUpdateCustomColor(idx, hex)}
+                    onClose={() => setEditingIdx(null)}
+                  />
+                </div>
+              )}
             </div>
           );
         })}

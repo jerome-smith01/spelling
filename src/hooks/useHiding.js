@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const HIDING_STORAGE_KEY = 'spelling_tutor_hiding_state_v1';
 
-export function useHiding(words) {
+export function useHiding(words, listId) {
   // Denominator: 2 (1 in 2), 3 (1 in 3), or 'all'
   const [denominator, setDenominator] = useState(2);
 
@@ -23,6 +23,15 @@ export function useHiding(words) {
     }
     return {};
   });
+
+  // Word ids are positional, so hiding state from one list must not leak into another
+  const lastListId = useRef(listId);
+  useEffect(() => {
+    if (lastListId.current !== listId) {
+      lastListId.current = listId;
+      setHiddenMap({});
+    }
+  }, [listId]);
 
   // Save to localStorage whenever hiddenMap changes
   useEffect(() => {

@@ -8,6 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // Never serve the SPA shell for API calls (they live outside the SW scope, but be explicit)
+        navigateFallbackDenylist: [/^\/api\//]
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Spelling Tutor',

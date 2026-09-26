@@ -9,7 +9,8 @@ export default function WordCard({
   onShow,
   onSpeak,
   onSpeakSyllables,
-  activePlayback
+  activePlayback,
+  onAttempts
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
@@ -46,6 +47,7 @@ export default function WordCard({
     if (hiddenSequence.length === 0) return;
 
     const results = {};
+    const attempts = [];
     let allCorrect = true;
 
     // Flatten word letters for easy indexing
@@ -55,15 +57,15 @@ export default function WordCard({
       const typed = (userInputs[idx] || '').trim().toLowerCase();
       const actual = letters[idx]?.char.toLowerCase();
 
-      if (typed && typed === actual) {
-        results[idx] = 'correct';
-      } else {
-        results[idx] = 'incorrect';
-        allCorrect = false;
-      }
+      const isCorrect = Boolean(typed) && typed === actual;
+      results[idx] = isCorrect ? 'correct' : 'incorrect';
+      if (!isCorrect) allCorrect = false;
+      attempts.push({ letter: actual, position: idx, correct: isCorrect ? 1 : 0 });
     }
 
     setValidationResults(results);
+    // Every Check is recorded (a retry after a miss is the signal the friction score needs)
+    if (onAttempts) onAttempts(word.word, attempts);
   };
 
   const hasHidden = hiddenIndices.size > 0;

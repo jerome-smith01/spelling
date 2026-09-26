@@ -8,7 +8,8 @@ export default function WordList({
   onShowWord,
   onSpeak,
   onSpeakSyllables,
-  activePlayback
+  activePlayback,
+  onAttempts
 }) {
   if (!words || words.length === 0) {
     return (
@@ -42,6 +43,7 @@ export default function WordList({
           onSpeak={onSpeak}
           onSpeakSyllables={onSpeakSyllables}
           activePlayback={activePlayback}
+          onAttempts={onAttempts}
         />
       ))}
     </div>
