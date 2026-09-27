@@ -36,6 +36,20 @@ export default function Header({ theme, onToggleTheme }) {
             <a href="/spelling/" style={{ color: 'inherit', textDecoration: 'none' }}>
               Spelling Tutor
             </a>
+            <span style={{
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: 'var(--muted-foreground)',
+              border: '1px solid var(--card-border)',
+              borderRadius: '9999px',
+              padding: '0.1rem 0.5rem',
+              marginLeft: '0.5rem',
+              verticalAlign: 'middle'
+            }}>
+              Beta
+            </span>
           </h1>
         </div>
 
