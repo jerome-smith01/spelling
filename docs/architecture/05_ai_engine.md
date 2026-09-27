@@ -87,7 +87,7 @@ Client: `Modal` (focus trap, Esc, backdrop, returns focus), `AITipModal` (opened
 
 - **Progress page** (`/progress`): weekly summary card, opt-in email switch, stat tiles, the Mastered / Struggling / Needs-practice buckets (`utils/progress.js`), the spelling patterns list with "Read report", and the all-words table. Patterns and the digest are extras: if either request fails the word progress still shows.
 - **Word detail** (`/progress/words/:word`, `GET /api/spelling/scores/:word`): per-letter attempts and misses from final answers, the patterns each letter belongs to, and the cached tip. Miss counts are written out, not shown by color alone.
-- **Digest** (`src/lib/digest.ts`): the weekly cron (`0 13 * * 0`) builds one digest per learner who practiced in the last 7 days and stores it in `weekly_digests`. The summary sentence comes from the AI when the budget allows; otherwise a template is used. One failing learner never stops the run.
+- **Digest** (`src/lib/digest.ts`): the weekly cron (`0 13 * * SUN`) builds one digest per learner who practiced in the last 7 days and stores it in `weekly_digests`. The summary sentence comes from the AI when the budget allows; otherwise a template is used. One failing learner never stops the run.
 - **Email** is opt-in and off by default (`digest_prefs`), goes only to the account's own address, and every email carries a token-based unsubscribe link (`GET /api/spelling/digest/unsubscribe`, no login, identical response for any token). Delivery uses MailChannels (see Open Items).
 
 ## 8. API additions

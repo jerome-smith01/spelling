@@ -810,13 +810,13 @@ Warm, encouraging, jargon-free. No markdown.
 | NEW | `src/components/DigestCard.jsx` | Latest weekly digest shown at the top of Progress |
 | NEW | `src/components/DigestEmailToggle.jsx` | Opt-in switch for the weekly email |
 | NEW | `apps/spelling-tutor-api/migrations/0004_weekly_digests.sql` | `weekly_digests (learner_id, week_start, digest_json)` and `digest_prefs (user_id, email_opt_in, unsubscribe_token)` |
-| MODIFY | `apps/spelling-tutor-api/wrangler.jsonc` | Weekly cron, e.g. `0 13 * * 0` (Sunday) |
+| MODIFY | `apps/spelling-tutor-api/wrangler.jsonc` | Weekly cron, e.g. `0 13 * * SUN` (Sunday) |
 | MODIFY | `apps/spelling-tutor-api/src/index.ts` | `scheduled()` builds the digest for learners active that week (AI summary through `aiQuota`) and emails those who opted in. Adds `GET /digest/latest`, `PUT /digest/prefs` and `GET /digest/unsubscribe?token=` |
 
 ### Implementation notes (as built)
 - Digest period is the 7 days before the run; one row per learner per period is stored (re-running replaces it). The AI writes the summary sentence when the budget allows it; otherwise a plain template is used, so a digest never fails because AI is off.
 - The digest email is opt-in (off by default), is sent only to the account's own address, and every email carries an unsubscribe link. The unsubscribe endpoint needs no login and gives the same page for any token.
-- The weekly cron runs at `0 13 * * 0` (Sundays, 13:00 UTC) on `spelling-tutor-api`.
+- The weekly cron runs at `0 13 * * SUN` (Sundays, 13:00 UTC) on `spelling-tutor-api`.
 - `/progress/words/:word` shows a letter-by-letter result for one word (miss counts are written out, not shown by color alone) and its tip.
 - Automated coverage: `digest.test.ts`, `api.test.ts` (API), and `progress`, `DigestCard`, `DigestEmailToggle`, `WordBuckets`, `PatternList`, `ProgressPage`, `WordDetailPage`, `useStruggle` tests (client).
 
@@ -829,7 +829,7 @@ npx wrangler deploy                                            # also registers 
 Then deploy the spelling app to Pages. After that, the "Coming soon" badges on the `/spelling/` landing page ("AI Coaching" and "Parent pattern reports") can be updated.
 
 ### Manual Verification
-- [ ] After deploying, the weekly cron trigger (`0 13 * * 0`) appears under the `spelling-tutor-api` worker's Triggers tab in the Cloudflare dashboard
+- [ ] After deploying, the weekly cron trigger (`0 13 * * SUN`) appears under the `spelling-tutor-api` worker's Triggers tab in the Cloudflare dashboard
 - [ ] Turn on the weekly email, trigger the job once, and confirm the email really arrives and its unsubscribe link works. Delivery goes through MailChannels, which tests cannot reach, and MailChannels may now need an API key.
 - [ ] The new Progress and word-detail pages look right in dark mode and on a phone
 
