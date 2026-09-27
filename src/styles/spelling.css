@@ -227,3 +227,33 @@
   opacity: 0.92;
   transform: translateY(-1px);
 }
+
+/* Hue slider in the custom color editor: rainbow track, big touch-friendly thumb */
+.hue-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 0.9rem;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  touch-action: none;
+}
+.hue-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.hue-slider::-moz-range-thumb {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0, 0, 0, 0.45);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}

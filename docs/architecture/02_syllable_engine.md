@@ -59,7 +59,7 @@ Implemented across [`LetterInput.jsx`](../../src/components/LetterInput.jsx) and
 ## 5. Color Theming & Two Custom Color Slots
 Managed by [`src/components/ColorPicker.jsx`](../../src/components/ColorPicker.jsx):
 * **Presets:** Provides 6 curated accessible presets (Emerald, Sky Blue, Violet, Amber, Rose, Indigo).
-* **Two Custom Color Slots:** Users can click the edit badge (✏️) on either custom slot to open an in-app editor (hue/saturation/lightness sliders plus a hex field), choose any custom color, and save it. The native `<input type="color">` is deliberately not used: Android Chrome shows only a short fixed palette for it.
+* **Two Custom Color Slots:** Users can click the edit badge (✏️) on either custom slot to open an in-app editor (a saturation/brightness board with arrow-key support, a hue slider, and hex + RGB fields), choose any custom color, and save it. The native `<input type="color">` is deliberately not used: Android Chrome shows only a short fixed palette for it.
 * **Persistence:** Both custom colors (`spelling_tutor_custom_colors_v1`) and the active color choice (`spelling_tutor_success_color_v1`) are persisted in `localStorage`.
 * **Dynamic CSS Calculation:** Custom colors use `hexToRgba()` to automatically derive soft 15% opacity background tints (`--selected-color-bg`) for correct letters.
 

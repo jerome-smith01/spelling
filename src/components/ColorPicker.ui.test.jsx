@@ -50,11 +50,32 @@ describe('ColorPicker custom color editor', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('changing a slider updates the selected color', async () => {
+  it('RGB fields update the color and the hex field', async () => {
     const user = userEvent.setup();
     render(<ColorPicker />);
     await user.click(screen.getByRole('button', { name: 'Customize Custom Color 1' }));
-    fireEvent.change(screen.getByLabelText('Lightness'), { target: { value: '100' } });
-    expect(screen.getByLabelText('Hex color')).toHaveValue('#ffffff');
+    fireEvent.change(screen.getByLabelText('Red'), { target: { value: '255' } });
+    fireEvent.change(screen.getByLabelText('Green'), { target: { value: '0' } });
+    fireEvent.change(screen.getByLabelText('Blue'), { target: { value: '0' } });
+    expect(screen.getByLabelText('Hex color')).toHaveValue('#ff0000');
+  });
+
+  it('arrow keys on the board change saturation and brightness', async () => {
+    const user = userEvent.setup();
+    render(<ColorPicker />);
+    await user.click(screen.getByRole('button', { name: 'Customize Custom Color 2' }));
+    const board = screen.getByRole('group', { name: /Saturation and brightness board/ });
+    board.focus();
+    for (let i = 0; i < 50; i++) await user.keyboard('{ArrowDown}');
+    expect(screen.getByLabelText('Hex color')).toHaveValue('#000000');
+  });
+
+  it('hue slider changes the hue', async () => {
+    const user = userEvent.setup();
+    render(<ColorPicker />);
+    await user.click(screen.getByRole('button', { name: 'Customize Custom Color 1' }));
+    const before = screen.getByLabelText('Hex color').value;
+    fireEvent.change(screen.getByLabelText('Hue'), { target: { value: '0' } });
+    expect(screen.getByLabelText('Hex color').value).not.toBe(before);
   });
 });

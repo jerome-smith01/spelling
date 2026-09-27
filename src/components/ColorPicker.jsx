@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 
 const COLOR_STORAGE_KEY = 'spelling_tutor_success_color_v1';
 const CUSTOM_COLORS_STORAGE_KEY = 'spelling_tutor_custom_colors_v1';
@@ -28,12 +28,13 @@ export function hexToRgba(hex, alpha = 0.15) {
 }
 
 const HEX_RE = /^#[0-9a-f]{6}$/i;
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
 
-export function hexToHsl(hex) {
+/** #rrggbb -> { h: 0-360, s: 0-100, v: 0-100 } (unrounded, so dragging doesn't drift) */
+export function hexToHsv(hex) {
   const n = parseInt(hex.slice(1), 16);
   const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-  const l = (max + min) / 2;
   let h = 0;
   if (d) {
     if (max === r) h = ((g - b) / d) % 6;
@@ -42,84 +43,198 @@ export function hexToHsl(hex) {
     h *= 60;
     if (h < 0) h += 360;
   }
-  const sat = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
-  return { h: Math.round(h), s: Math.round(sat * 100), l: Math.round(l * 100) };
+  return { h, s: max ? (d / max) * 100 : 0, v: max * 100 };
 }
 
-export function hslToHex({ h, s, l }) {
-  const sat = s / 100, lig = l / 100;
-  const a = sat * Math.min(lig, 1 - lig);
+/** { h: 0-360, s: 0-100, v: 0-100 } -> lowercase #rrggbb */
+export function hsvToHex({ h, s, v }) {
+  const sat = s / 100, val = v / 100;
   const f = (n) => {
-    const k = (n + h / 30) % 12;
-    const c = lig - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    const k = (n + h / 60) % 6;
+    const c = val - val * sat * Math.max(0, Math.min(k, 4 - k, 1));
     return Math.round(255 * c).toString(16).padStart(2, '0');
   };
-  return `#${f(0)}${f(8)}${f(4)}`;
+  return `#${f(5)}${f(3)}${f(1)}`;
 }
 
-// Same on every device (the native <input type="color"> on Android only offers a short fixed palette)
+export function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+export function rgbToHex({ r, g, b }) {
+  return `#${[r, g, b].map(c => clamp(Math.round(c), 0, 255).toString(16).padStart(2, '0')).join('')}`;
+}
+
+// Same on every device (the native <input type="color"> on Android only offers a short fixed palette).
+// Layout: saturation/brightness board, hue slider, hex + RGB fields.
 function ColorEditor({ color, onChange, onClose }) {
-  const [hsl, setHsl] = useState(() => hexToHsl(color));
+  const [hsv, setHsv] = useState(() => hexToHsv(color));
   const [hexText, setHexText] = useState(color);
+  const panelRef = useRef(null);
+  const boardRef = useRef(null);
+  const [shiftX, setShiftX] = useState(0);
+
+  // Keep the panel inside the viewport (the swatch can sit near the right edge on phones)
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const margin = 8;
+    const rect = el.getBoundingClientRect();
+    const naturalLeft = rect.left - shiftX;
+    const maxLeft = document.documentElement.clientWidth - rect.width - margin;
+    setShiftX(Math.max(margin, Math.min(naturalLeft, maxLeft)) - naturalLeft);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hex = hsvToHex(hsv);
+  const { r, g, b } = hexToRgb(hex);
 
   const update = (patch) => {
-    const next = { ...hsl, ...patch };
-    const hex = hslToHex(next);
-    setHsl(next);
-    setHexText(hex);
-    onChange(hex);
+    const next = { ...hsv, ...patch };
+    const nextHex = hsvToHex(next);
+    setHsv(next);
+    setHexText(nextHex);
+    onChange(nextHex);
+  };
+
+  const setFromHex = (value) => {
+    setHexText(value);
+    if (HEX_RE.test(value)) {
+      const lower = value.toLowerCase();
+      // Keep hue when the color is gray/black (hue is undefined there) so the slider doesn't jump
+      const next = hexToHsv(lower);
+      setHsv(prev => (next.s === 0 || next.v === 0 ? { ...next, h: prev.h } : next));
+      onChange(lower);
+    }
   };
 
   const onHexInput = (e) => {
     let v = e.target.value.trim();
     if (v && !v.startsWith('#')) v = `#${v}`;
-    setHexText(v);
-    if (HEX_RE.test(v)) {
-      setHsl(hexToHsl(v));
-      onChange(v.toLowerCase());
+    setFromHex(v);
+  };
+
+  const onRgbInput = (channel) => (e) => {
+    const n = clamp(parseInt(e.target.value, 10) || 0, 0, 255);
+    setFromHex(rgbToHex({ r, g, b, [channel]: n }));
+  };
+
+  const moveBoard = (e) => {
+    const rect = boardRef.current.getBoundingClientRect();
+    update({
+      s: clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100),
+      v: clamp(100 - ((e.clientY - rect.top) / rect.height) * 100, 0, 100)
+    });
+  };
+
+  const onBoardKey = (e) => {
+    const step = e.shiftKey ? 10 : 2;
+    const moves = {
+      ArrowLeft: { s: clamp(hsv.s - step, 0, 100) },
+      ArrowRight: { s: clamp(hsv.s + step, 0, 100) },
+      ArrowUp: { v: clamp(hsv.v + step, 0, 100) },
+      ArrowDown: { v: clamp(hsv.v - step, 0, 100) }
+    };
+    if (moves[e.key]) {
+      e.preventDefault();
+      update(moves[e.key]);
     }
   };
 
-  const slider = (label, key, max, track) => (
-    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
-      <span style={{ width: '1.25rem' }}>{label}</span>
-      <input
-        type="range"
-        min="0"
-        max={max}
-        value={hsl[key]}
-        onChange={(e) => update({ [key]: Number(e.target.value) })}
-        aria-label={`${label === 'H' ? 'Hue' : label === 'S' ? 'Saturation' : 'Lightness'}`}
-        style={{ flex: 1, height: '1.5rem', accentColor: 'var(--selected-color)', background: track, borderRadius: '9999px' }}
-      />
-    </label>
-  );
+  const fieldStyle = {
+    minWidth: 0,
+    padding: '0.4rem 0.5rem',
+    fontFamily: 'monospace',
+    fontSize: '1rem',
+    color: 'var(--foreground)',
+    backgroundColor: 'var(--muted)',
+    border: '1px solid var(--card-border)',
+    borderRadius: '0.5rem'
+  };
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-label="Customize color"
       style={{
         position: 'absolute',
         top: 'calc(100% + 0.5rem)',
-        left: 0,
+        left: shiftX,
         zIndex: 60,
         width: 'min(16rem, calc(100vw - 2rem))',
         padding: '0.75rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.6rem',
+        gap: '0.7rem',
         backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--card-border)',
         borderRadius: 'var(--radius-xl)',
         boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
       }}
     >
-      <div style={{ height: '2rem', borderRadius: '0.5rem', backgroundColor: hslToHex(hsl), border: '1px solid var(--card-border)' }} />
-      {slider('H', 'h', 360, 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)')}
-      {slider('S', 's', 100, `linear-gradient(to right,${hslToHex({ ...hsl, s: 0 })},${hslToHex({ ...hsl, s: 100 })})`)}
-      {slider('L', 'l', 100, `linear-gradient(to right,#000,${hslToHex({ ...hsl, l: 50 })},#fff)`)}
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      {/* Saturation (x) / brightness (y) board */}
+      <div
+        ref={boardRef}
+        role="group"
+        tabIndex={0}
+        aria-label={`Saturation and brightness board: saturation ${Math.round(hsv.s)}%, brightness ${Math.round(hsv.v)}%. Use arrow keys.`}
+        onKeyDown={onBoardKey}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture?.(e.pointerId);
+          moveBoard(e);
+        }}
+        onPointerMove={(e) => {
+          if (e.currentTarget.hasPointerCapture?.(e.pointerId)) moveBoard(e);
+        }}
+        style={{
+          position: 'relative',
+          height: '9rem',
+          borderRadius: '0.5rem',
+          cursor: 'crosshair',
+          touchAction: 'none', // keep the page from scrolling while dragging on a phone
+          background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(${hsv.h}, 100%, 50%)`,
+          border: '1px solid var(--card-border)'
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: `${hsv.s}%`,
+            top: `${100 - hsv.v}%`,
+            width: '1.1rem',
+            height: '1.1rem',
+            transform: 'translate(-50%, -50%)',
+            borderRadius: '50%',
+            border: '2px solid #fff',
+            boxShadow: '0 0 0 1px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.5)',
+            backgroundColor: hex,
+            pointerEvents: 'none'
+          }}
+        />
+      </div>
+
+      {/* Preview + hue */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <div
+          aria-hidden="true"
+          style={{ width: '2rem', height: '2rem', flexShrink: 0, borderRadius: '50%', backgroundColor: hex, border: '1px solid var(--card-border)' }}
+        />
+        <input
+          type="range"
+          min="0"
+          max="360"
+          value={Math.round(hsv.h)}
+          onChange={(e) => update({ h: Number(e.target.value) })}
+          aria-label="Hue"
+          className="hue-slider"
+          style={{ flex: 1, minWidth: 0 }}
+        />
+      </div>
+
+      {/* Hex + RGB */}
+      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
         <input
           type="text"
           value={hexText}
@@ -127,21 +242,28 @@ function ColorEditor({ color, onChange, onClose }) {
           maxLength={7}
           spellCheck={false}
           aria-label="Hex color"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            padding: '0.4rem 0.5rem',
-            fontFamily: 'monospace',
-            fontSize: '1rem',
-            color: 'var(--foreground)',
-            backgroundColor: 'var(--muted)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '0.5rem'
-          }}
+          style={{ ...fieldStyle, flex: 1 }}
         />
         <button type="button" className="btn-secondary-sm" onClick={onClose} style={{ fontWeight: 700 }}>
           Done
         </button>
+      </div>
+      <div style={{ display: 'flex', gap: '0.4rem' }}>
+        {[['R', 'r', r, 'Red'], ['G', 'g', g, 'Green'], ['B', 'b', b, 'Blue']].map(([label, key, value, name]) => (
+          <label key={key} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.15rem', fontSize: '0.7rem', color: 'var(--muted-foreground)', textAlign: 'center' }}>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="255"
+              value={value}
+              onChange={onRgbInput(key)}
+              aria-label={name}
+              style={{ ...fieldStyle, width: '100%', textAlign: 'center', padding: '0.4rem 0.2rem' }}
+            />
+            {label}
+          </label>
+        ))}
       </div>
     </div>
   );

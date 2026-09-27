@@ -1,34 +1,41 @@
 import { describe, it, expect } from 'vitest';
-import { hexToHsl, hslToHex, hexToRgba, COLOR_PRESETS } from './ColorPicker';
+import { hexToHsv, hsvToHex, hexToRgb, rgbToHex, hexToRgba, COLOR_PRESETS } from './ColorPicker';
 
-describe('hexToHsl / hslToHex', () => {
+describe('hexToHsv / hsvToHex', () => {
   it('converts primary colors', () => {
-    expect(hexToHsl('#ff0000')).toEqual({ h: 0, s: 100, l: 50 });
-    expect(hexToHsl('#00ff00')).toEqual({ h: 120, s: 100, l: 50 });
-    expect(hexToHsl('#0000ff')).toEqual({ h: 240, s: 100, l: 50 });
+    expect(hexToHsv('#ff0000')).toEqual({ h: 0, s: 100, v: 100 });
+    expect(hexToHsv('#00ff00')).toEqual({ h: 120, s: 100, v: 100 });
+    expect(hexToHsv('#0000ff')).toEqual({ h: 240, s: 100, v: 100 });
   });
 
   it('handles black, white and grays without dividing by zero', () => {
-    expect(hexToHsl('#000000')).toEqual({ h: 0, s: 0, l: 0 });
-    expect(hexToHsl('#ffffff')).toEqual({ h: 0, s: 0, l: 100 });
-    expect(hexToHsl('#808080').s).toBe(0);
+    expect(hexToHsv('#000000')).toEqual({ h: 0, s: 0, v: 0 });
+    expect(hexToHsv('#ffffff')).toEqual({ h: 0, s: 0, v: 100 });
+    expect(hexToHsv('#808080').s).toBe(0);
   });
 
-  it('converts HSL back to lowercase 6-digit hex', () => {
-    expect(hslToHex({ h: 0, s: 100, l: 50 })).toBe('#ff0000');
-    expect(hslToHex({ h: 0, s: 0, l: 100 })).toBe('#ffffff');
-    expect(hslToHex({ h: 0, s: 0, l: 0 })).toBe('#000000');
-    expect(hslToHex({ h: 200, s: 60, l: 40 })).toMatch(/^#[0-9a-f]{6}$/);
+  it('converts HSV back to lowercase 6-digit hex', () => {
+    expect(hsvToHex({ h: 0, s: 100, v: 100 })).toBe('#ff0000');
+    expect(hsvToHex({ h: 0, s: 0, v: 100 })).toBe('#ffffff');
+    expect(hsvToHex({ h: 0, s: 0, v: 0 })).toBe('#000000');
+    expect(hsvToHex({ h: 217, s: 91, v: 96 })).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  it('round-trips the preset colors to within rounding error', () => {
-    for (const { hex } of COLOR_PRESETS) {
-      const back = hslToHex(hexToHsl(hex));
-      for (let i = 1; i < 7; i += 2) {
-        const diff = Math.abs(parseInt(hex.slice(i, i + 2), 16) - parseInt(back.slice(i, i + 2), 16));
-        expect(diff).toBeLessThanOrEqual(3);
-      }
+  it('round-trips presets and default custom colors exactly', () => {
+    for (const hex of [...COLOR_PRESETS.map(p => p.hex), '#06b6d4', '#ec4899', '#3b82f6']) {
+      expect(hsvToHex(hexToHsv(hex))).toBe(hex);
     }
+  });
+});
+
+describe('hexToRgb / rgbToHex', () => {
+  it('round-trips', () => {
+    expect(hexToRgb('#06b6d4')).toEqual({ r: 6, g: 182, b: 212 });
+    expect(rgbToHex({ r: 6, g: 182, b: 212 })).toBe('#06b6d4');
+  });
+
+  it('clamps out-of-range channels', () => {
+    expect(rgbToHex({ r: -5, g: 300, b: 0 })).toBe('#00ff00');
   });
 });
 

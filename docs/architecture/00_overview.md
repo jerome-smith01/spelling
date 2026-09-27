@@ -7,6 +7,8 @@ This document outlines the core architectural principles, invariants, and patter
 > - **Base HREF Contract:** The app MUST always be configured with `base: '/spelling/app/'` to correctly resolve under the reverse-proxy at `goodplusfast.com/spelling/app/`.
 > - **Unified Global CSS:** All UI colors, cards, and buttons must derive from the main Good Plus Fast design tokens (`--color-primary`, `--background`, `--foreground`). Never introduce hardcoded discordant color schemes.
 > - **Graceful Local-First Fallback:** All spelling practice features MUST remain fully functional using `localStorage` if the user is unauthenticated or the backend API is unreachable.
+> - **Local-first UI, background sync:** The UI always reads/writes `localStorage`; cloud sync is background work that may fail without affecting practice. Attempts are idempotent (`client_id`).
+> - **Unique URLs:** Every screen and every list has its own URL under `/spelling/app/` (see `04_auth_and_sync.md`); list ids are UUIDs and access is enforced server-side.
 > - **Session Cookie Auth:** Never store JWTs in `localStorage`. Authentication relies strictly on the `HttpOnly` session cookie issued by `goodplusfast.com`.
 > - **AI Capacity Limits:** All Cloudflare Workers AI interactions must verify neuron caps against `ai_admin_config` before executing to prevent cost overruns.
 
@@ -19,7 +21,7 @@ This document outlines the core architectural principles, invariants, and patter
 | Platform, Routing & PWA | [`01_platform_and_pwa.md`](./01_platform_and_pwa.md) | `VitePWA`, `spelling-proxy-worker.js` |
 | Syllable Parsing & Hiding Engine | [`02_syllable_engine.md`](./02_syllable_engine.md) | `useWordList`, `useHiding` |
 | Cloudflare API & D1 Schema | [`03_backend_and_schema.md`](./03_backend_and_schema.md) | `spelling-tutor-api`, `spelling_db` |
-| Auth & User Data Sync | `04_auth_and_sync.md` *(Phase 4)* | `apiService`, `storageService` |
+| Auth, URLs & User Data Sync | [`04_auth_and_sync.md`](./04_auth_and_sync.md) | `useAuth`, `useLists`, `syncService`, `attemptQueue` |
 | AI Struggle Engine (Leech Hunter) | `05_ai_engine.md` *(Phase 5)* | `calculateFrictionScore`, Workers AI |
 | Android & Mobile Packaging | `05_mobile_capacitor.md` *(Phase 7)* | Capacitor Android Bridge |
 

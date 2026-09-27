@@ -60,6 +60,7 @@ flowchart LR
 - `position` (INTEGER): Zero-indexed position of letter in word
 - `correct` (INTEGER): `1` if correct, `0` if mistake
 - `practiced_at` (DATETIME)
+- `client_id` (TEXT, nullable): client-generated id; partial unique index `(user_id, client_id)` makes retried batches idempotent (migration `0002`)
 
 ### `word_scores`
 *Aggregated struggle metrics per word per user, updated automatically on batch practice submission.*
@@ -81,8 +82,10 @@ flowchart LR
 |---|---|---|---|
 | `GET` | `/api/spelling/health` | No | Worker health status and phase |
 | `GET` | `/api/spelling/lists` | Yes | Get all saved word lists for authenticated user |
-| `POST` | `/api/spelling/lists` | Yes | Create or update a custom word list |
+| `GET` | `/api/spelling/lists/:id` | Yes | One list (owner only; anyone else gets 404) |
+| `POST` | `/api/spelling/lists` | Yes | Create a list (optional client UUID `id`) |
+| `PUT` | `/api/spelling/lists/:id` | Yes | Upsert with a client-generated UUID; 409 at 25 lists |
 | `DELETE` | `/api/spelling/lists/:id` | Yes | Delete a custom word list by ID |
-| `POST` | `/api/spelling/attempts` | Yes | Submit batch of practice attempts; recalculates friction scores |
+| `POST` | `/api/spelling/attempts` | Yes | Submit up to 500 attempts (`client_id` for idempotency); returns `{ recorded, duplicates, words_updated }` |
 | `GET` | `/api/spelling/scores` | Yes | List all word struggle scores |
 | `GET` | `/api/spelling/scores/hardest` | Yes | Top N hardest words (`friction_score > 0`) |
