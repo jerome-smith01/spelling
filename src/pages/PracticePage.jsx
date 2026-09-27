@@ -104,6 +104,20 @@ function PracticeView({ listId }) {
       maxWidth: '1024px',
       margin: '0 auto'
     }}>
+      {/* Current list title */}
+      <h2
+        tabIndex={-1}
+        style={{
+          margin: 0,
+          fontSize: '1.5rem',
+          fontWeight: 800,
+          color: 'var(--foreground)',
+          overflowWrap: 'anywhere'
+        }}
+      >
+        {list?.name}
+      </h2>
+
       {/* Top Toolbar: Expandable Spelling Practice Controls */}
       <section style={{
         backgroundColor: 'var(--card-bg)',

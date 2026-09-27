@@ -49,7 +49,8 @@ export default function Header({ theme, onToggleTheme }) {
           borderRadius: '9999px'
         }} aria-label="Main Navigation">
           {[
-            { to: '/', label: 'Practice', active: pathname === '/' || pathname.startsWith('/lists') },
+            { to: '/', label: 'Practice', active: pathname === '/' || pathname.startsWith('/lists/') },
+            { to: '/lists', label: 'My Lists', active: pathname === '/lists' },
             { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') }
           ].map(({ to, label, active }) => (
             <Link
