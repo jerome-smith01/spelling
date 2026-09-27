@@ -10,7 +10,7 @@ This document outlines the core architectural principles, invariants, and patter
 > - **Local-first UI, background sync:** The UI always reads/writes `localStorage`; cloud sync is background work that may fail without affecting practice. Attempts are idempotent (`client_id`).
 > - **Unique URLs:** Every screen and every list has its own URL under `/spelling/app/` (see `04_auth_and_sync.md`); list ids are UUIDs and access is enforced server-side.
 > - **Session Cookie Auth:** Never store JWTs in `localStorage`. Authentication relies strictly on the `HttpOnly` session cookie issued by `goodplusfast.com`.
-> - **AI Capacity Limits:** All Cloudflare Workers AI interactions must verify neuron caps against `ai_admin_config` before executing to prevent cost overruns.
+> - **AI Capacity Limits:** All Cloudflare Workers AI interactions must verify the kill switch and neuron cap in the shared `ai_admin_config` (in `good_plus_fast_db`) before executing, including fire-and-forget auto-triggers to prevent cost overruns.
 
 ---
 
@@ -22,7 +22,7 @@ This document outlines the core architectural principles, invariants, and patter
 | Syllable Parsing & Hiding Engine | [`02_syllable_engine.md`](./02_syllable_engine.md) | `useWordList`, `useHiding` |
 | Cloudflare API & D1 Schema | [`03_backend_and_schema.md`](./03_backend_and_schema.md) | `spelling-tutor-api`, `spelling_db` |
 | Auth, URLs & User Data Sync | [`04_auth_and_sync.md`](./04_auth_and_sync.md) | `useAuth`, `useLists`, `syncService`, `attemptQueue` |
-| AI Struggle Engine (Leech Hunter) | `05_ai_engine.md` *(Phase 5)* | `calculateFrictionScore`, Workers AI |
+| Struggle & Pattern Engine, shared AI quota | [`05_ai_engine.md`](./05_ai_engine.md) *(Phase 5)* | `scoring.ts`, `patternTagger.ts`, `useStruggle` |
 | Android & Mobile Packaging | `05_mobile_capacitor.md` *(Phase 7)* | Capacitor Android Bridge |
 
 ---

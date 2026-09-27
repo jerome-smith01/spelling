@@ -257,3 +257,9 @@
   border: 2px solid rgba(0, 0, 0, 0.45);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
+
+.struggle-flame {
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: default;
+}

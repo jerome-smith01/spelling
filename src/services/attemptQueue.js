@@ -29,11 +29,16 @@ function write(queue) {
   }
 }
 
+/** Pending attempts, oldest first (used for anonymous flames). */
+export function readQueue() {
+  return read();
+}
+
 export function queueLength() {
   return read().length;
 }
 
-/** attempts: [{ word, letter, position, correct (0|1) }] */
+/** attempts: [{ word, letter, position, correct (0|1), typed?, session_id?, list_id? }] */
 export function enqueue(attempts) {
   if (!attempts?.length) return;
   const stamped = attempts.map(a => ({ ...a, client_id: crypto.randomUUID() }));

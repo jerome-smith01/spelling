@@ -12,11 +12,14 @@
 | 1 | [Standalone React App (Vite + PWA shell)](#phase-1) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 2 | [Core Spelling Features (all 7 from spec)](#phase-2) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 3 | [Cloudflare Backend API + D1 Schema](#phase-3) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
-| 4 | [Auth Integration + User Data Sync](#phase-4) | 🟡 Built — pending production verification | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
-| 5 | [AI Struggling-Areas Engine (Global Quota)](#phase-5) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 4 |
+| 4 | [Auth Integration + User Data Sync](#phase-4) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
+| 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built — pending deploy + verification | Claude Sonnet (High) | Antigravity | Phase 4 |
+| 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🔲 Not Started | Gemini Pro (High) | Antigravity | Phase 5a |
+| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 7 | [Android (Capacitor)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
+| 9 | [Admin: Uncaptured-Pattern Report](#phase-9) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5a |
 
 ---
 
@@ -37,6 +40,7 @@ flowchart TD
         CF_MAIN["good-plus-fast-db D1\n(sessions + users)"]
         CF_DB["spelling-tutor-db D1\n(word lists, attempts, AI scores)"]
         CF_AI["Cloudflare Workers AI"]
+        CF_QUOTA["good_plus_fast_db\nai_admin_config + ai_neuron_log\n(shared GPF AI budget, Phase 5a)"]
     end
 
     subgraph gpf["goodplusfast.com"]
@@ -52,6 +56,7 @@ flowchart TD
     CF_WORKER --> CF_DB
     CF_WORKER --> CF_MAIN
     CF_WORKER --> CF_AI
+    CF_WORKER -->|"check + log neurons"| CF_QUOTA
     API --> CF_WORKER
 ```
 
@@ -82,8 +87,17 @@ flowchart TD
 > [!IMPORTANT]
 > **Before Phase 3:** Confirm whether to create a brand-new Cloudflare D1 database named `spelling-tutor-db`, or if you'd prefer a different name. I'll provide the exact `wrangler` command to run.
 
+> [!NOTE]
+> **Phase 5 AI quota: RESOLVED (2026-09-26).** We'll use one daily neuron budget and kill switch shared across all GPF apps. `ai_admin_config` and `ai_neuron_log` move from the Flashy Cards DB into `good_plus_fast_db`, which both workers already bind. The main-site GPF API takes over the daily reset cron and the `/api/admin/ai-*` routes. See [Phase 5a](#phase-5a).
+
 > [!IMPORTANT]
-> **Before Phase 5:** The AI engine will use Cloudflare Workers AI (same as Flashy Cards' Leech Hunter). Do you want the same daily neuron cap and kill-switch pattern, or a different limit for the spelling app?
+> **Before Phase 5a:** Confirm the main-site GPF API can host a cron trigger. If it runs as Astro on Pages, it can't, and we'll need a small `gpf-cron` Worker to do the daily budget reset.
+
+> [!IMPORTANT]
+> **Before Phase 5c:** Confirm which email sender the Flashy Cards admin emails use, and whether it's OK to send opt-in digest emails to end users (parents) through it.
+
+> [!NOTE]
+> **Family accounts (future phase):** Parents or teachers and children or students will share a family account. Parents set and assign words and monitor progress; children complete them. The new Phase 5 tables use a `learner_id` column, set equal to `user_id` for now, so child profiles can be mapped in later without a data migration.
 
 > [!NOTE]
 > **Android (Phase 7):** Capacitor requires Android Studio installed. Confirm you have it when we reach that phase.
@@ -572,74 +586,242 @@ On session complete (user finishes practicing a list):
 ---
 
 <a id="phase-5"></a>
-## Phase 5 — AI Struggling-Areas Engine
+## Phase 5 — AI Struggling-Areas & Pattern Engine (overview)
 [↑ Back to Table of Contents](#overall-status)
 
-**Goal:** Implement the friction-score algorithm (identical to Flashy Cards' Leech Hunter, adapted for spelling) and auto-generate AI coaching tips for words the student is repeatedly getting wrong.
+**Goal:** Help children with the specific words they keep missing, and show parents the *spelling patterns* behind those misses. For example: "keeps dropping the silent e", "confuses b/d", "misses doubled consonants before -ing". Phase 5 is split into three sessions: **5a** covers data and scoring with no AI output, **5b** adds the AI output, and **5c** builds the dashboard and weekly digest.
 
-**Model:** `Gemini Pro (High effort)` — Antigravity
-*Reason: Adapting the Leech Hunter algorithm for letter-level (not card-level) mistakes requires deep reasoning about the data model; the AI prompt engineering for spelling-specific coaching tips also benefits from the larger context window.*
+### Decisions (interview, 2026-09-26)
+| Topic | Decision |
+|---|---|
+| AI quota | One **shared GPF daily neuron budget** and kill switch. The tables move to `good_plus_fast_db`. |
+| Quota owner | The main-site GPF API owns the daily reset cron and `/api/admin/ai-*`. `admin/ai-credits.astro` gets repointed to it. |
+| What counts as a miss | **Final answer only.** Each hidden letter's *last* answer within a session counts. Raw Check rows are still stored. |
+| Session | **One visit to a list.** The client creates a `session_id` each time a list is opened for practice. |
+| Mastery | **3 perfect sessions in a row** for a word reset its friction score to 0 and clear its kid tip. |
+| Scope | Friction is tracked **per word**. Patterns are tracked **across all words and lists** for a learner. |
+| Pattern detection | **Deterministic rules tag, AI explains.** The server tags each letter position with pattern categories for free. The AI only writes explanations. |
+| Audience | **Both.** A kid-friendly tip per struggling word, plus a parent-facing pattern report. |
+| Word flames | Kept. 🔥 at friction ≥ 40; the AI kid tip auto-generates at ≥ 70 and is cached. |
+| Pattern report timing | (1) Auto-generated when a pattern first qualifies, then cached. It regenerates only if the pattern clears and later returns. (2) A weekly digest built by cron. |
+| Digest delivery | In-app on the Progress page, plus an **opt-in** email to the parent with an unsubscribe link. |
+| Anonymous users | Flames are computed client-side from localStorage. **All AI requires login.** |
+| Progress UI | Mastered / Struggling / Needs-practice buckets, plus a Patterns section for parents. |
+| Future families | New tables key on `learner_id`, which equals `user_id` for now. |
+| Uncaptured patterns | Admin report of misses that no rule tags. Moved to [Phase 9](#phase-9). |
 
-### How It Works
+### Pattern Categories (v1 — K–5)
+| Category key | Covers | Example |
+|---|---|---|
+| `silent_letters` | Silent e / VCe ("magic e"), kn, wr, gh, mb, silent h | make, knee, write, lamb |
+| `double_consonants` | ll/ss/ff/zz floss rule, doubling before -ing/-ed, missing or extra doubles | hopping, bell |
+| `vowel_teams` | ai/ay, ee/ea, oa/ow, oi/oy, ou/ow, igh, ew/ue | rain, boat, night |
+| `r_controlled` | ar, er, ir, ur, or | bird, turn |
+| `digraphs` | ch, sh, th, wh, ph, ng | ship, phone |
+| `endings` | -tion, -ed, -le, -ing, -er, -est | nation, little |
+| `short_vowels` | CVC vowel swaps (a/e/i/o/u) | cat vs "cet" |
+| `schwa` | Unstressed-syllable vowels | pencil → "pencel" |
+| `blends` | bl, cl, st, str, spl, nd, mp | stamp, string |
+| `soft_c_g` | c/g before e/i/y | city, gem |
+| `ck_dge_tch` | -ck vs -k, -dge, -tch | back, badge, catch |
+| `plurals` | -s vs -es, y → ies, f → ves | boxes, babies |
+| `prefixes` | un-, re-, pre-, dis- | unhappy |
+| `y_rules` | y as a vowel, y → i before suffixes | happy, happier |
+| `contractions` | Apostrophe placement | don't, it's |
+| `reversals` | b/d, p/q, n/u swaps (needs the `typed` letter) | "bog" for dog |
 
-The Leech Hunter pattern from Flashy Cards is adapted for spelling:
-- **Unit of struggle:** a specific **letter at a specific position** in a word (not a whole card)
-- **Friction score** increases exponentially with consecutive misses on the same letter
-- **AI tip** is triggered the first time a word crosses `friction_score >= 70`
-- **Tips are word-specific:** mnemonic device, phonetic breakdown, visual pattern
+A letter position can have **several** tags. Misses that match no tag are recorded as `untagged`, which feeds the Phase 9 admin report.
+
+### Thresholds (defaults, tunable constants)
+| Constant | Default | Meaning |
+|---|---|---|
+| `FLAME_THRESHOLD` | 40 | Show 🔥 on the word card |
+| `AI_TIP_THRESHOLD` | 70 | Auto-generate the kid tip (first crossing only) |
+| `MASTERY_STREAK` | 3 | Perfect sessions in a row that reset friction |
+| `PATTERN_QUALIFY` | ≥ 3 distinct words missed across ≥ 2 sessions within 30 days | Pattern becomes "active", which triggers the parent report |
+| `PATTERN_CLEAR` | ≥ 90% correct over its last 10 tagged letters | Pattern becomes "cleared" |
+
+---
+
+<a id="phase-5a"></a>
+## Phase 5a — Shared AI Quota + Sessions + Pattern Tagging
+[↑ Back to Table of Contents](#overall-status)
+
+**Goal:** Build everything Phase 5 needs *except* AI output:
+- the shared GPF quota tables
+- session-aware scoring
+- mastery reset
+- the deterministic pattern tagger with pattern stats
+- the 🔥 flame (which also works for anonymous users)
+
+**Model:** `Claude Sonnet (High effort)` — Antigravity
+*Reason: Cross-repo schema migrations (GPF DB, spelling DB, Flashy Cards refactor) plus a rules engine that needs unit tests. Correctness matters more than creativity here.*
 
 ### File-Level Changes
 
 | Action | File | Notes |
 |--------|------|-------|
-| MODIFY | `apps/spelling-tutor-api/src/index.ts` | Add friction engine + AI tip generation to `POST /api/spelling/attempts` handler |
-| NEW | `src/components/StruggleIndicator.jsx` | Flame icon 🔥 on words with high friction score |
-| NEW | `src/components/AITipModal.jsx` | Shows AI coaching tip for a struggling word |
-| NEW | `src/pages/ProgressPage.jsx` | Full progress dashboard: mastered, struggling, needs-practice |
-| MODIFY | `src/components/WordCard.jsx` | Show flame icon if `friction_score >= 40` |
+| NEW | `Astro Project/<gpf-db migrations>/00XX_shared_ai_quota.sql` | `ai_admin_config` (key/value) and `ai_neuron_log` (+ an `app` column) in `good_plus_fast_db`. Copies the current Flashy values over. |
+| ~~MODIFY~~ DEFERRED | Main-site GPF API / `gpf-cron` Worker | **Not done in 5a.** The main site is an Astro worker with no `scheduled` handler, so moving the cron needs a new worker. The reset cron, report email and `/api/fc/admin/ai-*` stay in the Flashy Cards worker, now operating on the shared tables. |
+| MODIFY | `jerome-portfolio/src/pages/admin/ai-credits.astro` | Point at the shared admin routes and show a per-app breakdown |
+| MODIFY | `Astro Project/apps/flashy-cards-api/src/index.ts` | Read and write the shared tables, using an **atomic** `UPDATE ... RETURNING` counter and a conditional kill-switch flip (only one request sends the email). **Fix:** the auto-trigger (≈ line 635) must check the kill switch. Remove its own cron reset. |
+| NEW | `apps/spelling-tutor-api/migrations/0003_sessions_patterns.sql` | See the schema below |
+| NEW | `apps/spelling-tutor-api/src/lib/patternTagger.ts` | Pure `tagWord(word) → [{ position, patterns[] }]`, with one rule module per category |
+| NEW | `apps/spelling-tutor-api/src/lib/patternTagger.test.ts` | Table-driven tests covering every category, plus multi-tag and untagged cases |
+| NEW | `apps/spelling-tutor-api/src/lib/scoring.ts` | Session-aware friction, mastery streak, and pattern stats update. It updates incrementally instead of rereading the full history. |
+| MODIFY | `apps/spelling-tutor-api/src/index.ts` | `POST /attempts` accepts `session_id` and `typed`, upserts `practice_sessions`, and calls `scoring.ts`. Adds `GET /api/spelling/patterns`. |
+| MODIFY | `src/pages/PracticePage.jsx` | Create a `session_id` (UUID) whenever a list is opened for practice |
+| MODIFY | `src/components/WordCard.jsx` | `handleVerify` also sends `typed` and `session_id`; show `StruggleIndicator` |
+| MODIFY | `src/services/attemptQueue.js` | Carry `session_id` and `typed` |
+| NEW | `src/components/StruggleIndicator.jsx` | 🔥 when friction ≥ 40, with an `aria-label` such as "Tricky word" |
+| NEW | `src/utils/friction.js` | Client-side port of the friction and final-answer logic, used for anonymous users' flames from localStorage |
 
-### Friction Algorithm (letter-level, server-side)
-```ts
-function calculateFrictionScore(attempts: Attempt[], word: string): number {
-  // Group by letter position
-  const byPosition: Record<number, boolean[]> = {};
-  for (const a of attempts) {
-    byPosition[a.position] ??= [];
-    byPosition[a.position].push(a.correct === 1);
-  }
+### Schema — `0003_sessions_patterns.sql`
+```sql
+ALTER TABLE attempts ADD COLUMN session_id TEXT;
+ALTER TABLE attempts ADD COLUMN typed      TEXT;        -- what the child actually typed ('' = blank)
+ALTER TABLE attempts ADD COLUMN learner_id TEXT;        -- = user_id until family accounts
+CREATE INDEX IF NOT EXISTS idx_attempts_session ON attempts(learner_id, session_id);
 
-  let total = 0;
-  for (const results of Object.values(byPosition)) {
-    let consecutive = 0;
-    for (const correct of results.reverse()) { // most recent first
-      if (!correct) { consecutive++; total += 10 * consecutive; }
-      else { consecutive = 0; total -= 5; }
-    }
-  }
-  return Math.max(0, total);
-}
+CREATE TABLE IF NOT EXISTS practice_sessions (
+  id            TEXT PRIMARY KEY,                       -- client-generated UUID
+  learner_id    TEXT NOT NULL,
+  list_id       TEXT,
+  started_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_seen_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE word_scores ADD COLUMN perfect_streak INTEGER DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS pattern_stats (
+  learner_id            TEXT NOT NULL,
+  pattern               TEXT NOT NULL,                  -- category key, or 'untagged'
+  attempts              INTEGER DEFAULT 0,              -- final answers on tagged letters
+  misses                INTEGER DEFAULT 0,
+  missed_words_json     TEXT,                           -- recent missed words + typed vs expected
+  status                TEXT DEFAULT 'watching',        -- watching | active | cleared
+  first_qualified_at    DATETIME,
+  report_json           TEXT,                           -- Phase 5b parent report cache
+  report_generated_at   DATETIME,
+  updated_at            DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (learner_id, pattern)
+);
 ```
 
-### AI Prompt (Cloudflare Workers AI — `llama-3.1-8b-instruct`)
+### Scoring Rules
+- **Final answer:** within a `session_id`, only the last attempt per (word, position) counts. Scoring re-runs for the affected session's words whenever a batch arrives, and is idempotent.
+- **Friction:** the existing letter-level algorithm (`+10 × consecutive misses`, `−5` per correct answer), applied to *final answers per session* instead of raw Check presses.
+- **Mastery:** a session where every hidden letter in the word ends up correct increments `perfect_streak`. Any miss resets it to 0. At 3, set `friction_score = 0` and `ai_suggestion = NULL`.
+- **Patterns:** each final-answer letter is tagged with `tagWord()`, which updates `pattern_stats` counts and `status` using `PATTERN_QUALIFY` / `PATTERN_CLEAR`.
+
+### Implementation notes (as built)
+- Friction reads at most the last 400 attempts per word, and pattern stats recompute from the last 30 days (max 3000 rows) per batch. This is a bounded recompute rather than a true incremental update, and it is idempotent.
+- `pattern_stats.cleared_at` was added so old misses cannot flip a cleared pattern straight back to active.
+- `word_scores.mastered_at` was added: attempts before it stop counting toward friction.
+- Details: [`architecture/05_ai_engine.md`](architecture/05_ai_engine.md).
+
+### Manual Verification
+- [ ] Migrations applied (see deploy steps in the 5a hand-off) 
+- [ ] The Flashy Cards admin page shows the shared budget, and Flashy AI still works against the shared tables
+- [ ] Setting `ai_enabled = 'false'` blocks the Flashy auto-trigger too (the bug fix)
+- [ ] Miss a letter, then correct it before leaving the list: it counts as **correct** (final answer only)
+- [ ] Miss "control" in several sessions: 🔥 appears on the card (logged in *and* anonymous)
+- [ ] 3 perfect sessions of "control" in a row: 🔥 disappears and friction is 0
+- [ ] Miss the silent e in make, bike and home across 2 sessions: `GET /patterns` shows `silent_letters` as `active`
+- [ ] Type "bog" for dog: `reversals` gets tagged
+- [ ] `patternTagger` tests pass
+
+---
+
+<a id="phase-5b"></a>
+## Phase 5b — AI Kid Tips + Parent Pattern Reports
+[↑ Back to Table of Contents](#overall-status)
+
+**Goal:** Generate and show AI output within the shared GPF budget: a kid-friendly tip for each struggling word, and a parent report for each active pattern.
+
+**Model:** `Gemini Pro (High effort)` — Antigravity
+*Reason: Prompt engineering for two audiences (child and parent), plus JSON robustness and quota-safe async generation.*
+
+### File-Level Changes
+
+| Action | File | Notes |
+|--------|------|-------|
+| NEW | `apps/spelling-tutor-api/src/lib/aiQuota.ts` | `checkQuota()` runs before **every** AI call (kill switch + daily limit); `logNeurons(app='spelling')` runs after. Uses the shared `good_plus_fast_db` tables. |
+| NEW | `apps/spelling-tutor-api/src/lib/prompts.ts` | Kid tip prompt and parent pattern prompt |
+| MODIFY | `apps/spelling-tutor-api/src/index.ts` | Auto-generation via `waitUntil`: a kid tip when a word first crosses 70, a parent report when a pattern first becomes `active`. New routes: `POST /scores/:word/analyze` and `POST /patterns/:pattern/analyze`. Both return the cache first, or 503 if AI is disabled. |
+| NEW | `src/components/Modal.jsx` | Shared dialog with focus trap, Esc to close, and `aria-modal` |
+| NEW | `src/components/AITipModal.jsx` | Kid view, opened by tapping 🔥: tip, mnemonic and breakdown |
+| NEW | `src/components/PatternReportModal.jsx` | Parent view: summary, why it happens, practice ideas and example words |
+| MODIFY | `src/services/apiService.js` | `getPatterns`, `analyzeWord`, `analyzePattern` |
+
+### Kid Tip Prompt (`@cf/meta/llama-3.1-8b-instruct`)
 ```
-You are a spelling coach for 3rd-grade students. The student is repeatedly 
-misspelling the word "${word}" (syllables: ${syllables.join('-')}).
+You are a spelling coach for elementary students (K–5). The student keeps
+misspelling "${word}" (syllables: ${syllables.join('-')}). Tricky letters:
+${trickyPositions} (they typed ${typedVsExpected}).
 
-Respond with ONLY valid JSON with these keys:
-- "tip": string — a short, child-friendly memory trick (1 sentence)
-- "mnemonic": string — a fun rhyme or story to remember the tricky part
-- "breakdown": string — explain why each syllable sounds the way it does
+Respond with ONLY valid JSON:
+- "tip": one short, child-friendly memory trick
+- "mnemonic": a fun rhyme or mini-story for the tricky part
+- "breakdown": how each syllable sounds and is spelled
 
-Keep language simple (3rd grade level). No markdown, just the JSON object.
+Use simple words a 3rd grader can read. No markdown.
+```
+
+### Parent Pattern Report Prompt
+```
+You are a reading specialist writing to a parent of a K–5 child.
+Pattern: ${patternName} (${patternDescription}).
+Recently missed words (expected → typed): ${examples}.
+
+Respond with ONLY valid JSON:
+- "summary": 1–2 sentences naming the pattern in plain language
+- "why_it_happens": why children commonly struggle with this
+- "practice_ideas": array of 3 short at-home activities
+- "example_words": array of 5 age-appropriate practice words with this pattern
+
+Warm, encouraging, jargon-free. No markdown.
 ```
 
 ### Manual Verification
-- [ ] Practice the word "control" incorrectly 5+ times → flame icon appears on the word card
-- [ ] Click the flame → AI tip modal opens with a child-friendly coaching tip
-- [ ] Progress page shows words sorted by friction score (hardest at top)
-- [ ] Mastering a word (spelling it correctly 3x in a row) resets its friction score
+- [ ] A word crossing 70 gets a kid tip within seconds; tapping 🔥 opens `AITipModal`
+- [ ] A pattern becoming active gets a parent report; opening it shows every field
+- [ ] With the kill switch off: no generation happens, the analyze routes return 503, and the UI shows a friendly "Tips are resting today"
+- [ ] Neuron log rows appear in `good_plus_fast_db` with `app = 'spelling'`
+- [ ] The cached result is returned on the second open, with no new neuron log row
+- [ ] Anonymous user: no AI calls, and the flame shows a "Log in for tips" note
+- [ ] Modals trap focus and close on Esc
 
 ---
+
+<a id="phase-5c"></a>
+## Phase 5c — Progress Dashboard + Weekly Digest
+[↑ Back to Table of Contents](#overall-status)
+
+**Goal:** Rebuild the Progress page around buckets and patterns, fill in the word-detail page, and send a weekly digest in-app plus an opt-in email.
+
+**Model:** `Claude Sonnet (Medium effort)` — Antigravity
+*Reason: UI composition over existing data, plus a cron job following the established Flashy Cards pattern.*
+
+### File-Level Changes
+
+| Action | File | Notes |
+|--------|------|-------|
+| MODIFY | `src/pages/ProgressPage.jsx` | Buckets (**Mastered**: streak ≥ 3 · **Struggling**: 🔥 ≥ 40 · **Needs practice**: 0 < friction < 40), plus a **Patterns** section with active and cleared patterns and a "Read report" button |
+| NEW | `src/pages/WordDetailPage.jsx` | Replaces the `/progress/words/:word` stub: letter-level miss heatmap, session history and the kid tip |
+| NEW | `src/components/DigestCard.jsx` | Latest weekly digest shown at the top of Progress |
+| NEW | `src/components/DigestEmailToggle.jsx` | Opt-in switch for the weekly email |
+| NEW | `apps/spelling-tutor-api/migrations/0004_weekly_digests.sql` | `weekly_digests (learner_id, week_start, digest_json)` and `digest_prefs (user_id, email_opt_in, unsubscribe_token)` |
+| MODIFY | `apps/spelling-tutor-api/wrangler.jsonc` | Weekly cron, e.g. `0 13 * * 0` (Sunday) |
+| MODIFY | `apps/spelling-tutor-api/src/index.ts` | `scheduled()` builds the digest for learners active that week (AI summary through `aiQuota`) and emails those who opted in. Adds `GET /digest/latest`, `PUT /digest/prefs` and `GET /digest/unsubscribe?token=` |
+
+### Manual Verification
+- [ ] Progress shows the three buckets with correct counts, and the Patterns section lists active patterns
+- [ ] Word detail page shows which letters are missed most
+- [ ] Triggering the cron manually (`wrangler dev --test-scheduled`) creates a digest that shows on Progress
+- [ ] With email opt-in on, the digest email arrives and the unsubscribe link turns it off
+- [ ] With opt-in off (the default), no email is sent
+- [ ] Dark mode and mobile layout are readable
 
 <a id="phase-6"></a>
 ## Phase 6 — Astro Landing Page + Proxy Worker Deploy
@@ -806,6 +988,28 @@ pause
 
 ---
 
+<a id="phase-9"></a>
+## Phase 9 — Admin: Uncaptured-Pattern Report
+[↑ Back to Table of Contents](#overall-status)
+
+**Goal:** As the global admin, see which missed letters in the words users load are **not captured by any pattern rule**, so we can decide which new rules to add to `patternTagger.ts`.
+
+**Model:** `Claude Sonnet (Medium effort)` — Antigravity
+*Reason: A read-only aggregate query plus a simple admin page, following the existing `ADMIN_EMAILS` pattern.*
+
+### File-Level Changes
+
+| Action | File | Notes |
+|--------|------|-------|
+| MODIFY | `apps/spelling-tutor-api/src/index.ts` | `GET /api/spelling/admin/untagged` (gated by `ADMIN_EMAILS`) returns final-answer misses tagged `untagged`, grouped by word, position and letter context (±2 letters), with miss counts and learner counts. No per-user identities. |
+| NEW | `jerome-portfolio/src/pages/admin/spelling-patterns.astro` | Sortable table of untagged misses, plus coverage stats (% of misses tagged per category) |
+
+### Manual Verification
+- [ ] A non-admin gets 403
+- [ ] Untagged misses appear with word and letter context; adding a rule and re-scoring removes them from the list
+
+---
+
 ## Architecture Docs to Update After Each Phase
 [↑ Back to Table of Contents](#overall-status)
 
@@ -814,7 +1018,9 @@ pause
 | 0 | Create `spelling_tutor/docs/architecture/01_overview.md` |
 | 3 | Add D1 schema diagram to overview doc |
 | 4 | Document auth + sync strategy |
-| 5 | Document friction algorithm + AI prompt |
+| 5a | Create `docs/architecture/05_ai_engine.md` (tagger, friction/mastery, shared quota); update `03_backend_and_schema.md` with the new tables |
+| 5b | Extend `05_ai_engine.md` with prompts and AI trigger rules |
+| 5c | Extend `05_ai_engine.md` with the digest; update `04_auth_and_sync.md` for the Progress page |
 | 6 | Update `Astro Project/WEBSITE_PAGES.md` |
 | 8 | Final review: all docs match deployed state |
 

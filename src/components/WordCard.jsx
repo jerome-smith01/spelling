@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SyllableBlock from './SyllableBlock';
+import StruggleIndicator from './StruggleIndicator';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 
 export default function WordCard({
@@ -10,7 +11,8 @@ export default function WordCard({
   onSpeak,
   onSpeakSyllables,
   activePlayback,
-  onAttempts
+  onAttempts,
+  friction = 0
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
@@ -60,7 +62,7 @@ export default function WordCard({
       const isCorrect = Boolean(typed) && typed === actual;
       results[idx] = isCorrect ? 'correct' : 'incorrect';
       if (!isCorrect) allCorrect = false;
-      attempts.push({ letter: actual, position: idx, correct: isCorrect ? 1 : 0 });
+      attempts.push({ letter: actual, position: idx, correct: isCorrect ? 1 : 0, typed: typed.slice(0, 1) });
     }
 
     setValidationResults(results);
@@ -102,6 +104,7 @@ export default function WordCard({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <StruggleIndicator friction={friction} word={word.word} />
           {isAllCorrect && (
             <span style={{
               fontSize: '0.8rem',

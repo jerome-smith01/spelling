@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWordList } from '../hooks/useWordList';
 import { useHiding } from '../hooks/useHiding';
@@ -13,6 +13,7 @@ import { useLists } from '../hooks/useLists';
 import { enqueue } from '../services/attemptQueue';
 import { saveLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useStruggle } from '../hooks/useStruggle';
 import '../styles/spelling.css';
 
 const SPEED_CONFIGS = {
@@ -51,9 +52,14 @@ function PracticeView({ listId }) {
     saveLastListId(listId);
   }, [listId]);
 
+  // One visit to a list = one practice session. Scoring uses the LAST answer per
+  // letter within a session, so a corrected miss counts as correct.
+  const sessionId = useRef(crypto.randomUUID());
+  const frictionByWord = useStruggle();
+
   const handleAttempts = (word, attempts) => {
     if (!VALID_WORD.test(word)) return;
-    enqueue(attempts.map(a => ({ word, ...a })));
+    enqueue(attempts.map(a => ({ word, ...a, session_id: sessionId.current, list_id: listId })));
   };
 
   const handleImport = (text) => {
@@ -238,6 +244,7 @@ function PracticeView({ listId }) {
         onSpeakSyllables={handleSpeakSyllables}
         activePlayback={activePlayback}
         onAttempts={handleAttempts}
+        frictionByWord={frictionByWord}
       />
     </div>
   );
