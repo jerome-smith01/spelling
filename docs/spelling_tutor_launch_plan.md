@@ -14,8 +14,8 @@
 | 3 | [Cloudflare Backend API + D1 Schema](#phase-3) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 4 | [Auth Integration + User Data Sync](#phase-4) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
 | 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built and deployed — one visual check left | Claude Sonnet (High) | Antigravity | Phase 4 |
-| 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🟡 Built — pending deploy + verification | Gemini Pro (High) | Antigravity | Phase 5a |
-| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Built — pending deploy + verification | Claude Sonnet (Medium) | Antigravity | Phase 5b |
+| 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🟡 Deployed — one manual check left | Gemini Pro (High) | Antigravity | Phase 5a |
+| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Deployed — manual checks left | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 7 | [Better TTS (Research)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
@@ -826,7 +826,7 @@ cd "C:\Users\Jerom\My Apps\Astro Project\apps\spelling-tutor-api"
 npx wrangler d1 migrations apply spelling-tutor-db --remote   # applies 0004_weekly_digests.sql
 npx wrangler deploy                                            # also registers the weekly cron
 ```
-Then deploy the spelling app to Pages. After that, the "Coming soon" badges on the `/spelling/` landing page ("AI Coaching" and "Parent pattern reports") can be updated.
+Then deploy the spelling app to Pages. The "Coming soon" badges for AI Coaching and parent reports on the `/spelling/` landing page have been removed, and the home page now lists Spelling Tutor (marked Beta).
 
 ### Manual Verification
 - [ ] After deploying, the weekly cron trigger (`0 13 * * SUN`) appears under the `spelling-tutor-api` worker's Triggers tab in the Cloudflare dashboard
