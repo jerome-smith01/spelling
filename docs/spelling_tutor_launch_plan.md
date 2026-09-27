@@ -13,11 +13,11 @@
 | 2 | [Core Spelling Features (all 7 from spec)](#phase-2) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 3 | [Cloudflare Backend API + D1 Schema](#phase-3) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 4 | [Auth Integration + User Data Sync](#phase-4) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
-| 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built — pending deploy + verification | Claude Sonnet (High) | Antigravity | Phase 4 |
-| 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🔲 Not Started | Gemini Pro (High) | Antigravity | Phase 5a |
-| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5b |
+| 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built and deployed — one visual check left | Claude Sonnet (High) | Antigravity | Phase 4 |
+| 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🟡 Built — pending deploy + verification | Gemini Pro (High) | Antigravity | Phase 5a |
+| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Built — pending deploy + verification | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
-| 7 | [Android (Capacitor)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
+| 7 | [Better TTS (Research)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 | 9 | [Admin: Uncaptured-Pattern Report](#phase-9) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5a |
 
@@ -100,7 +100,7 @@ flowchart TD
 > **Family accounts (future phase):** Parents or teachers and children or students will share a family account. Parents set and assign words and monitor progress; children complete them. The new Phase 5 tables use a `learner_id` column, set equal to `user_id` for now, so child profiles can be mapped in later without a data migration.
 
 > [!NOTE]
-> **Android (Phase 7):** Capacitor requires Android Studio installed. Confirm you have it when we reach that phase.
+> **Android (deferred):** Staying a PWA for now; Capacitor/Android Studio only if the Play Store becomes a goal.
 
 ---
 
@@ -629,6 +629,11 @@ On session complete (user finishes practicing a list):
 | `y_rules` | y as a vowel, y → i before suffixes | happy, happier |
 | `contractions` | Apostrophe placement | don't, it's |
 | `reversals` | b/d, p/q, n/u swaps (needs the `typed` letter) | "bog" for dog |
+| `open_syllables` | One-syllable words ending in a vowel that says its name (multi-syllable needs syllable data, later) | me, hi, go |
+| `drop_silent_e` | Dropping the e before -ing (tagged on the suffix's first letter) | making |
+| `c_vs_k_initial` | Hard /k/ at the start: c before a/o/u, k before e/i/y | cat, kite |
+| `high_frequency_irregular` | Sight words that must be memorised (list-based) | said, was, could |
+| `roots` | Greek/Latin roots (list-based, grades 4-5) | graph, photo, phon |
 
 A letter position can have **several** tags. Misses that match no tag are recorded as `untagged`, which feeds the Phase 9 admin report.
 
@@ -721,15 +726,7 @@ CREATE TABLE IF NOT EXISTS pattern_stats (
 - Details: [`architecture/05_ai_engine.md`](architecture/05_ai_engine.md).
 
 ### Manual Verification
-- [ ] Migrations applied (see deploy steps in the 5a hand-off) 
-- [ ] The Flashy Cards admin page shows the shared budget, and Flashy AI still works against the shared tables
-- [ ] Setting `ai_enabled = 'false'` blocks the Flashy auto-trigger too (the bug fix)
-- [ ] Miss a letter, then correct it before leaving the list: it counts as **correct** (final answer only)
-- [ ] Miss "control" in several sessions: 🔥 appears on the card (logged in *and* anonymous)
-- [ ] 3 perfect sessions of "control" in a row: 🔥 disappears and friction is 0
-- [ ] Miss the silent e in make, bike and home across 2 sessions: `GET /patterns` shows `silent_letters` as `active`
-- [ ] Type "bog" for dog: `reversals` gets tagged
-- [ ] `patternTagger` tests pass
+- [ ] As the admin, `/admin/ai-credits` loads, shows the shared budget, and has a "Today by App" section (visual check; the data behind it is covered by tests)
 
 ---
 
@@ -783,14 +780,15 @@ Respond with ONLY valid JSON:
 Warm, encouraging, jargon-free. No markdown.
 ```
 
+### Implementation notes (as built)
+- Every AI call goes through `aiQuota.ts` (`checkQuota` before, `logNeurons` after), including the fire-and-forget auto-triggers. There is also a per-user cap of 20 AI generations a day.
+- A model response is parsed as JSON, shape-checked, length-clamped and sanitised before it is stored. Words and letters put into prompts are validated first.
+- After an attempts batch, at most 3 jobs are queued (parent reports first, then kid tips) to protect the budget.
+- A manual `analyze` only generates for words at or above the flame threshold, and only for `active` patterns. Cached results are always served, even while AI is disabled.
+- Automated coverage: `ai.test.ts`, `api.test.ts` (API), and `Modal`, `AITipModal`, `PatternReportModal`, `StruggleIndicator`, `WordCard.coaching` tests (client).
+
 ### Manual Verification
-- [ ] A word crossing 70 gets a kid tip within seconds; tapping 🔥 opens `AITipModal`
-- [ ] A pattern becoming active gets a parent report; opening it shows every field
-- [ ] With the kill switch off: no generation happens, the analyze routes return 503, and the UI shows a friendly "Tips are resting today"
-- [ ] Neuron log rows appear in `good_plus_fast_db` with `app = 'spelling'`
-- [ ] The cached result is returned on the second open, with no new neuron log row
-- [ ] Anonymous user: no AI calls, and the flame shows a "Log in for tips" note
-- [ ] Modals trap focus and close on Esc
+- [ ] With the real Cloudflare Workers AI, a kid tip and a parent report read well (tone, spelling, and that the advice makes sense for the pattern). Tests use a stand-in model, so real output quality is the one thing they cannot judge.
 
 ---
 
@@ -815,13 +813,27 @@ Warm, encouraging, jargon-free. No markdown.
 | MODIFY | `apps/spelling-tutor-api/wrangler.jsonc` | Weekly cron, e.g. `0 13 * * 0` (Sunday) |
 | MODIFY | `apps/spelling-tutor-api/src/index.ts` | `scheduled()` builds the digest for learners active that week (AI summary through `aiQuota`) and emails those who opted in. Adds `GET /digest/latest`, `PUT /digest/prefs` and `GET /digest/unsubscribe?token=` |
 
+### Implementation notes (as built)
+- Digest period is the 7 days before the run; one row per learner per period is stored (re-running replaces it). The AI writes the summary sentence when the budget allows it; otherwise a plain template is used, so a digest never fails because AI is off.
+- The digest email is opt-in (off by default), is sent only to the account's own address, and every email carries an unsubscribe link. The unsubscribe endpoint needs no login and gives the same page for any token.
+- The weekly cron runs at `0 13 * * 0` (Sundays, 13:00 UTC) on `spelling-tutor-api`.
+- `/progress/words/:word` shows a letter-by-letter result for one word (miss counts are written out, not shown by color alone) and its tip.
+- Automated coverage: `digest.test.ts`, `api.test.ts` (API), and `progress`, `DigestCard`, `DigestEmailToggle`, `WordBuckets`, `PatternList`, `ProgressPage`, `WordDetailPage`, `useStruggle` tests (client).
+
+### Deploy steps (yours to run)
+```powershell
+cd "C:\Users\Jerom\My Apps\Astro Project\apps\spelling-tutor-api"
+npx wrangler d1 migrations apply spelling-tutor-db --remote   # applies 0004_weekly_digests.sql
+npx wrangler deploy                                            # also registers the weekly cron
+```
+Then deploy the spelling app to Pages. After that, the "Coming soon" badges on the `/spelling/` landing page ("AI Coaching" and "Parent pattern reports") can be updated.
+
 ### Manual Verification
-- [ ] Progress shows the three buckets with correct counts, and the Patterns section lists active patterns
-- [ ] Word detail page shows which letters are missed most
-- [ ] Triggering the cron manually (`wrangler dev --test-scheduled`) creates a digest that shows on Progress
-- [ ] With email opt-in on, the digest email arrives and the unsubscribe link turns it off
-- [ ] With opt-in off (the default), no email is sent
-- [ ] Dark mode and mobile layout are readable
+- [ ] After deploying, the weekly cron trigger (`0 13 * * 0`) appears under the `spelling-tutor-api` worker's Triggers tab in the Cloudflare dashboard
+- [ ] Turn on the weekly email, trigger the job once, and confirm the email really arrives and its unsubscribe link works. Delivery goes through MailChannels, which tests cannot reach, and MailChannels may now need an API key.
+- [ ] The new Progress and word-detail pages look right in dark mode and on a phone
+
+---
 
 <a id="phase-6"></a>
 ## Phase 6 — Astro Landing Page + Proxy Worker Deploy
@@ -895,72 +907,58 @@ export const ALL: APIRoute = async ({ request, url }) => {
 ---
 
 <a id="phase-7"></a>
-## Phase 7 — Android App (Capacitor)
+## Phase 7 — Better Text-to-Speech (Research)
 [↑ Back to Table of Contents](#overall-status)
 
-**Goal:** Wrap the production React PWA in Capacitor to generate an Android APK — same codebase, no React Native rewrite.
+**Goal:** Decide how the PWA gets higher-quality, consistent voices for free, without slowing down users' phones. **Research phase — no code until we pick an approach.**
 
 **Model:** `Claude Sonnet (Medium effort)` — Antigravity
-*Reason: Capacitor setup is well-documented with clear steps; Android-specific config (icons, splash, permissions) has some judgment calls.*
+*Reason: Comparison and prototyping with some judgment calls; low implementation volume.*
 
-> [!IMPORTANT]
-> Requires Android Studio installed locally. Confirm before starting this phase.
+> [!NOTE]
+> **Android/Capacitor is deferred.** We are staying a PWA. The app isn't going in the Play Store yet, and the PWA already installs and works offline on Android. Revisit only if store discoverability or native APIs become a real need. (Old plan: `@capacitor/*`, `capacitor.config.json`, `tools/11.build_android.bat`, Android Studio.)
 
-### File-Level Changes
+### Constraints
+- **Free** (or free within generous tiers). No per-use cost that scales with users.
+- **No heavy work on the user's phone.** No large model downloads or slow on-device inference on low-end devices.
+- **Hostable on Cloudflare** (Workers, R2, Pages) **or** callable as an API from a Worker.
+- Works offline for words the learner has already practiced, where possible.
 
-| Action | File | Notes |
-|--------|------|-------|
-| MODIFY | `package.json` | Add `@capacitor/core`, `@capacitor/cli`, `@capacitor/android` |
-| NEW | `capacitor.config.json` | App ID, server URL, display name |
-| NEW | `android/` | Auto-generated by `npx cap add android` |
-| NEW | `tools/11.build_android.bat` | Build web → sync capacitor → open Android Studio |
-| NEW | `public/icons/icon-192.png` | App icon (to be provided or generated) |
-| NEW | `public/splash.png` | Splash screen |
+### Options to Research
 
-### `capacitor.config.json`
-```json
-{
-  "appId": "com.goodplusfast.spellingtutor",
-  "appName": "Spelling Tutor",
-  "webDir": "dist",
-  "server": {
-    "androidScheme": "https"
-  },
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 1500
-    }
-  }
-}
-```
+| # | Approach | Where it runs | Phone impact | Cost | Open questions |
+|---|----------|---------------|--------------|------|----------------|
+| A | **Pre-generated audio** (Piper/Kokoro run once on your PC → MP3 in R2, plain `<audio>` playback) | Build time / your machine | Minimal | Free (R2 free tier) | How to handle user-created words not in the pre-generated set? |
+| B | **Cloudflare Workers AI TTS** (e.g. MeloTTS) called from the Worker, cached in R2 | Cloudflare edge | Minimal | Free daily neuron allowance, then paid | Current model list, free-tier limits, voice quality, latency |
+| C | **Hosted API free tiers** (Google Cloud TTS ~1M chars/mo, Azure ~500k chars/mo) via the Worker, cached in R2 | Provider | Minimal | Free tier, then paid | Key management, quota safety, terms on caching audio |
+| D | **On-device neural TTS** (Kokoro via `kokoro-js`, Piper WASM) | User's phone | **High** (50-80 MB download, slow on weak phones) | Free | Likely rejected by the "no slowdown" constraint; test on a low-end phone before ruling out |
+| E | **`speechSynthesis`** (current) | User's device | None | Free | Voice quality varies by device; keep as fallback |
 
-### `tools/11.build_android.bat`
-```bat
-@echo off
-title Build Spelling Tutor Android
-cd /d "%~dp0.."
+### Likely Architecture (to validate)
+1. Word/sentence requested → check R2 cache by hash of `(text, voice)`.
+2. Cache hit → return the audio URL; the client plays it with `<audio>` and the service worker caches it for offline use.
+3. Cache miss → Worker generates via B or C, stores in R2, returns it.
+4. Generation fails or the user is offline with no cached audio → fall back to `speechSynthesis`.
 
-echo [1/3] Building Vite...
-call npm run build
-if %errorlevel% neq 0 ( echo BUILD FAILED & pause & exit /b )
+This keeps the phone doing only playback, and each unique word is generated at most once, so cost stays near zero.
 
-echo [2/3] Syncing Capacitor...
-call npx cap sync android
-if %errorlevel% neq 0 ( echo CAP SYNC FAILED & pause & exit /b )
+### Research Tasks
+- [ ] Confirm current Workers AI TTS models, voices, free-tier limits, and pricing beyond the free tier
+- [ ] Compare Google/Azure free-tier limits and their terms on storing/caching generated audio
+- [ ] Generate the same 10 test words with Piper, Kokoro, Workers AI, and Google Neural2; pick a winner by ear (clarity of single words matters more than sentence flow)
+- [ ] Estimate volume: unique words per list × expected lists → will we stay inside the free tier?
+- [ ] Check R2 free-tier storage/operations against expected audio size (~10-30 KB per word)
+- [ ] Decide the approach for custom user words (on-demand generation vs. fallback to `speechSynthesis`)
+- [ ] Decide whether pre-generating a common word bank (e.g. grade-level lists) is worth doing up front
+- [ ] Check how current dictation uses `speechSynthesis` so the new engine slots in behind the same interface
 
-echo [3/3] Opening Android Studio...
-call npx cap open android
-
-echo Done! Build the APK from Android Studio: Build > Generate Signed APK
-pause
-```
+### Deliverable
+A short decision record in `docs/architecture/` (e.g. `06_tts_decision.md`) covering the chosen approach, rejected options with reasons, the cache/fallback design, and a follow-up implementation phase if warranted.
 
 ### Manual Verification
-- [ ] `npm run build && npx cap sync android` runs without errors
-- [ ] Android Studio opens the project
-- [ ] Run on emulator → app loads, spelling practice works
-- [ ] Web Speech API (dictation) works on emulator
-- [ ] Dark mode toggle works in the WebView
+- [ ] Sample audio for each candidate reviewed and a winner chosen
+- [ ] Free-tier math shows we stay within limits at expected usage
+- [ ] Decision record written and this plan updated with an implementation phase
 
 ---
 

@@ -4,9 +4,9 @@ Phase 5 is delivered in three parts. This document describes what is **built** a
 
 | Part | Scope | Status |
 |---|---|---|
-| 5a | Shared AI quota, practice sessions, session-aware friction, mastery, pattern tagging, flame | Built (pending deploy) |
-| 5b | AI kid tips and parent pattern reports | Not started |
-| 5c | Progress dashboard and weekly digest | Not started |
+| 5a | Shared AI quota, practice sessions, session-aware friction, mastery, pattern tagging, flame | Built and deployed |
+| 5b | AI kid tips and parent pattern reports | Built (pending deploy) |
+| 5c | Progress dashboard and weekly digest | Built (pending deploy) |
 
 ---
 
@@ -22,6 +22,7 @@ One daily neuron budget and one kill switch cover every app that calls Workers A
 - **Every** AI call, including fire-and-forget auto-triggers, must read `ai_enabled` first and skip when it is `'false'`.
 - Flashy Cards' own per-user card-generation caps (`ai_usage`, `ai_usage_global`) stay in its own DB.
 - The daily reset cron (`0 3 * * *`), the daily report email and `/api/fc/admin/ai-*` still run in the Flashy Cards worker, now against the shared tables. Moving them to an app-neutral worker is deferred (see Open Items).
+- **Admin gate.** `isAdminRequest` allows the admin email, or any request when the Worker itself is served from localhost (`wrangler dev`). It must never trust the `Origin` or `Referer` headers, which any client can forge; an earlier version did, which let any logged-in user switch AI off or change the limit. A test guards this.
 
 ## 2. Sessions and "final answer only"
 
@@ -43,11 +44,19 @@ One daily neuron budget and one kill switch cover every app that calls Workers A
 
 `tagWord(word)` returns, per letter position, the pattern categories that letter belongs to. `tagMiss(word, position, typed)` adds `reversals` when the typed letter is the mirror of the expected one (b/d, p/q, n/u, m/w). Tagging is deterministic; **the AI never tags**, it only explains (5b).
 
-Categories: `silent_letters`, `double_consonants`, `vowel_teams`, `r_controlled`, `digraphs`, `endings`, `short_vowels`, `schwa`, `blends`, `soft_c_g`, `ck_dge_tch`, `plurals`, `prefixes`, `y_rules`, `contractions`, `reversals`. A position may carry several. Letters no rule recognises are recorded as `untagged` (never shown to users; feeds the Phase 9 admin report). Rules are heuristics (for example, prefix and plural rules have small exception lists), so extend them by adding a rule plus a test case.
+Categories: `silent_letters`, `double_consonants`, `vowel_teams`, `r_controlled`, `digraphs`, `endings`, `short_vowels`, `schwa`, `blends`, `soft_c_g`, `ck_dge_tch`, `plurals`, `prefixes`, `y_rules`, `contractions`, `reversals`, `open_syllables`, `drop_silent_e`, `c_vs_k_initial`, `high_frequency_irregular`, `roots`. A position may carry several. Letters no rule recognises are recorded as `untagged` (never shown to users; feeds the Phase 9 admin report). Rules are heuristics (for example, prefix and plural rules have small exception lists), so extend them by adding a rule plus a test case.
+
+Notes on the newer categories:
+- `open_syllables` covers **one-syllable** words only (me, hi, go, fly). Multi-syllable cases such as ti/ger need syllable breaks, which the server does not receive yet.
+- `drop_silent_e` is tagged on the first letter of `-ing` after a consonant-vowel-consonant base (making). Words like "visiting" match the same shape, so they add harmless correct answers; only real misses matter.
+- `high_frequency_irregular` and `roots` are list-based (`IRREGULAR_HIGH_FREQUENCY`, `ROOTS_*` in `patternTagger.ts`); extend the lists as the Phase 9 report shows gaps.
+- Not built: homophones (needs sentence context) and compound words (needs a curated word list). Revisit later.
 
 ## 5. Pattern statistics (`pattern_stats`, per learner)
 
 Recomputed after every attempts batch from the learner's last 30 days of final answers (at most 3000 raw rows).
+
+**Blank answers are ignored.** A Check with nothing typed (`typed = ''`) still counts as a miss for the word's friction (so the flame works), but is dropped before pattern statistics are built, because a blank says nothing about which pattern a child struggles with. Dropping happens before the per-session collapse, so an earlier real wrong answer in the same session is kept. Legacy rows with `typed` NULL are not treated as blank.
 
 | State | Rule |
 |---|---|
@@ -57,22 +66,55 @@ Recomputed after every attempts batch from the learner's last 30 days of final a
 
 After a pattern is cleared, only misses **newer than `cleared_at`** can re-qualify it, so old misses in the window cannot flip it straight back to active. A (re)activation sets `first_qualified_at` and clears any cached `report_json` so 5b regenerates the parent report.
 
-## 6. API additions
+## 6. AI generation (Phase 5b)
+
+Code: `src/lib/ai.ts` (orchestration), `aiQuota.ts` (budget), `prompts.ts` (prompts and parsers), `patternInfo.ts` (names used in reports).
+
+| Feature | Trigger | Cached in | Invalidated by |
+|---|---|---|---|
+| Kid tip | Friction crosses 70 for the first time (auto), or a manual request for a word at 40 or above | `word_scores.ai_suggestion` | Mastering the word |
+| Parent report | A pattern becomes `active` (auto), or a manual request | `pattern_stats.report_json` | The pattern re-activating after it cleared |
+
+- **Always through the shared budget.** `checkQuota()` (kill switch, then a per-user cap of 20 generations a day) runs before the model and `logNeurons()` after. The cost is logged even when the model returns unusable output, because the call was made.
+- **Cached results are free.** A cached tip or report is served even while AI is disabled.
+- **Untrusted output.** Model text is parsed to JSON, checked for the required fields, length-clamped, and example words are restricted to plain letters. Inputs to prompts are validated first (words by pattern, typed letters reduced to one lowercase letter), and prompts say the data is not instructions.
+- **Auto-generation** runs after the response is sent (`waitUntil`), capped at 3 jobs per attempts batch (reports first, then tips). A failure in one job never stops the others.
+- **Errors map to friendly HTTP codes:** 404 unknown, 409 not tricky enough or not active, 429 daily cap, 503 AI disabled, 502 unavailable or unusable output.
+
+Client: `Modal` (focus trap, Esc, backdrop, returns focus), `AITipModal` (opened from the flame; signed-out visitors see a login link and no request is made), `PatternReportModal` (parent report and recent misses).
+
+## 7. Progress, word detail and the weekly digest (Phase 5c)
+
+- **Progress page** (`/progress`): weekly summary card, opt-in email switch, stat tiles, the Mastered / Struggling / Needs-practice buckets (`utils/progress.js`), the spelling patterns list with "Read report", and the all-words table. Patterns and the digest are extras: if either request fails the word progress still shows.
+- **Word detail** (`/progress/words/:word`, `GET /api/spelling/scores/:word`): per-letter attempts and misses from final answers, the patterns each letter belongs to, and the cached tip. Miss counts are written out, not shown by color alone.
+- **Digest** (`src/lib/digest.ts`): the weekly cron (`0 13 * * 0`) builds one digest per learner who practiced in the last 7 days and stores it in `weekly_digests`. The summary sentence comes from the AI when the budget allows; otherwise a template is used. One failing learner never stops the run.
+- **Email** is opt-in and off by default (`digest_prefs`), goes only to the account's own address, and every email carries a token-based unsubscribe link (`GET /api/spelling/digest/unsubscribe`, no login, identical response for any token). Delivery uses MailChannels (see Open Items).
+
+## 8. API additions
 
 | Method | Path | Notes |
 |---|---|---|
 | `POST` | `/api/spelling/attempts` | Accepts `typed`, `session_id`, `list_id`; upserts `practice_sessions`; recomputes word scores and pattern stats |
 | `GET` | `/api/spelling/scores` | Adds `perfect_streak`, `mastered_at` |
-| `GET` | `/api/spelling/patterns` | Learner's patterns (active first) with recent examples; excludes `untagged` |
+| `GET` | `/api/spelling/patterns` | Learner's patterns (active first) with label, recent examples and cached report; excludes `untagged` |
+| `POST` | `/api/spelling/scores/:word/analyze` | Kid tip for a tricky word (cached or generated) |
+| `POST` | `/api/spelling/patterns/:pattern/analyze` | Parent report for an active pattern (cached or generated) |
+| `GET` | `/api/spelling/scores/:word` | One word's score, per-letter results and tip |
+| `GET` | `/api/spelling/digest/latest` | Newest weekly digest, or null |
+| `GET` / `PUT` | `/api/spelling/digest/prefs` | Weekly email opt-in (off by default) |
+| `GET` | `/api/spelling/digest/unsubscribe?token=` | Unsubscribe link from the email (no login) |
 
-## 7. Tests
+## 9. Tests
 
 ```
-cd "Astro Project/apps/spelling-tutor-api"
-node --test src/lib/patternTagger.test.ts src/lib/scoring.test.ts    # Node 22.6+ (type stripping)
+cd "Astro Project/apps/spelling-tutor-api" && npm test    # tagger, scoring, AI, digest and HTTP API
+cd "Astro Project/apps/flashy-cards-api"   && npm test    # shared quota, kill switch, admin gate
+cd spelling_tutor                          && npm test    # React app
 ```
-Client: `npm test` in `spelling_tutor` (includes `src/utils/friction.test.js`).
+The two API suites use Node's built-in test runner (Node 22.6+, type stripping) and run the real SQL on in-memory SQLite through a small D1 stand-in (`spelling-tutor-api/src/lib/testing/d1.ts`, test-only). The AI is a fake, so tests never spend neurons or touch the network. What they cannot cover: real model output quality, real email delivery, and the Cloudflare cron trigger.
 
-## 8. Open items
+## 10. Open items
 - Move the daily reset cron and admin routes to an app-neutral worker (the main site is an Astro worker with no `scheduled` handler, so this needs a small `gpf-cron` worker).
 - Thresholds are constants at the top of `scoring.ts` and are expected to be tuned with real usage.
+- Email delivery uses the MailChannels endpoint the Flashy Cards admin emails use. MailChannels ended its free integration for Cloudflare Workers, so this may need an API key. Confirm with a real send before relying on the digest email.
+- Family accounts: `learner_id` (equal to `user_id` today) is where child profiles will attach. Digests and pattern stats already key on it.

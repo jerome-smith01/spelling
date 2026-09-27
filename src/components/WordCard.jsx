@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SyllableBlock from './SyllableBlock';
 import StruggleIndicator from './StruggleIndicator';
+import AITipModal from './AITipModal';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 
 export default function WordCard({
@@ -16,6 +17,7 @@ export default function WordCard({
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
+  const [tipOpen, setTipOpen] = useState(false);
   const inputRefs = useRef({});
 
   // Active speech playback states
@@ -104,7 +106,7 @@ export default function WordCard({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <StruggleIndicator friction={friction} word={word.word} />
+          <StruggleIndicator friction={friction} word={word.word} onClick={() => setTipOpen(true)} />
           {isAllCorrect && (
             <span style={{
               fontSize: '0.8rem',
@@ -172,6 +174,7 @@ export default function WordCard({
           </button>
         )}
       </div>
+      {tipOpen && <AITipModal word={word.word} onClose={() => setTipOpen(false)} />}
     </article>
   );
 }

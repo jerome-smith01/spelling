@@ -263,3 +263,65 @@
   line-height: 1;
   cursor: default;
 }
+
+.struggle-flame-btn {
+  background: none;
+  border: none;
+  padding: 0.15rem;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.struggle-flame-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(15, 23, 42, 0.55);
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 34rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--card-border);
+  background-color: var(--card-bg);
+  color: var(--foreground);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.modal-body h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.modal-body p,
+.modal-body li {
+  line-height: 1.5;
+}

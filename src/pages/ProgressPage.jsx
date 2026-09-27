@@ -3,10 +3,16 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLists } from '../hooks/useLists';
 import { usePageTitle } from '../hooks/usePageTitle';
-import { apiFetch } from '../services/apiService';
-import { flush, queueLength, subscribe } from '../services/attemptQueue';
 import { buildLoginUrl } from '../services/apiService';
+import { getLatestDigest, getPatterns, getScores } from '../services/coachingApi';
+import { flush, queueLength, subscribe } from '../services/attemptQueue';
 import { parseWordList } from '../utils/wordParser';
+import { formatSqlDate, wordAccuracy } from '../utils/progress';
+import DigestCard from '../components/DigestCard';
+import DigestEmailToggle from '../components/DigestEmailToggle';
+import WordBuckets from '../components/WordBuckets';
+import PatternList from '../components/PatternList';
+import PatternReportModal from '../components/PatternReportModal';
 
 const card = {
   backgroundColor: 'var(--card-bg)',
@@ -14,8 +20,6 @@ const card = {
   borderRadius: 'var(--radius-xl)',
   padding: '1.25rem'
 };
-
-const accuracy = (s) => (s.attempt_count > 0 ? Math.round((1 - s.error_count / s.attempt_count) * 100) : 0);
 
 function Stat({ label, value }) {
   return (
@@ -26,7 +30,7 @@ function Stat({ label, value }) {
   );
 }
 
-/** Route: /progress — per-word attempts, accuracy and friction score. */
+/** Route: /progress. Weekly summary, word buckets, spelling patterns and per-word detail. */
 export default function ProgressPage() {
   usePageTitle('Progress');
   const { status } = useAuth();
@@ -35,6 +39,9 @@ export default function ProgressPage() {
   const listFilter = params.get('list') || 'all';
 
   const [scores, setScores] = useState(null);
+  const [patterns, setPatterns] = useState([]);
+  const [digest, setDigest] = useState(null);
+  const [reportFor, setReportFor] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState(queueLength());
@@ -46,14 +53,25 @@ export default function ProgressPage() {
     setError('');
     try {
       await flush(); // make sure the latest session is included
-      setScores(await apiFetch('/api/spelling/scores'));
-    } catch (err) {
-      if (err.name === 'AuthError') setError('Your session expired. Log in again to see your progress.');
-      else if (err.name === 'NetworkError') setError("You're offline. Progress will load when you're back online.");
-      else setError(err.message || 'Could not load progress.');
-    } finally {
-      setLoading(false);
+    } catch {
+      // Offline or expired: still show whatever the server has
     }
+    // Patterns and the digest are extras: if either fails, the scores still show.
+    const [scoresResult, patternsResult, digestResult] = await Promise.allSettled([
+      getScores(), getPatterns(), getLatestDigest()
+    ]);
+
+    if (scoresResult.status === 'fulfilled') {
+      setScores(scoresResult.value);
+    } else {
+      const err = scoresResult.reason;
+      if (err?.name === 'AuthError') setError('Your session expired. Log in again to see your progress.');
+      else if (err?.name === 'NetworkError') setError("You're offline. Progress will load when you're back online.");
+      else setError(err?.message || 'Could not load progress.');
+    }
+    setPatterns(patternsResult.status === 'fulfilled' && Array.isArray(patternsResult.value) ? patternsResult.value : []);
+    setDigest(digestResult.status === 'fulfilled' ? digestResult.value : null);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -134,6 +152,13 @@ export default function ProgressPage() {
         <p role="status" style={{ color: 'var(--muted-foreground)' }}>Loading your progress…</p>
       )}
 
+      {scores !== null && (
+        <>
+          <DigestCard digest={digest} />
+          <DigestEmailToggle />
+        </>
+      )}
+
       {scores && rows.length === 0 && !error && (
         <div style={{ ...card, textAlign: 'center', color: 'var(--muted-foreground)' }}>
           Nothing here yet. Hide some letters, type them in and press <strong>Check</strong> on the{' '}
@@ -149,10 +174,13 @@ export default function ProgressPage() {
             <Stat label="Need more practice" value={needsWork} />
           </div>
 
+          <WordBuckets scores={rows} />
+          <PatternList patterns={patterns} onOpenReport={setReportFor} />
+
           <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
               <caption style={{ textAlign: 'left', padding: '0.85rem 1rem', fontWeight: 700, color: 'var(--foreground)' }}>
-                Words, hardest first
+                All words, hardest first
               </caption>
               <thead>
                 <tr style={{ color: 'var(--muted-foreground)', textAlign: 'left' }}>
@@ -168,9 +196,13 @@ export default function ProgressPage() {
                   const hard = Math.min(s.friction_score, 100);
                   return (
                     <tr key={s.word} style={{ borderTop: '1px solid var(--card-border)' }}>
-                      <th scope="row" style={{ padding: '0.6rem 1rem', textAlign: 'left', color: 'var(--foreground)' }}>{s.word}</th>
+                      <th scope="row" style={{ padding: '0.6rem 1rem', textAlign: 'left' }}>
+                        <Link to={`/progress/words/${encodeURIComponent(s.word)}`} style={{ color: 'var(--color-primary)' }}>
+                          {s.word}
+                        </Link>
+                      </th>
                       <td style={{ padding: '0.6rem 1rem' }}>{s.attempt_count}</td>
-                      <td style={{ padding: '0.6rem 1rem' }}>{accuracy(s)}%</td>
+                      <td style={{ padding: '0.6rem 1rem' }}>{wordAccuracy(s)}%</td>
                       <td style={{ padding: '0.6rem 1rem', minWidth: '9rem' }}>
                         <div
                           role="img"
@@ -182,7 +214,7 @@ export default function ProgressPage() {
                         <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{s.friction_score}</span>
                       </td>
                       <td style={{ padding: '0.6rem 1rem', color: 'var(--muted-foreground)' }}>
-                        {s.last_practiced ? new Date(`${s.last_practiced.replace(' ', 'T')}Z`).toLocaleDateString() : '—'}
+                        {formatSqlDate(s.last_practiced)}
                       </td>
                     </tr>
                   );
@@ -192,6 +224,8 @@ export default function ProgressPage() {
           </div>
         </>
       )}
+
+      {reportFor && <PatternReportModal pattern={reportFor} onClose={() => setReportFor(null)} />}
     </section>
   );
 }

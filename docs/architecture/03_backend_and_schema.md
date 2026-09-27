@@ -82,6 +82,9 @@ flowchart LR
 ### `practice_sessions` / `pattern_stats` (migration `0003`)
 See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, list_id, started_at, last_seen_at)`; `pattern_stats(learner_id, pattern, attempts, misses, distinct_words, sessions_missed, missed_words_json, status, first_qualified_at, cleared_at, report_json, report_generated_at, updated_at)` keyed by `(learner_id, pattern)`.
 
+### `weekly_digests` / `digest_prefs` (migration `0004`)
+`weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
+
 ---
 
 ## API Endpoints (`spelling-tutor-api`)
@@ -97,4 +100,10 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 | `POST` | `/api/spelling/attempts` | Yes | Submit up to 500 attempts (`client_id` for idempotency); returns `{ recorded, duplicates, words_updated }` |
 | `GET` | `/api/spelling/scores` | Yes | List all word struggle scores |
 | `GET` | `/api/spelling/scores/hardest` | Yes | Top N hardest words (`friction_score > 0`) |
-| `GET` | `/api/spelling/patterns` | Yes | Learner's spelling patterns with status and recent examples (Phase 5a) |
+| `GET` | `/api/spelling/patterns` | Yes | Learner's spelling patterns with label, status, examples and cached report |
+| `POST` | `/api/spelling/scores/:word/analyze` | Yes | Kid tip for a tricky word (Phase 5b) |
+| `POST` | `/api/spelling/patterns/:pattern/analyze` | Yes | Parent report for an active pattern (Phase 5b) |
+| `GET` | `/api/spelling/scores/:word` | Yes | One word: score, per-letter results, tip (Phase 5c) |
+| `GET` | `/api/spelling/digest/latest` | Yes | Newest weekly digest (Phase 5c) |
+| `GET` / `PUT` | `/api/spelling/digest/prefs` | Yes | Weekly email opt-in (Phase 5c) |
+| `GET` | `/api/spelling/digest/unsubscribe` | No (token) | Unsubscribe link from the email (Phase 5c) |

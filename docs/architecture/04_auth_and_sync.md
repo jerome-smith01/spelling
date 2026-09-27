@@ -35,7 +35,7 @@ Login links go to `/login?redirect=<current path+query+hash>`. The main site val
 | `/lists/default` | Built-in default list (virtual, never synced until edited) |
 | `/lists/:listId` | Practice one list — `listId` is a client-generated UUID that is also the server primary key |
 | `/progress` | Progress dashboard (`?list=<id>` filters) |
-| `/progress/words/:word` | Reserved for Phase 5 |
+| `/progress/words/:word` | One word: letter-by-letter results and its tip (Phase 5c) |
 
 * URLs are addresses, not credentials. The API scopes every query by `user_id`; another user's id returns 404, identical to a non-existent list. Lists that exist only in one anonymous browser resolve only there.
 * Deep links need SPA fallback: `public/_redirects` (`/* /index.html 200`). The proxy Worker forwards any `/spelling/app*` path and strips the prefix.
@@ -74,7 +74,7 @@ Legacy storage (`spelling_tutor_words_v4/v3/v2`) migrates once into a dirty list
 
 ## 6. Progress page
 
-Flushes the queue, then `GET /api/spelling/scores`. Shows words practiced, overall accuracy and "need more practice", plus a table sorted by friction score. Empty, loading, offline, expired and error states are handled. Flame icons and AI tips arrive in Phase 5.
+Flushes the queue, then loads scores, patterns and the latest weekly digest in parallel (patterns and the digest are extras: if either fails the word progress still shows). Shows the weekly summary and email opt-in, stat tiles, the Mastered / Struggling / Needs-practice buckets, the spelling patterns list with parent reports, and a table of all words sorted by friction score. Empty, loading, offline, expired and error states are handled. Flames on the practice page open an AI tip (see `05_ai_engine.md`).
 
 ## 7. Failure modes
 

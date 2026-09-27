@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from './useAuth';
-import { apiFetch } from '../services/apiService';
+import { getScores } from '../services/coachingApi';
 import { readQueue, subscribe } from '../services/attemptQueue';
 import { frictionByWord } from '../utils/friction';
 
@@ -25,7 +25,7 @@ export function useStruggle() {
 
     const load = async () => {
       try {
-        const rows = await apiFetch('/api/spelling/scores');
+        const rows = await getScores();
         if (!cancelled && Array.isArray(rows)) {
           setScores(Object.fromEntries(rows.map(r => [r.word, r.friction_score])));
         }
