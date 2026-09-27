@@ -17,7 +17,7 @@
 | 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🟡 Deployed — one manual check left | Gemini Pro (High) | Antigravity | Phase 5a |
 | 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Deployed — manual checks left | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
-| 7 | [Better TTS (Research)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
+| 7 | [Better TTS (Research)](#phase-7) | ✅ Complete — decision recorded | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 | 9 | [Admin: Uncaptured-Pattern Report](#phase-9) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5a |
 
@@ -955,10 +955,12 @@ This keeps the phone doing only playback, and each unique word is generated at m
 ### Deliverable
 A short decision record in `docs/architecture/` (e.g. `06_tts_decision.md`) covering the chosen approach, rejected options with reasons, the cache/fallback design, and a follow-up implementation phase if warranted.
 
+**Decision:** [`architecture/06_tts_decision.md`](architecture/06_tts_decision.md) — pre-generated Kokoro audio cached in R2 (Option A), with `speechSynthesis` fallback for un-generated custom words (Option E). Server-generated options (B/C) and on-device neural TTS (D) were considered and rejected; see the decision record for reasoning and free-tier math. A follow-up implementation phase (proposed "Phase 7b") is not yet scheduled.
+
 ### Manual Verification
-- [ ] Sample audio for each candidate reviewed and a winner chosen
-- [ ] Free-tier math shows we stay within limits at expected usage
-- [ ] Decision record written and this plan updated with an implementation phase
+- [x] Sample audio for each candidate reviewed (via published comparisons) and a winner chosen — Kokoro
+- [x] Free-tier math shows we stay within limits at expected usage
+- [x] Decision record written and this plan updated with an implementation phase
 
 ---
 
@@ -1020,6 +1022,7 @@ A short decision record in `docs/architecture/` (e.g. `06_tts_decision.md`) cove
 | 5b | Extend `05_ai_engine.md` with prompts and AI trigger rules |
 | 5c | Extend `05_ai_engine.md` with the digest; update `04_auth_and_sync.md` for the Progress page |
 | 6 | Update `Astro Project/WEBSITE_PAGES.md` |
+| 7 | Create `docs/architecture/06_tts_decision.md` (decision record; done) |
 | 8 | Final review: all docs match deployed state |
 
 ---

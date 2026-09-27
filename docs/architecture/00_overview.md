@@ -23,7 +23,8 @@ This document outlines the core architectural principles, invariants, and patter
 | Cloudflare API & D1 Schema | [`03_backend_and_schema.md`](./03_backend_and_schema.md) | `spelling-tutor-api`, `spelling_db` |
 | Auth, URLs & User Data Sync | [`04_auth_and_sync.md`](./04_auth_and_sync.md) | `useAuth`, `useLists`, `syncService`, `attemptQueue` |
 | Struggle & Pattern Engine, shared AI quota | [`05_ai_engine.md`](./05_ai_engine.md) *(Phase 5)* | `scoring.ts`, `patternTagger.ts`, `useStruggle` |
-| Android & Mobile Packaging | `05_mobile_capacitor.md` *(Phase 7)* | Capacitor Android Bridge |
+| Text-to-Speech Decision | [`06_tts_decision.md`](./06_tts_decision.md) *(Phase 7)* | Kokoro pre-gen + R2, `speechSynthesis` fallback |
+| Android & Mobile Packaging | *(deferred — see Phase 7 note in launch plan)* | Capacitor Android Bridge |
 
 ---
 
