@@ -13,7 +13,7 @@
 | 2 | [Core Spelling Features (all 7 from spec)](#phase-2) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 3 | [Cloudflare Backend API + D1 Schema](#phase-3) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 4 | [Auth Integration + User Data Sync](#phase-4) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
-| 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built and deployed — one visual check left | Claude Sonnet (High) | Antigravity | Phase 4 |
+| 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built and deployed — one menu check left | Claude Sonnet (High) | Antigravity | Phase 4 |
 | 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🟡 Deployed — one manual check left | Gemini Pro (High) | Antigravity | Phase 5a |
 | 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Deployed — manual checks left | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
@@ -726,7 +726,7 @@ CREATE TABLE IF NOT EXISTS pattern_stats (
 - Details: [`architecture/05_ai_engine.md`](architecture/05_ai_engine.md).
 
 ### Manual Verification
-- [ ] As the admin, `/admin/ai-credits` loads, shows the shared budget, and has a "Today by App" section (visual check; the data behind it is covered by tests)
+- [ ] Logged in as the admin (`goodplusfast@gmail.com`), an "AI Credits" link appears in the account menu (desktop dropdown and phone menu) and opens `/admin/ai-credits`; a normal user does not see it (the rule is covered by tests, the look is not)
 
 ---
 
