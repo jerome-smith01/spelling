@@ -43,7 +43,9 @@ export default defineConfig({
   server: {
     hmr: { host: 'localhost', clientPort: 5173 },
     // Dev only: forward same-origin API/auth calls to the local Astro site
-    // (`ADAPTER=node npx astro dev` in jerome-portfolio, port 4321).
+    // (`npm run dev` in jerome-portfolio, port 4321 — do NOT set ADAPTER=node,
+    // that swaps out the Cloudflare adapter and drops the D1 binding, which is
+    // why /api/auth/me would 500 with "Database binding not found").
     proxy: { '/api': 'http://localhost:4321' }
   }
 });

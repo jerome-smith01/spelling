@@ -20,6 +20,10 @@ flowchart LR
 * `apiService.js` uses relative URLs. Set `VITE_API_ORIGIN` for builds served from another origin (Capacitor, Phase 7).
 * Dev: `vite.config.js` proxies `/api` to the local Astro site (`localhost:4321`).
 
+**Running the Astro site locally:** use a plain `npm run dev` in `jerome-portfolio`. Its `astro.config.mjs` defaults to the `@astrojs/cloudflare` adapter with `platformProxy` enabled, which is what wires up `locals.runtime.env.good_plus_fast_db` against the local D1 sqlite file in `.wrangler/state/v3/d1/`. Do **not** set `ADAPTER=node` for this — that swaps in `@astrojs/node`, which has no Cloudflare bindings at all, and every `/api/auth/*` route will 500 with "Database binding not found" (there's no D1, no `locals.runtime`, nothing — `import.meta.env` doesn't have it either). If you ever see that error locally, check for a stale `ADAPTER` env var in the shell or a leftover dev server still bound to port 4321 from an earlier run. `tools/01.launch_dev.bat` runs this correctly.
+
+**`/admin/ai-credits` will 500 locally** (`fetch failed` / `ECONNREFUSED` on `/api/fc/admin/ai-status`) because it also calls the Flashy Cards worker, which `01.launch_dev.bat` does not start — getting that worker's `good_plus_fast_db` binding to see the same local users/sessions/AI-quota data as the Astro site (they default to separate local D1 files per project) turned out more trouble than it was worth for a page only the admin account uses. Test `/admin/ai-credits` on production instead.
+
 ## 2. Auth state (`useAuth.jsx`)
 
 `status`: `loading` → `anonymous | authenticated | expired`. Checked via `GET /api/auth/me` on load, on window focus and on tab visibility (so logging in or out in another tab is picked up). `authenticated → not authenticated` becomes `expired` (UI says "Log in again"; local data is untouched). Offline or server errors never log the user out.

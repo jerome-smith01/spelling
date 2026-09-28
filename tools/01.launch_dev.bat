@@ -9,7 +9,10 @@ echo  Spelling Tutor -- Launching Local Dev Environment
 echo  Everything is served from ONE port:
 echo    Landing page : http://localhost:4321/spelling/
 echo    App          : http://localhost:4321/spelling/app/
-echo  (Vite runs behind it on :5173; Astro forwards to it)
+echo  (Vite runs behind it on :5173; Astro forwards to it.
+echo   Note: /admin/ai-credits also needs the Flashy Cards
+echo   worker, which this script does NOT start -- test
+echo   that page on prod instead.)
 echo ===================================================
 echo.
 
@@ -21,7 +24,7 @@ if not exist "%ASTRO_DIR%\package.json" (
 )
 
 echo [1/2] Starting Astro site on :4321 (new window)...
-start "Astro Dev (4321)" /d "%ASTRO_DIR%" cmd /k "set ADAPTER=node&& npx astro dev"
+start "Astro Dev (4321)" /d "%ASTRO_DIR%" cmd /k "npx astro dev"
 
 echo [2/2] Starting Vite app on :5173 (this window)...
 echo Opening http://localhost:4321/spelling/ shortly...

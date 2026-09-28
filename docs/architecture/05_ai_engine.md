@@ -88,7 +88,8 @@ Client: `Modal` (focus trap, Esc, backdrop, returns focus), `AITipModal` (opened
 - **Progress page** (`/progress`): weekly summary card, opt-in email switch, stat tiles, the Mastered / Struggling / Needs-practice buckets (`utils/progress.js`), the spelling patterns list with "Read report", and the all-words table. Patterns and the digest are extras: if either request fails the word progress still shows.
 - **Word detail** (`/progress/words/:word`, `GET /api/spelling/scores/:word`): per-letter attempts and misses from final answers, the patterns each letter belongs to, and the cached tip. Miss counts are written out, not shown by color alone.
 - **Digest** (`src/lib/digest.ts`): the weekly cron (`0 13 * * SUN`) builds one digest per learner who practiced in the last 7 days and stores it in `weekly_digests`. The summary sentence comes from the AI when the budget allows; otherwise a template is used. One failing learner never stops the run.
-- **Email** is opt-in and off by default (`digest_prefs`), goes only to the account's own address, and every email carries a token-based unsubscribe link (`GET /api/spelling/digest/unsubscribe`, no login, identical response for any token). Delivery uses MailChannels (see Open Items).
+- **Email** is opt-in and off by default (`digest_prefs`), goes only to the account's own address, and every email carries a token-based unsubscribe link (`GET /api/spelling/digest/unsubscribe`, no login, identical response for any token). Delivery uses Resend (`src/lib/email.ts`, same provider and FROM address as the main site's contact form) — MailChannels was dropped because it now needs an API key of its own. Requires the `RESEND_API_KEY` secret (`wrangler secret put RESEND_API_KEY` in `apps/spelling-tutor-api`); without it, `sendEmail()` logs and returns `false` rather than throwing, so a digest run never crashes over a missing key.
+- **Admin on-demand triggers** (`/admin/ai-credits` on the main site): "Send me a test digest" always emails only the signed-in admin, using their own real data from the last 7 days if they have any, or clearly-labelled sample data otherwise (`sendAdminTestDigest` in `digest.ts`) — never touches `weekly_digests` or `digest_prefs`. "Run the weekly digest now" calls `runWeeklyDigests` directly, exactly like the Sunday cron. Both require an `ADMIN_EMAILS` match (checked in `spelling-tutor-api`, not just the main site) and are rate-limited (5/hour test, 2/hour run) via the `digest_admin_actions` table, which also logs every call (who, when, result) — this table doubles as the rate-limit store so the limit holds across Worker isolates without in-memory state.
 
 ## 8. API additions
 
@@ -103,6 +104,8 @@ Client: `Modal` (focus trap, Esc, backdrop, returns focus), `AITipModal` (opened
 | `GET` | `/api/spelling/digest/latest` | Newest weekly digest, or null |
 | `GET` / `PUT` | `/api/spelling/digest/prefs` | Weekly email opt-in (off by default) |
 | `GET` | `/api/spelling/digest/unsubscribe?token=` | Unsubscribe link from the email (no login) |
+| `POST` | `/api/spelling/admin/digest/test` | Admin only: test digest email to the admin's own address (real data or a labelled sample) |
+| `POST` | `/api/spelling/admin/digest/run` | Admin only: runs the full weekly digest job now |
 
 ## 9. Tests
 
@@ -116,5 +119,5 @@ The two API suites use Node's built-in test runner (Node 22.6+, type stripping) 
 ## 10. Open items
 - Move the daily reset cron and admin routes to an app-neutral worker (the main site is an Astro worker with no `scheduled` handler, so this needs a small `gpf-cron` worker).
 - Thresholds are constants at the top of `scoring.ts` and are expected to be tuned with real usage.
-- Email delivery uses the MailChannels endpoint the Flashy Cards admin emails use. MailChannels ended its free integration for Cloudflare Workers, so this may need an API key. Confirm with a real send before relying on the digest email.
+- `RESEND_API_KEY` needs to be set on `spelling-tutor-api` (`wrangler secret put RESEND_API_KEY`, same key value as the main site's) before the digest email, the admin test-send, or the AI-auto-disabled alert can actually deliver. Confirm with a real send before relying on any of them.
 - Family accounts: `learner_id` (equal to `user_id` today) is where child profiles will attach. Digests and pattern stats already key on it.
