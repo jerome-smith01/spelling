@@ -16,10 +16,19 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { useStruggle } from '../hooks/useStruggle';
 import '../styles/spelling.css';
 
-const SPEED_CONFIGS = {
-  normal: { rate: 0.80, pauseDurationMs: 400 },
-  slower: { rate: 0.70, pauseDurationMs: 650 },
-  slowest: { rate: 0.60, pauseDurationMs: 900 }
+// Rate (how slowly each syllable is spoken) and pause (the gap between syllables)
+// are independent controls — a user must be able to slow speech down without
+// changing the pause, and vice versa.
+const RATE_PRESETS = {
+  normal: 0.80,
+  slow: 0.65,
+  slowest: 0.5
+};
+
+const PAUSE_PRESETS = {
+  short: 400,
+  medium: 650,
+  long: 900
 };
 
 // Server-side validation is /^[a-z][a-z' -]{0,39}$/; skip anything it would reject
@@ -80,26 +89,43 @@ function PracticeView({ listId }) {
 
   const { speak, speakSyllables, activePlayback } = useSpeech();
   const [isImportExpanded, setIsImportExpanded] = useState(false);
-  const [speedPreset, setSpeedPreset] = useState(() => {
+  const [ratePreset, setRatePreset] = useState(() => {
     try {
-      return localStorage.getItem('spelling_tutor_speed_preset_v1') || 'normal';
+      return localStorage.getItem('spelling_tutor_rate_preset_v1') || 'normal';
     } catch {
       return 'normal';
     }
   });
-
-  const handleSpeedPresetChange = (preset) => {
-    setSpeedPreset(preset);
+  const [pausePreset, setPausePreset] = useState(() => {
     try {
-      localStorage.setItem('spelling_tutor_speed_preset_v1', preset);
+      return localStorage.getItem('spelling_tutor_pause_preset_v1') || 'short';
+    } catch {
+      return 'short';
+    }
+  });
+
+  const handleRatePresetChange = (preset) => {
+    setRatePreset(preset);
+    try {
+      localStorage.setItem('spelling_tutor_rate_preset_v1', preset);
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  };
+
+  const handlePausePresetChange = (preset) => {
+    setPausePreset(preset);
+    try {
+      localStorage.setItem('spelling_tutor_pause_preset_v1', preset);
     } catch {
       // Ignore storage errors in restricted contexts
     }
   };
 
   const handleSpeakSyllables = (wordId, syllableTexts) => {
-    const config = SPEED_CONFIGS[speedPreset] || SPEED_CONFIGS.normal;
-    speakSyllables(wordId, syllableTexts, config);
+    const rate = RATE_PRESETS[ratePreset] ?? RATE_PRESETS.normal;
+    const pauseDurationMs = PAUSE_PRESETS[pausePreset] ?? PAUSE_PRESETS.short;
+    speakSyllables(wordId, syllableTexts, { rate, pauseDurationMs });
   };
 
   return (
@@ -171,10 +197,10 @@ function PracticeView({ listId }) {
               width: '1px',
               backgroundColor: 'var(--card-border)'
             }} />
-            {/* Syllable Speed Preset Dropdown */}
+            {/* Syllable Rate Preset Dropdown — independent of pause length */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <label
-                htmlFor="syllable-speed-select"
+                htmlFor="syllable-rate-select"
                 style={{
                   fontSize: '0.8rem',
                   fontWeight: 600,
@@ -185,18 +211,47 @@ function PracticeView({ listId }) {
                   cursor: 'pointer'
                 }}
               >
-                <span>🐢</span> Syllables:
+                <span>🐢</span> Speed:
               </label>
               <select
-                id="syllable-speed-select"
-                value={speedPreset}
-                onChange={(e) => handleSpeedPresetChange(e.target.value)}
+                id="syllable-rate-select"
+                value={ratePreset}
+                onChange={(e) => handleRatePresetChange(e.target.value)}
                 className="speed-preset-select"
-                aria-label="Syllable pronunciation speed preset"
+                aria-label="Syllable pronunciation speed"
               >
-                <option value="normal">Normal (0.4s pause)</option>
-                <option value="slower">Slower (0.65s pause)</option>
-                <option value="slowest">Slowest (0.9s pause)</option>
+                <option value="normal">Normal</option>
+                <option value="slow">Slow</option>
+                <option value="slowest">Slowest</option>
+              </select>
+            </div>
+
+            {/* Syllable Pause Preset Dropdown — independent of speech rate */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <label
+                htmlFor="syllable-pause-select"
+                style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: 'var(--muted-foreground)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>⏸️</span> Pause:
+              </label>
+              <select
+                id="syllable-pause-select"
+                value={pausePreset}
+                onChange={(e) => handlePausePresetChange(e.target.value)}
+                className="speed-preset-select"
+                aria-label="Pause between syllables"
+              >
+                <option value="short">Short (0.4s)</option>
+                <option value="medium">Medium (0.65s)</option>
+                <option value="long">Long (0.9s)</option>
               </select>
             </div>
           </div>

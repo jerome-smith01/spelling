@@ -17,9 +17,10 @@
 | 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | ✅ Complete | Gemini Pro (High) | Antigravity | Phase 5a |
 | 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | ✅ Complete (digest email via Resend + on-demand admin trigger) | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
-| 7 | [Better TTS (Research)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
+| 7 | [Better TTS (Research)](#phase-7) | ✅ Complete — decision recorded | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 | 9 | [Admin: Uncaptured-Pattern Report](#phase-9) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5a |
+| 10 | [Automatic Syllable Pronunciation (Prototype)](#phase-10) | 🔲 Not Started — plan only, no code yet | Claude Sonnet (High) | Antigravity | Phase 2 |
 
 ---
 
@@ -962,10 +963,12 @@ This keeps the phone doing only playback, and each unique word is generated at m
 ### Deliverable
 A short decision record in `docs/architecture/` (e.g. `06_tts_decision.md`) covering the chosen approach, rejected options with reasons, the cache/fallback design, and a follow-up implementation phase if warranted.
 
+**Decision:** [`architecture/06_tts_decision.md`](architecture/06_tts_decision.md) — pre-generated Kokoro audio cached in R2 (Option A), with `speechSynthesis` fallback for un-generated custom words (Option E). Server-generated options (B/C) and on-device neural TTS (D) were considered and rejected; see the decision record for reasoning and free-tier math. A follow-up implementation phase (proposed "Phase 7b") is not yet scheduled.
+
 ### Manual Verification
-- [ ] Sample audio for each candidate reviewed and a winner chosen
-- [ ] Free-tier math shows we stay within limits at expected usage
-- [ ] Decision record written and this plan updated with an implementation phase
+- [x] Sample audio for each candidate reviewed (via published comparisons) and a winner chosen — Kokoro
+- [x] Free-tier math shows we stay within limits at expected usage
+- [x] Decision record written and this plan updated with an implementation phase
 
 ---
 
@@ -1015,6 +1018,53 @@ A short decision record in `docs/architecture/` (e.g. `06_tts_decision.md`) cove
 
 ---
 
+<a id="phase-10"></a>
+## Phase 10 — Automatic Syllable Pronunciation (Prototype)
+[↑ Back to Table of Contents](#overall-status)
+
+**Status: planning only.** This phase is a prototype/spike to validate the approach with real data before any production code is written. Nothing here is built yet.
+
+**Context:** Today, correct syllable pronunciation depends on (1) a parent/teacher manually typing hyphen boundaries at import time, and (2) `src/utils/syllablePhonetics.js`'s hand-written auto-rules plus a hand-written irregular-word dictionary (`pretty`, `handsome`, `busy`, ...) catching known mispronunciations, with a manual per-word override as the last resort. This works, but every new mispronunciation (like "puppy" → "py" sounding like "pie") has to be discovered and fixed by a human, one word at a time.
+
+Two other approaches were evaluated and set aside for this phase:
+- **Orthographic-only auto-syllabification** (spelling-based hyphenation algorithms): easy, but only solves *where* to split, not *how it sounds* — still needs the same manual rule/override layer for pronunciation.
+- **Forced alignment on whole-word pre-generated audio** (synthesize the full word, align phonemes to audio, slice at syllable boundaries): the most rigorous option, but it introduces a real, currently-unsolved risk — the phonetic syllable boundaries from alignment may not match the *spelling* syllable boundaries the UI highlights letter-by-letter during practice, which could make the highlighted block and the audio drift out of sync. It also multiplies pipeline cost for independent rate control, turns new-word playback into a batch job instead of instant, and requires a Python/MFA-class toolchain foreign to this stack. Full reasoning is in the conversation that produced this plan; revisit if the approach below proves insufficient.
+
+**Goal:** Prototype a **phonemic auto-respelling engine** — for any word, look up its true pronunciation, derive syllable boundaries and a corrected respelling from it automatically, and keep speaking that respelling as text (via `speechSynthesis` today, or pre-generated audio later) rather than synthesizing or slicing raw audio. This keeps today's architecture (text in, TTS engine speaks it) and mostly *automates* what the manual override system already proves works, rather than replacing it with a new audio pipeline.
+
+### Why this approach (recap)
+- Reuses real pronunciation data (a phoneme dictionary), so it doesn't guess from spelling the way pure orthographic syllabification does — same correctness guarantee as forced alignment, without needing to align or slice audio.
+- Stays text-based, so `rate` (speed) stays a trivial TTS parameter — no re-synthesis per speed preset, no pitch-shift-on-slice concerns.
+- New words stay fast: a dictionary lookup + a syllabification/respelling algorithm can run synchronously in the client, no batch/server round-trip for the common case.
+- The existing `syllablePhonetics.js` layering (override → irregular dictionary → auto-rules) doesn't get thrown away — this phase adds a new, earlier layer that *generates* correct entries automatically; the existing layers remain as the fallback path for words the new layer can't resolve.
+
+### Prototype Scope (spike — not production code)
+
+| Step | What to build/try | Question it answers |
+|---|---|---|
+| 1 | Source a usable phoneme dictionary (CMU Pronouncing Dictionary — free, offline, public domain, ~134K US-English words with ARPAbet phonemes + stress) as a static JS-importable dataset, trimmed to a reasonable size | Can we get real pronunciation data without a network call, and how big is the bundle? |
+| 2 | Write or adapt a phoneme-to-syllable grouping function (standard sonority-sequencing / maximal-onset-principle algorithm over an ARPAbet phoneme sequence) | Can we reliably derive syllable *count* and *boundaries* from phonemes alone? |
+| 3 | Build an ARPAbet-phoneme → simple-English-respelling lookup table (e.g. `P IY` → `pee`, `SH AH N` → `shun`) covering the ~40 ARPAbet phonemes | Can we generate a TTS-safe respelling string per syllable, the same shape as today's manual overrides (`prit-tee`)? |
+| 4 | Write a reconciliation check: compare the phoneme-derived syllable count to the word's existing *spelling*-syllable count (from the parent's hyphenation). If they match, pair them in order and use the auto-respelling per spelling-syllable slot; if they don't match, **do not guess** — fall back to today's existing auto-rules/override behavior for that word and flag the mismatch | Does resolving objection #2 (spelling vs. phonemic syllable drift) this way actually work in practice, or do mismatches happen often enough to be a problem? |
+| 5 | Run the full pipeline (steps 1–4) against: the app's default word list, a few representative custom lists, and the specific words already in `IRREGULAR_WORD_MAP` (`pretty`, `handsome`, `busy`, `business`, `women`, `sugar`, `water`, `people`) plus `puppy` | Does the auto-generated respelling match or improve on the hand-written overrides that are known to work? |
+| 6 | Measure cmudict coverage against real word-list vocabulary (grade-level spelling lists skew common, so coverage should be high) and decide whether an out-of-dictionary fallback (a G2P model, vs. just keeping today's auto-rules as the fallback) is worth the added complexity | Is a full G2P fallback needed, or is "cmudict + today's existing rules as fallback" good enough coverage? |
+
+### Explicit Non-Goals for This Phase
+- No forced alignment, no audio slicing, no changes to how audio is generated or played.
+- No production integration — this is a Node/browser-console-runnable spike to validate feasibility and measure coverage/quality, kept separate from `src/` app code until a decision is made.
+- No decision yet on whether this replaces, or simply supplements, the existing manual override workflow — that depends on what step 5's listening test and step 6's coverage numbers show.
+
+### Manual Verification (of the prototype, once built)
+- [ ] cmudict lookup + syllabifier produces a plausible syllable count for at least 90% of words across the tested lists
+- [ ] The auto-generated respelling for `puppy`, `pretty`, `handsome`, `busy`, `business`, `women`, `sugar`, `water`, `people` is judged correct by ear, and ideally matches or improves on the existing hand-written overrides
+- [ ] The step-4 mismatch fallback triggers cleanly (no silent wrong guesses) when phoneme-syllable count and spelling-syllable count disagree
+- [ ] A rough measurement exists of how many real word-list words fall outside cmudict, to size the fallback need
+
+### Decision Record (to be written after the prototype)
+Once the spike above has real coverage/quality numbers, write the outcome to `docs/architecture/07_pronunciation_engine.md`: keep, extend, or abandon this approach, and if kept, whether it replaces or supplements the current manual-override workflow, plus a proposed integration phase (into `syllablePhonetics.js` and/or the word-import flow) if warranted.
+
+---
+
 ## Architecture Docs to Update After Each Phase
 [↑ Back to Table of Contents](#overall-status)
 
@@ -1027,7 +1077,9 @@ A short decision record in `docs/architecture/` (e.g. `06_tts_decision.md`) cove
 | 5b | Extend `05_ai_engine.md` with prompts and AI trigger rules |
 | 5c | Extend `05_ai_engine.md` with the digest; update `04_auth_and_sync.md` for the Progress page |
 | 6 | Update `Astro Project/WEBSITE_PAGES.md` |
+| 7 | Create `docs/architecture/06_tts_decision.md` (decision record; done) |
 | 8 | Final review: all docs match deployed state |
+| 10 | Create `docs/architecture/07_pronunciation_engine.md` after the prototype runs (not yet written — plan only) |
 
 ---
 
