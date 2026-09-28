@@ -15,7 +15,7 @@
 | 4 | [Auth Integration + User Data Sync](#phase-4) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
 | 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built and deployed — one menu check left | Claude Sonnet (High) | Antigravity | Phase 4 |
 | 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🟡 Deployed — one manual check left | Gemini Pro (High) | Antigravity | Phase 5a |
-| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Deployed — manual checks left | Claude Sonnet (Medium) | Antigravity | Phase 5b |
+| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Deployed (digest email now via Resend + on-demand admin trigger) — manual checks left | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 7 | [Better TTS (Research)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
@@ -812,13 +812,19 @@ Warm, encouraging, jargon-free. No markdown.
 | NEW | `apps/spelling-tutor-api/migrations/0004_weekly_digests.sql` | `weekly_digests (learner_id, week_start, digest_json)` and `digest_prefs (user_id, email_opt_in, unsubscribe_token)` |
 | MODIFY | `apps/spelling-tutor-api/wrangler.jsonc` | Weekly cron, e.g. `0 13 * * SUN` (Sunday) |
 | MODIFY | `apps/spelling-tutor-api/src/index.ts` | `scheduled()` builds the digest for learners active that week (AI summary through `aiQuota`) and emails those who opted in. Adds `GET /digest/latest`, `PUT /digest/prefs` and `GET /digest/unsubscribe?token=` |
+| NEW | `apps/spelling-tutor-api/migrations/0005_digest_admin_actions.sql` | `digest_admin_actions` log table (also used to rate-limit the admin routes below) |
+| MODIFY | `apps/spelling-tutor-api/src/lib/email.ts` | Delivery switched from MailChannels to Resend (same provider/FROM address as the main site's contact form); requires the `RESEND_API_KEY` secret |
+| MODIFY | `apps/spelling-tutor-api/src/index.ts` | Adds admin-only `POST /admin/digest/test` (emails only the signed-in admin; their own data or a labelled sample) and `POST /admin/digest/run` (runs the weekly job now), each rate-limited and logged |
+| MODIFY | `jerome-portfolio/src/pages/admin/ai-credits.astro` | "Send me a test digest" / "Run the weekly digest now" buttons |
 
 ### Implementation notes (as built)
 - Digest period is the 7 days before the run; one row per learner per period is stored (re-running replaces it). The AI writes the summary sentence when the budget allows it; otherwise a plain template is used, so a digest never fails because AI is off.
 - The digest email is opt-in (off by default), is sent only to the account's own address, and every email carries an unsubscribe link. The unsubscribe endpoint needs no login and gives the same page for any token.
 - The weekly cron runs at `0 13 * * SUN` (Sundays, 13:00 UTC) on `spelling-tutor-api`.
 - `/progress/words/:word` shows a letter-by-letter result for one word (miss counts are written out, not shown by color alone) and its tip.
-- Automated coverage: `digest.test.ts`, `api.test.ts` (API), and `progress`, `DigestCard`, `DigestEmailToggle`, `WordBuckets`, `PatternList`, `ProgressPage`, `WordDetailPage`, `useStruggle` tests (client).
+- Delivery is via Resend, not MailChannels (which now needs a key of its own). This also fixed the existing "AI auto-disabled" admin alert, which shares the same `sendEmail()` helper.
+- Admins (`goodplusfast@gmail.com`) can trigger the digest on demand from `/admin/ai-credits` instead of waiting for Sunday: a test send (their own data, or a labelled sample if they have none) or a full run of the real job. Both are rate-limited and every call is logged to `digest_admin_actions`.
+- Automated coverage: `digest.test.ts`, `api.test.ts`, `email.test.ts` (API), and `progress`, `DigestCard`, `DigestEmailToggle`, `WordBuckets`, `PatternList`, `ProgressPage`, `WordDetailPage`, `useStruggle` tests (client).
 
 ### Deploy steps (yours to run)
 ```powershell
@@ -830,7 +836,8 @@ Then deploy the spelling app to Pages. The "Coming soon" badges for AI Coaching 
 
 ### Manual Verification
 - [ ] After deploying, the weekly cron trigger (`0 13 * * SUN`) appears under the `spelling-tutor-api` worker's Triggers tab in the Cloudflare dashboard
-- [ ] Turn on the weekly email, trigger the job once, and confirm the email really arrives and its unsubscribe link works. Delivery goes through MailChannels, which tests cannot reach, and MailChannels may now need an API key.
+- [ ] As the admin, click "Send me a test digest" on `/admin/ai-credits` and confirm the email actually arrives (Resend, not tests, is the one thing that can prove real delivery)
+- [ ] Turn on the weekly email for a real account, use "Run the weekly digest now" (or wait for Sunday), and confirm the email arrives and its unsubscribe link works
 - [ ] The new Progress and word-detail pages look right in dark mode and on a phone
 
 ---
