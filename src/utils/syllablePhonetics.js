@@ -78,7 +78,8 @@ const IRREGULAR_WORD_MAP = {
   women: ['wim', 'in'],
   sugar: ['shoog', 'ur'],
   water: ['wah', 'tur'],
-  people: ['pee', 'pul']
+  people: ['pee', 'pul'],
+  avoid: ['uh', 'voyd']
 };
 
 /**
