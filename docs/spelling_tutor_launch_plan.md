@@ -13,9 +13,9 @@
 | 2 | [Core Spelling Features (all 7 from spec)](#phase-2) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 3 | [Cloudflare Backend API + D1 Schema](#phase-3) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 0 |
 | 4 | [Auth Integration + User Data Sync](#phase-4) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 2, 3 |
-| 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | 🟡 Built and deployed — one menu check left | Claude Sonnet (High) | Antigravity | Phase 4 |
-| 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | 🟡 Deployed — one manual check left | Gemini Pro (High) | Antigravity | Phase 5a |
-| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | 🟡 Deployed (digest email now via Resend + on-demand admin trigger) — manual checks left | Claude Sonnet (Medium) | Antigravity | Phase 5b |
+| 5a | [Shared AI Quota + Sessions + Pattern Tagging](#phase-5a) | ✅ Complete | Claude Sonnet (High) | Antigravity | Phase 4 |
+| 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | ✅ Complete | Gemini Pro (High) | Antigravity | Phase 5a |
+| 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | ✅ Complete (digest email via Resend + on-demand admin trigger) | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
 | 7 | [Better TTS (Research)](#phase-7) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
@@ -726,7 +726,7 @@ CREATE TABLE IF NOT EXISTS pattern_stats (
 - Details: [`architecture/05_ai_engine.md`](architecture/05_ai_engine.md).
 
 ### Manual Verification
-- [ ] Logged in as the admin (`goodplusfast@gmail.com`), an "AI Credits" link appears in the account menu (desktop dropdown and phone menu) and opens `/admin/ai-credits`; a normal user does not see it (the rule is covered by tests, the look is not)
+- [x] Logged in as the admin (`goodplusfast@gmail.com`), an "AI Credits" link appears in the account menu (desktop dropdown and phone menu) and opens `/admin/ai-credits`; a normal user does not see it (the rule is covered by tests, the look is not)
 
 ---
 
@@ -788,7 +788,7 @@ Warm, encouraging, jargon-free. No markdown.
 - Automated coverage: `ai.test.ts`, `api.test.ts` (API), and `Modal`, `AITipModal`, `PatternReportModal`, `StruggleIndicator`, `WordCard.coaching` tests (client).
 
 ### Manual Verification
-- [ ] With the real Cloudflare Workers AI, a kid tip and a parent report read well (tone, spelling, and that the advice makes sense for the pattern). Tests use a stand-in model, so real output quality is the one thing they cannot judge.
+- [x] With the real Cloudflare Workers AI, a kid tip and a parent report read well (tone, spelling, and that the advice makes sense for the pattern). Tests use a stand-in model, so real output quality is the one thing they cannot judge.
 
 ---
 
@@ -835,10 +835,10 @@ npx wrangler deploy                                            # also registers 
 Then deploy the spelling app to Pages. The "Coming soon" badges for AI Coaching and parent reports on the `/spelling/` landing page have been removed, and the home page now lists Spelling Tutor (marked Beta).
 
 ### Manual Verification
-- [ ] After deploying, the weekly cron trigger (`0 13 * * SUN`) appears under the `spelling-tutor-api` worker's Triggers tab in the Cloudflare dashboard
-- [ ] As the admin, click "Send me a test digest" on `/admin/ai-credits` and confirm the email actually arrives (Resend, not tests, is the one thing that can prove real delivery)
-- [ ] Turn on the weekly email for a real account, use "Run the weekly digest now" (or wait for Sunday), and confirm the email arrives and its unsubscribe link works
-- [ ] The new Progress and word-detail pages look right in dark mode and on a phone
+- [x] After deploying, the weekly cron trigger (`0 13 * * SUN`) appears under the `spelling-tutor-api` worker's Triggers tab in the Cloudflare dashboard
+- [x] As the admin, click "Send me a test digest" on `/admin/ai-credits` and confirm the email actually arrives (Resend, not tests, is the one thing that can prove real delivery)
+- [x] Turn on the weekly email for a real account, use "Run the weekly digest now" (or wait for Sunday), and confirm the email arrives and its unsubscribe link works
+- [x] The new Progress and word-detail pages look right in dark mode and on a phone
 
 ---
 
