@@ -228,6 +228,16 @@
   transform: translateY(-1px);
 }
 
+.btn-verify:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.btn-verify:disabled:hover {
+  transform: none;
+}
+
 /* Hue slider in the custom color editor: rainbow track, big touch-friendly thumb */
 .hue-slider {
   -webkit-appearance: none;

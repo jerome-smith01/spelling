@@ -98,10 +98,16 @@ describe('WordCard coaching', () => {
     ]);
   });
 
-  it('reports a blank box as an empty typed value', async () => {
+  it('disables Check until every blank is filled in', async () => {
     const onAttempts = vi.fn();
     renderCard({ hiddenIndices: new Set([0]), onAttempts });
-    await userEvent.click(screen.getByRole('button', { name: /check your spelling/i }));
-    expect(onAttempts.mock.calls[0][1]).toEqual([{ letter: 'c', position: 0, correct: 0, typed: '' }]);
+    const checkButton = screen.getByRole('button', { name: /check your spelling/i });
+    expect(checkButton).toBeDisabled();
+
+    await userEvent.type(screen.getAllByRole('textbox')[0], 'c');
+    expect(checkButton).toBeEnabled();
+
+    await userEvent.click(checkButton);
+    expect(onAttempts.mock.calls[0][1]).toEqual([{ letter: 'c', position: 0, correct: 1, typed: 'c' }]);
   });
 });

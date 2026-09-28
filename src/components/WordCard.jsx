@@ -19,6 +19,8 @@ export default function WordCard({
   const [validationResults, setValidationResults] = useState(null);
   const [tipOpen, setTipOpen] = useState(false);
   const inputRefs = useRef({});
+  const cardRef = useRef(null);
+  const hasScrolledRef = useRef(false);
 
   // Active speech playback states
   const isCardSpeakingSlow = activePlayback?.wordId === word.id && activePlayback?.isSlow;
@@ -29,7 +31,18 @@ export default function WordCard({
   useEffect(() => {
     setUserInputs({});
     setValidationResults(null);
+    hasScrolledRef.current = false;
   }, [hiddenIndices]);
+
+  // Scroll this card to the top of the viewport the first time a letter
+  // block is focused, then leave it put — re-scrolling on every keystroke's
+  // focus change is what makes the page bounce as a mobile keyboard
+  // opens/closes.
+  const handleCardFocusIn = () => {
+    if (hasScrolledRef.current) return;
+    hasScrolledRef.current = true;
+    cardRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
 
   // Ordered list of hidden global indices for auto-advance/backspace sequence
   const hiddenSequence = Array.from({ length: word.letterCount }, (_, i) => i)
@@ -74,9 +87,19 @@ export default function WordCard({
 
   const hasHidden = hiddenIndices.size > 0;
   const isAllCorrect = validationResults && Object.values(validationResults).every(v => v === 'correct');
+  const allFilled = hasHidden && hiddenSequence.every(idx => (userInputs[idx] || '').trim() !== '');
 
   return (
-    <article className="word-card" aria-label={`Spelling card for ${word.word}`}>
+    <article
+      ref={cardRef}
+      onFocus={handleCardFocusIn}
+      className="word-card"
+      aria-label={`Spelling card for ${word.word}`}
+      style={isAllCorrect ? {
+        backgroundColor: 'var(--selected-color-bg)',
+        borderColor: 'var(--selected-color-border)'
+      } : undefined}
+    >
       {/* Header: Pronunciation & Word info */}
       <div className="word-card-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -168,7 +191,9 @@ export default function WordCard({
             type="button"
             onClick={handleVerify}
             className="btn-verify"
+            disabled={!allFilled}
             aria-label={`Check your spelling for ${word.word}`}
+            aria-disabled={!allFilled}
           >
             Check
           </button>

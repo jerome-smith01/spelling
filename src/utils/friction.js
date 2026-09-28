@@ -10,6 +10,11 @@
 export const FLAME_THRESHOLD = 40;
 export const MASTERY_STREAK = 3;
 
+// TODO(scoring): revisit the friction algorithm below. Flagged as needing a
+// fix but not yet scoped — placeholder until the new scoring approach is
+// decided. Keep in sync with apps/spelling-tutor-api/src/lib/scoring.ts
+// whenever this changes.
+
 /** Collapse chronological attempts to one final answer per (session, word, position). */
 export function toFinalAnswers(attempts) {
   const last = new Map();

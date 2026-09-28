@@ -16,6 +16,12 @@ export default function LetterInput({
     }
   };
 
+  const handleFocus = (e) => {
+    // Select any existing letter so the next keystroke overwrites it,
+    // instead of requiring the student to move right + backspace.
+    e.target.select();
+  };
+
   const handleChange = (e) => {
     const raw = e.target.value;
     // Take the newest character typed
@@ -45,6 +51,8 @@ export default function LetterInput({
         value={value}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onClick={handleFocus}
         autoCapitalize="none"
         autoCorrect="off"
         spellCheck="false"
