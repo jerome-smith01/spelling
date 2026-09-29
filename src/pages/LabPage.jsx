@@ -10,7 +10,42 @@ import NotFoundPage from './NotFoundPage';
 // pause" mean roughly the same thing whether you're comparing speechSynthesis or these
 // server-generated voices.
 const RATE_PRESETS = { normal: 1.0, slow: 0.75, slowest: 0.6 };
-const PAUSE_PRESETS = { short: 400, medium: 650, long: 900 };
+const PAUSE_PRESETS = { none: 0, short: 400, medium: 650, long: 900 };
+
+const RATE_OPTIONS = [
+  { value: 'normal', label: 'Normal' },
+  { value: 'slow', label: 'Slow' },
+  { value: 'slowest', label: 'Slowest' }
+];
+
+const PAUSE_OPTIONS = [
+  { value: 'none', label: 'None (0s)' },
+  { value: 'short', label: 'Short (0.4s)' },
+  { value: 'medium', label: 'Medium (0.65s)' },
+  { value: 'long', label: 'Long (0.9s)' }
+];
+
+function RadioGroup({ legend, name, options, value, onChange }) {
+  return (
+    <fieldset style={{ border: '1px solid var(--card-border)', borderRadius: '8px', padding: '0.4rem 0.75rem 0.6rem' }}>
+      <legend style={{ fontSize: '0.8rem', padding: '0 0.25rem' }}>{legend}</legend>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+        {options.map(opt => (
+          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name={name}
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+            />
+            {opt.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 const DEFAULT_WORDS = [
   'con-trol', 'speak-er', 'pen-cil', 'bounce', 'knee',
@@ -118,13 +153,14 @@ export default function LabPage() {
         to back, same as the app's normal syllable playback.
       </p>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', margin: '1rem 0' }}>
-        <div>
-          <label htmlFor="lab-word-select" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.25rem' }}>Word</label>
-          <select id="lab-word-select" value={selectedWord} onChange={(e) => setSelectedWord(e.target.value)}>
-            {allWords.map(w => <option key={w} value={w}>{w}</option>)}
-          </select>
-        </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start', margin: '1rem 0' }}>
+        <RadioGroup
+          legend="Word"
+          name="lab-word-select"
+          options={allWords.map(w => ({ value: w, label: w }))}
+          value={selectedWord}
+          onChange={setSelectedWord}
+        />
 
         <form onSubmit={handleAddCustomWord} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
           <div>
@@ -142,23 +178,21 @@ export default function LabPage() {
           <button type="submit">Add</button>
         </form>
 
-        <div>
-          <label htmlFor="lab-rate-select" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.25rem' }}>🐢 Speed</label>
-          <select id="lab-rate-select" value={ratePreset} onChange={(e) => setRatePreset(e.target.value)}>
-            <option value="normal">Normal</option>
-            <option value="slow">Slow</option>
-            <option value="slowest">Slowest</option>
-          </select>
-        </div>
+        <RadioGroup
+          legend="🐢 Speed"
+          name="lab-rate-select"
+          options={RATE_OPTIONS}
+          value={ratePreset}
+          onChange={setRatePreset}
+        />
 
-        <div>
-          <label htmlFor="lab-pause-select" style={{ display: 'block', fontSize: '0.8rem', marginBottom: '0.25rem' }}>⏸️ Pause between syllables</label>
-          <select id="lab-pause-select" value={pausePreset} onChange={(e) => setPausePreset(e.target.value)}>
-            <option value="short">Short (0.4s)</option>
-            <option value="medium">Medium (0.65s)</option>
-            <option value="long">Long (0.9s)</option>
-          </select>
-        </div>
+        <RadioGroup
+          legend="⏸️ Pause between syllables"
+          name="lab-pause-select"
+          options={PAUSE_OPTIONS}
+          value={pausePreset}
+          onChange={setPausePreset}
+        />
       </div>
 
       <p style={{ fontSize: '0.85rem' }}>
