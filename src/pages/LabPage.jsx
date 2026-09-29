@@ -115,20 +115,28 @@ export default function LabPage() {
 
     setRowStatus(prev => ({ ...prev, [row.key]: 'playing' }));
     try {
-      for (let i = 0; i < syllables.length; i++) {
+      // Fetch every syllable's audio up front. Fetching one-at-a-time inside the
+      // playback loop added network/synthesis latency between syllables on top of
+      // the pause setting, so "0s pause" never actually sounded like 0s.
+      const urls = [];
+      for (const syllable of syllables) {
         if (cancelRef.current !== runId) return; // a newer play request took over
-        const url = await fetchWordAudio(syllables[i], row.provider, row.speaker || undefined);
+        urls.push(await fetchWordAudio(syllable, row.provider, row.speaker || undefined));
+      }
+      if (cancelRef.current !== runId) return;
+
+      for (let i = 0; i < urls.length; i++) {
         if (cancelRef.current !== runId) return;
 
         await new Promise((resolve, reject) => {
-          const audio = new Audio(url);
+          const audio = new Audio(urls[i]);
           audio.playbackRate = rate;
           audio.onended = resolve;
           audio.onerror = () => reject(new Error('Playback failed'));
           audio.play().catch(reject);
         });
 
-        if (i < syllables.length - 1 && cancelRef.current === runId) {
+        if (i < urls.length - 1 && cancelRef.current === runId && pauseMs > 0) {
           await new Promise(resolve => setTimeout(resolve, pauseMs));
         }
       }
