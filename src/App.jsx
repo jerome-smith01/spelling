@@ -8,6 +8,7 @@ import WordDetailPage from './pages/WordDetailPage';
 import ListsPage from './pages/ListsPage';
 import RootRedirect from './pages/RootRedirect';
 import NotFoundPage from './pages/NotFoundPage';
+import LabPage from './pages/LabPage';
 import { useTheme } from './hooks/useTheme';
 import { AuthProvider } from './hooks/useAuth';
 import { ListsProvider } from './hooks/useLists';
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="/lists/:listId" element={<PracticePage />} />
             <Route path="/progress" element={<ProgressPage />} />
             <Route path="/progress/words/:word" element={<WordDetailPage />} />
+            <Route path="/lab" element={<LabPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AppShell>

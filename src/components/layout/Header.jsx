@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import UserMenu from './UserMenu';
+import { useAuth } from '../../hooks/useAuth';
+import { isLabUser } from '../../utils/labAccess';
 
 export default function Header({ theme, onToggleTheme }) {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   return (
     <header style={{
       borderBottom: '1px solid var(--card-border)',
@@ -62,7 +65,8 @@ export default function Header({ theme, onToggleTheme }) {
           {[
             { to: '/', label: 'Practice', active: pathname === '/' || pathname.startsWith('/lists/') },
             { to: '/lists', label: 'My Lists', active: pathname === '/lists' },
-            { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') }
+            { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') },
+            ...(isLabUser(user?.email) ? [{ to: '/lab', label: 'Lab', active: pathname === '/lab' }] : [])
           ].map(({ to, label, active }) => (
             <Link
               key={to}
