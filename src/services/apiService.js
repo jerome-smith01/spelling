@@ -89,3 +89,38 @@ export function buildLoginUrl(mode = 'login') {
 }
 
 export const ACCOUNT_URL = `${API_ORIGIN}/account`;
+
+/** Lab-only: fetch TTS audio for a word/voice pair. Returns an object URL for an <audio> tag. */
+export async function fetchLabAudio(text, voice) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let res;
+  try {
+    res = await fetch(`${API_ORIGIN}/api/spelling/lab/tts`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice }),
+      signal: controller.signal
+    });
+  } catch {
+    throw new NetworkError();
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (res.status === 401) throw new AuthError();
+  if (!res.ok) {
+    let message = `Request failed (${res.status})`;
+    try {
+      const data = await res.json();
+      if (typeof data?.error === 'string') message = data.error;
+    } catch {
+      // non-JSON error body
+    }
+    throw new ApiError(message, res.status);
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
