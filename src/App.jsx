@@ -6,6 +6,7 @@ import PracticePage from './pages/PracticePage';
 import ProgressPage from './pages/ProgressPage';
 import WordDetailPage from './pages/WordDetailPage';
 import ListsPage from './pages/ListsPage';
+import LabPage from './pages/LabPage';
 import RootRedirect from './pages/RootRedirect';
 import NotFoundPage from './pages/NotFoundPage';
 import { useTheme } from './hooks/useTheme';
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="/lists/:listId" element={<PracticePage />} />
             <Route path="/progress" element={<ProgressPage />} />
             <Route path="/progress/words/:word" element={<WordDetailPage />} />
+            <Route path="/lab" element={<LabPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AppShell>

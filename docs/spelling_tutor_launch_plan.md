@@ -17,7 +17,7 @@
 | 5b | [AI Kid Tips + Parent Pattern Reports](#phase-5b) | ✅ Complete | Gemini Pro (High) | Antigravity | Phase 5a |
 | 5c | [Progress Dashboard + Weekly Digest](#phase-5c) | ✅ Complete (digest email via Resend + on-demand admin trigger) | Claude Sonnet (Medium) | Antigravity | Phase 5b |
 | 6 | [Astro Landing Page + Proxy Worker](#phase-6) | ✅ Complete | Gemini 3.8 Flash | Antigravity | Phase 1 |
-| 7 | [Better TTS (Research)](#phase-7) | ✅ Complete — decision recorded | Gemini 3.8 Flash | Antigravity | Phase 2 |
+| 7 | [Better TTS (Research)](#phase-7) | 🔁 Reopened — comparing Cloudflare-hosted models (see decision record) | Claude Sonnet (Medium) | Claude Code | Phase 2 |
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 | 9 | [Admin: Uncaptured-Pattern Report](#phase-9) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5a |
 | 10 | [Automatic Syllable Pronunciation (Prototype)](#phase-10) | 🔲 Not Started — plan only, no code yet | Claude Sonnet (High) | Antigravity | Phase 2 |
@@ -963,12 +963,12 @@ This keeps the phone doing only playback, and each unique word is generated at m
 ### Deliverable
 A short decision record in `docs/architecture/` (e.g. `06_tts_decision.md`) covering the chosen approach, rejected options with reasons, the cache/fallback design, and a follow-up implementation phase if warranted.
 
-**Decision:** [`architecture/06_tts_decision.md`](architecture/06_tts_decision.md) — pre-generated Kokoro audio cached in R2 (Option A), with `speechSynthesis` fallback for un-generated custom words (Option E). Server-generated options (B/C) and on-device neural TTS (D) were considered and rejected; see the decision record for reasoning and free-tier math. A follow-up implementation phase (proposed "Phase 7b") is not yet scheduled.
+**Status: Reopened (2026-09-28).** The original decision (Option A, pre-generated Kokoro audio) was reconsidered — see [`architecture/06_tts_decision.md`](architecture/06_tts_decision.md) for full reasoning. Current direction: **Option B** (Cloudflare-hosted, on-demand — comparing MeloTTS vs. Deepgram Aura-2), with **Option E** (`speechSynthesis`) as the fallback. Option A was rejected because Phase 10's ongoing pronunciation fixes would require manual re-generation/re-upload every time; Option C (Google/Azure) was explored and prototyped but dropped for simplicity once the account was confirmed to be on the Workers Free plan, which makes Option B's cost risk zero. A prototype admin route (`POST /api/spelling/admin/tts-test`) exists for the listening comparison; see the decision record's "Status: Reopened" section for what's left.
 
 ### Manual Verification
-- [x] Sample audio for each candidate reviewed (via published comparisons) and a winner chosen — Kokoro
-- [x] Free-tier math shows we stay within limits at expected usage
-- [x] Decision record written and this plan updated with an implementation phase
+- [ ] Sample audio for `melotts` and `aura2` reviewed on the 10 test words and a winner chosen
+- [x] Free-tier/cost-risk math confirmed: Workers Free plan hard-blocks overage rather than billing it
+- [ ] Decision record finalized with the listening-test outcome and this plan updated with an implementation phase
 
 ---
 

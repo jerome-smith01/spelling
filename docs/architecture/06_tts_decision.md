@@ -2,7 +2,20 @@
 
 > Research phase for [Phase 7 — Better Text-to-Speech](../spelling_tutor_launch_plan.md#phase-7). No code changes ship from this doc; it records the chosen approach for a later implementation phase.
 
-## Chosen Approach: A + E (pre-generated audio, cached in R2, with `speechSynthesis` fallback)
+## Status: Reopened (2026-09-28)
+
+A later session reopened this decision. The "Chosen Approach: A + E" section below (and everything under it) is the **previous** session's reasoning, kept for context — it is **no longer the plan**. Two of its premises don't hold up, and Option A itself was rejected on a new ground it didn't consider:
+
+- **Option A rejected.** Pre-generation's manual-regeneration cost isn't one-time — [Phase 10](../spelling_tutor_launch_plan.md#phase-10) is an ongoing process that keeps finding and fixing new mispronunciations, and each fix under A means manually re-running the batch generator and re-uploading to R2, forever. On-demand generation (B) self-heals instead: a fixed respelling gets a new cache key (hash of the corrected text) and regenerates automatically on next play.
+- **The "shares Phase 5's neuron budget" objection to B is true, but doesn't matter here.** The account is on the **Workers Free plan**: exceeding the shared 10,000-neurons/day allowance simply fails the request until the daily reset. There is no billing path at all, so there's no budget-competition risk to guard against — Option B carries zero cost risk as-is.
+- **Cloudflare's own model catalog has more than MeloTTS.** Deepgram's Aura-2 (`@cf/deepgram/aura-2-en`) is also Cloudflare-hosted — 40 voices, context-aware pacing — still billed through the same free neuron pool, no vendor account.
+- **Option C (Google/Azure) was explored, then dropped.** A prototype briefly supported both (see git history on `apps/spelling-tutor-api/src/lib/ttsProviders.ts`), including a correction to this doc's original claim that Google's terms leave caching "unresolved" (they don't — Google's ToS permits storing/using generated audio; the only restriction is not using it to train a competing TTS model). But with Option B carrying zero cost risk and two voice choices already inside the existing Cloudflare account, adding two more vendor accounts/keys for C wasn't worth the complexity. Dropped for simplicity, not infeasibility.
+
+**Current direction: Option B (MeloTTS vs. Aura-2), Option E (`speechSynthesis`) as fallback.** Next step is an actual listening comparison of the two Cloudflare-hosted models via `POST /api/spelling/admin/tts-test` (see `index.ts`) on the 10 test words below, to pick a winner and confirm the cache/fallback architecture (already mostly correct in the old plan — see "Architecture" below, minus the R2-upload-batch-script step, which on-demand generation doesn't need).
+
+---
+
+## Chosen Approach (superseded — see Status above): A + E (pre-generated audio, cached in R2, with `speechSynthesis` fallback)
 
 Generate audio for the app's known word bank once (offline, on a dev machine) using a free neural TTS engine, store it in R2, and serve it as a static `<audio>` file with service-worker caching for offline playback. Custom user-imported words that aren't pre-generated fall back to the existing `speechSynthesis` immediately — no on-demand server generation in v1.
 
