@@ -10,9 +10,6 @@ export default function Header({ theme, onToggleTheme }) {
       backgroundColor: 'var(--glass-bg)',
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 50,
       transition: 'background-color 0.3s ease, border-color 0.3s ease'
     }}>
       <div style={{
