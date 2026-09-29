@@ -75,3 +75,10 @@ input:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+/* Page headings are focused programmatically on route change (see App.jsx's
+   FocusOnNavigate) purely so screen readers announce the new page — that
+   isn't a keyboard/mouse focus event, so it shouldn't show a visible ring. */
+main h2:focus {
+  outline: none;
+}
