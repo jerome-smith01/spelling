@@ -2,7 +2,7 @@
 title Spelling Tutor - Dev Server
 cd /d "%~dp0.."
 
-set "ASTRO_DIR=%~dp0..\..\Astro Project\jerome-portfolio"
+set "ASTRO_DIR=%~dp0..\..\Astro Project\portfolio-website"
 
 echo ===================================================
 echo  Spelling Tutor -- Launching Local Dev Environment

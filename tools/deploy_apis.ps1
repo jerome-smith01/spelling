@@ -61,7 +61,7 @@ $targets = @(
     },
     @{
         Key = '3'; Name = 'Website (goodplusfast.com)'; Note = 'build, deploy'
-        Dir = Join-Path $astro 'jerome-portfolio'
+        Dir = Join-Path $astro 'portfolio-website'
         Steps = @(
             @{ Label = 'Build and deploy'; Cmd = 'npm run deploy'; Run = { npm run deploy } }
         )
