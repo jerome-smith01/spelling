@@ -2,8 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWordList } from '../hooks/useWordList';
 import { useHiding } from '../hooks/useHiding';
+import { useDeckSchedule } from '../hooks/useDeckSchedule';
 import { useSpeech } from '../hooks/useSpeech';
 import WordList from '../components/WordList';
+import WordCardDeck from '../components/WordCardDeck';
+import DeckSettings from '../components/DeckSettings';
 import HideControls from '../components/HideControls';
 import ColorPicker from '../components/ColorPicker';
 import ImportSection from '../components/ImportSection';
@@ -87,7 +90,10 @@ function PracticeView({ listId }) {
     showAllWords
   } = useHiding(words, listId);
 
+  const schedule = useDeckSchedule(listId, words.map(w => w.word));
+  const isGrid = schedule.prefs.view === 'grid';
   const { speak, speakSyllables, activePlayback } = useSpeech();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isImportExpanded, setIsImportExpanded] = useState(false);
   const [ratePreset, setRatePreset] = useState(() => {
     try {
@@ -162,9 +168,30 @@ function PracticeView({ listId }) {
         transition: 'all 0.3s ease'
       }} aria-label="Spelling Practice Controls">
         {/* List selector (each list has its own URL) */}
-        <div style={{ marginBottom: '0.9rem' }}>
+        <div style={{ marginBottom: settingsOpen ? '0.9rem' : 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
           <WordListManager listId={listId} />
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(prev => !prev)}
+            className="btn-secondary-sm"
+            style={{ fontWeight: 700 }}
+            aria-expanded={settingsOpen}
+            aria-controls="practice-settings"
+          >
+            {settingsOpen ? '▲ Settings' : '⚙ Settings'}
+          </button>
         </div>
+
+        {settingsOpen && (
+        <div id="practice-settings" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <DeckSettings
+          prefs={schedule.prefs}
+          setPrefs={schedule.setPrefs}
+          testDate={schedule.testDate}
+          setTestDate={schedule.setTestDate}
+          today={schedule.today}
+          onReset={schedule.resetProgress}
+        />
 
         {/* Main Controls Row */}
         <div style={{
@@ -180,17 +207,21 @@ function PracticeView({ listId }) {
             gap: '1.25rem',
             flexWrap: 'wrap'
           }}>
-            <HideControls
-              denominator={denominator}
-              onDenominatorChange={setDenominator}
-              onHideAll={hideAllWords}
-              onShowAll={showAllWords}
-            />
-            <div style={{
-              height: '1.5rem',
-              width: '1px',
-              backgroundColor: 'var(--card-border)'
-            }} />
+            {isGrid && (
+              <>
+                <HideControls
+                  denominator={denominator}
+                  onDenominatorChange={setDenominator}
+                  onHideAll={hideAllWords}
+                  onShowAll={showAllWords}
+                />
+                <div style={{
+                  height: '1.5rem',
+                  width: '1px',
+                  backgroundColor: 'var(--card-border)'
+                }} />
+              </>
+            )}
             <ColorPicker />
             <div style={{
               height: '1.5rem',
@@ -287,20 +318,34 @@ function PracticeView({ listId }) {
           onImport={handleImport}
           onResetDefault={resetToDefault}
         />
+        </div>
+        )}
       </section>
 
       {/* Main Words Grid */}
-      <WordList
-        words={words}
-        hiddenMap={hiddenMap}
-        onHideWord={hideNextLettersForWord}
-        onShowWord={showAllLettersForWord}
-        onSpeak={speak}
-        onSpeakSyllables={handleSpeakSyllables}
-        activePlayback={activePlayback}
-        onAttempts={handleAttempts}
-        frictionByWord={frictionByWord}
-      />
+      {isGrid ? (
+        <WordList
+          words={words}
+          hiddenMap={hiddenMap}
+          onHideWord={hideNextLettersForWord}
+          onShowWord={showAllLettersForWord}
+          onSpeak={speak}
+          onSpeakSyllables={handleSpeakSyllables}
+          activePlayback={activePlayback}
+          onAttempts={handleAttempts}
+          frictionByWord={frictionByWord}
+        />
+      ) : (
+        <WordCardDeck
+          words={words}
+          schedule={schedule}
+          onSpeak={speak}
+          onSpeakSyllables={handleSpeakSyllables}
+          activePlayback={activePlayback}
+          onAttempts={handleAttempts}
+          frictionByWord={frictionByWord}
+        />
+      )}
     </div>
   );
 }

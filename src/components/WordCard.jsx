@@ -13,7 +13,10 @@ export default function WordCard({
   onSpeakSyllables,
   activePlayback,
   onAttempts,
-  friction = 0
+  friction = 0,
+  deckMode = false,
+  onResult,
+  autoFocus = false
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
@@ -33,6 +36,13 @@ export default function WordCard({
     setValidationResults(null);
     hasScrolledRef.current = false;
   }, [hiddenIndices]);
+
+  // Deck mode: put the cursor in the first blank so the student can just start typing
+  useEffect(() => {
+    if (!autoFocus) return;
+    const first = Object.keys(inputRefs.current).map(Number).sort((a, b) => a - b)[0];
+    if (first !== undefined) inputRefs.current[first]?.focus({ preventScroll: true });
+  }, [autoFocus]);
 
   // Scroll this card to the top of the viewport the first time a letter
   // block is focused, then leave it put — re-scrolling on every keystroke's
@@ -83,6 +93,10 @@ export default function WordCard({
     setValidationResults(results);
     // Every Check is recorded (a retry after a miss is the signal the friction score needs)
     if (onAttempts) onAttempts(word.word, attempts);
+    if (onResult) {
+      const correct = attempts.filter(a => a.correct).length;
+      onResult({ pct: Math.round((correct / attempts.length) * 100), results, typed: { ...userInputs } });
+    }
   };
 
   const hasHidden = hiddenIndices.size > 0;
@@ -167,7 +181,7 @@ export default function WordCard({
 
       {/* Footer Controls: Hide, Show, and Verify Button */}
       <div className="word-card-footer">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div style={{ display: deckMode ? 'none' : 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <button
             type="button"
             onClick={() => onHide(word.id, word.letterCount)}

@@ -14,7 +14,7 @@ Thresholds are editable in Settings.
 
 ## Scheduling rules
 1. Test date = day N. Practice days = today … N-1. `daysLeft` = practice days remaining (incl. today).
-2. After a pass: `gap = round(daysLeft / (levelsLeft + 1))`, min 1 day normally. If `daysLeft <= levelsLeft` (crunch), gap = 0: word re-queues later in the same session at the next level.
+2. After a pass at level L: `passesAfter = 4 - L`, `gap = max(1, floor(daysLeft / (passesAfter + 1)))`. If `daysLeft - 1 < passesAfter` (crunch), gap = 0: word re-queues later in the same session at the next level.
 3. **Session loop ("keep practicing until right"):** a word stays in today's queue until it scores 100% once at its current level. Misses and partials re-queue ~3 cards later; a drop-down re-queues at the easier level. Every attempt is graded by the same table, so retries naturally climb back.
 4. **One level up per day** unless in crunch (rule 2), so a lucky streak doesn't skip real spacing.
 5. Mastered words return once on the final practice day as a last check; a miss there drops it to L3 and re-enters the loop.
@@ -47,7 +47,7 @@ Card front: hidden-letter word, 🔊 🐢, Check. Flips on Check: correct spelli
 
 ## Code (surgical edits, no rewrites)
 New: `WordCardDeck.jsx`, `useDeckSchedule.js`, `utils/schedule.js` (+tests).
-Edit: `WordCard.jsx` (flip back, result callback, drop Hide/Show in deck mode), `useHiding.js` (derive hidden set from level), `PracticePage.jsx` (collapsible settings, Grid/Deck toggle).
+Edit: `WordCard.jsx` (result callback, autofocus, hides Hide/Show in deck mode), `PracticePage.jsx` (collapsible settings, Grid/Deck toggle).
 Storage: per-list localStorage (mirrors `useHiding`); attempt logging/friction unchanged; no cross-device sync in v1.
 
 ## Quiz mode — test out of a word (decisions locked)
@@ -57,3 +57,11 @@ Storage: per-list localStorage (mirrors `useHiding`); attempt logging/friction u
 - **100% = tested out:** word jumps straight to Mastered, skipping remaining levels, and leaves the daily queue (keeps the final pre-test check, rule 5). Reduces `levelsLeft` to 0, freeing daily load.
 - **Miss: no penalty.** Word keeps its current level and schedule; quiz is a free shot at skipping ahead. Results still go to the attempt log / friction score.
 - Mastered words can be re-quizzed any time.
+
+## Last step before finishing: Tutorial mode
+Replicate the tutorial pattern from the Bible app. Deliberately LAST — build only after the code is finalized so tutorials aren't rewritten when features change. Must cover: deck/flip flow, levels & grading, test date & scheduling, settings panel, quiz mode.
+
+## Build status (branch `claude/spelling-flashcard-redesign-mq8tsx`)
+Built: schedule logic + tests, per-list progress hook, flip deck, dot strip, collapsible Settings, Grid/Deck toggle, Quiz mode. `useHiding.js` is untouched (grid view still uses it); deck hiding comes from `hiddenIndicesForLevel`.
+Test helper: add `?today=YYYY-MM-DD` to the URL to simulate a different day for scheduling.
+Remaining: tutorial mode (last), then feedback round.
