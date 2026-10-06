@@ -49,7 +49,7 @@ describe('WordCardDeck', () => {
     await fill(user, ['x', 'x', 'x']);
     await user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
     expect(await screen.findByText('0%')).toBeInTheDocument();
-    expect(screen.getByText(/back in a few cards/i)).toBeInTheDocument();
+    expect(screen.getByText(/back later this session/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next card' }));
     expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
   });

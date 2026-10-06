@@ -13,9 +13,9 @@ const fmtDay = (iso, today) => {
 
 function nextMessage(next, today) {
   switch (next.kind) {
-    case 'drop': return `Dropping back to ${LEVELS[next.level - 1].label.toLowerCase()}. It will come back in a few cards.`;
-    case 'stay': return 'So close! Same level. It will come back in a few cards.';
-    case 'again-today': return `Great! The test is close, so it comes back in a few cards at ${LEVELS[next.level - 1].label.toLowerCase()}.`;
+    case 'drop': return `Dropping back to ${LEVELS[next.level - 1].label.toLowerCase()}. It will come back later this session.`;
+    case 'stay': return 'So close! Same level. It will come back later this session.';
+    case 'again-today': return `Great! The test is close, so it comes back later this session at ${LEVELS[next.level - 1].label.toLowerCase()}.`;
     case 'advance': return `Great! Next time: ${LEVELS[next.level - 1].label.toLowerCase()}, ${fmtDay(next.due, today)}.`;
     case 'mastered': return next.due ? `Mastered! 🎉 One last check ${fmtDay(next.due, today)}.` : 'Mastered! 🎉';
     default: return '';

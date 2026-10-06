@@ -15,10 +15,10 @@ Thresholds are editable in Settings.
 ## Scheduling rules
 1. Test date = day N. Practice days = today … N-1. `daysLeft` = practice days remaining (incl. today).
 2. After a pass at level L: `passesAfter = 4 - L`, `gap = max(1, floor(daysLeft / (passesAfter + 1)))`. If `daysLeft - 1 < passesAfter` (crunch), gap = 0: word re-queues later in the same session at the next level.
-3. **Session loop ("keep practicing until right"):** a word stays in today's queue until it scores 100% once at its current level. Misses and partials re-queue ~3 cards later; a drop-down re-queues at the easier level. Every attempt is graded by the same table, so retries naturally climb back.
+3. **Session loop ("keep practicing until right"):** a word stays in today's queue until it scores 100% once at its current level. Misses and partials stay in the queue (never the very next card); a drop-down re-queues at the easier level. Every attempt is graded by the same table, so retries naturally climb back.
 4. **One level up per day** unless in crunch (rule 2), so a lucky streak doesn't skip real spacing.
 5. Mastered words return once on the final practice day as a last check; a miss there drops it to L3 and re-enters the loop.
-6. Each day's queue order: re-queued/dropped words, then due words, then not-yet-seen words.
+6. Card order: the queue is reshuffled every turn (the card just answered is never drawn next).
 7. No test date: fixed gaps 1 / 2 / 4 days after each pass.
 8. Extra practice on non-due words is always allowed. It is graded the same way, can promote or demote, and recomputes that word's next-due.
 

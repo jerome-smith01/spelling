@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   hiddenIndicesForLevel, outcomeFor, alignSpelling, gapAfterPass, applyResult, applyQuizResult,
-  buildQueue, requeueFront, addDays, DEFAULT_PREFS
+  buildQueue, requeueFront, shuffleQueue, addDays, DEFAULT_PREFS
 } from './schedule';
 
 const empty = { words: {} };
@@ -140,5 +140,20 @@ describe('queue', () => {
   it('requeueFront moves the first card 3 later', () => {
     expect(requeueFront(['a', 'b', 'c', 'd', 'e'])).toEqual(['b', 'c', 'd', 'a', 'e']);
     expect(requeueFront(['a'])).toEqual(['a']);
+  });
+});
+
+describe('shuffleQueue', () => {
+  it('keeps every card and never puts the just-answered card first', () => {
+    for (let n = 0; n < 50; n++) {
+      const q = shuffleQueue(['a', 'b', 'c', 'd'], 'a');
+      expect([...q].sort()).toEqual(['a', 'b', 'c', 'd']);
+      expect(q[0]).not.toBe('a');
+    }
+  });
+  it('leaves a single card alone and actually reorders', () => {
+    expect(shuffleQueue(['a'], 'a')).toEqual(['a']);
+    const seen = new Set(Array.from({ length: 40 }, () => shuffleQueue(['a', 'b', 'c', 'd']).join('')));
+    expect(seen.size).toBeGreaterThan(1);
   });
 });

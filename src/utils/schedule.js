@@ -187,3 +187,20 @@ export function requeueFront(queue) {
   const at = Math.min(REQUEUE_AFTER, rest.length);
   return [...rest.slice(0, at), first, ...rest.slice(at)];
 }
+
+/**
+ * Random order for the next turn. When `avoid` (the card just answered) is still in the
+ * queue and others exist, it never lands first, so a missed word can't repeat back-to-back.
+ */
+export function shuffleQueue(queue, avoid = null, random = Math.random) {
+  const a = [...queue];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  if (avoid !== null && a.length > 1 && a[0] === avoid) {
+    const k = 1 + Math.floor(random() * (a.length - 1));
+    [a[0], a[k]] = [a[k], a[0]];
+  }
+  return a;
+}

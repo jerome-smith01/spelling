@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, requeueFront, toDateStr, getWordState
+  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState
 } from '../utils/schedule';
 
 const PREFS_KEY = 'spelling_tutor_deck_prefs_v1';
@@ -76,8 +76,12 @@ export function useDeckSchedule(listId, wordTexts) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefs, today]);
 
+  // Every turn draws from a freshly shuffled queue; a requeued word stays in it
   const advance = useCallback((requeue) => {
-    setQueue(q => (requeue ? requeueFront(q) : q.slice(1)));
+    setQueue(q => {
+      const answered = q[0];
+      return shuffleQueue(requeue ? q : q.slice(1), requeue ? answered : null);
+    });
   }, []);
 
   /** Practice any word right now (extra practice), ahead of the rest of the queue. */
