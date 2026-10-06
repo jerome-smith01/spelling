@@ -49,3 +49,10 @@ Card front: hidden-letter word, 🔊 🐢, Check. Flips on Check: correct spelli
 New: `WordCardDeck.jsx`, `useDeckSchedule.js`, `utils/schedule.js` (+tests).
 Edit: `WordCard.jsx` (flip back, result callback, drop Hide/Show in deck mode), `useHiding.js` (derive hidden set from level), `PracticePage.jsx` (collapsible settings, Grid/Deck toggle).
 Storage: per-list localStorage (mirrors `useHiding`); attempt logging/friction unchanged; no cross-device sync in v1.
+
+## Quiz mode — test out of a word (DRAFT, questions open)
+- Word is pronounced aloud (normal speed, replayable); the card shows **no letters** (all blanks, one per letter or a single input — TBD). Student spells it from ear.
+- **100% = tested out**: the word jumps straight to Mastered, skipping any remaining levels, and drops out of the daily queue (keeps the final pre-test check, rule 5).
+- Scoring is the same % of letters correct; a miss is just an L4 attempt (see open questions for the penalty).
+- Words already mastered can be re-quizzed any time; quiz results feed the same attempt log / friction score.
+- Scheduling impact: tested-out words reduce `levelsLeft` to 0, freeing daily load for the rest.
