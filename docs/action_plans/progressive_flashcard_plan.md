@@ -50,9 +50,10 @@ New: `WordCardDeck.jsx`, `useDeckSchedule.js`, `utils/schedule.js` (+tests).
 Edit: `WordCard.jsx` (flip back, result callback, drop Hide/Show in deck mode), `useHiding.js` (derive hidden set from level), `PracticePage.jsx` (collapsible settings, Grid/Deck toggle).
 Storage: per-list localStorage (mirrors `useHiding`); attempt logging/friction unchanged; no cross-device sync in v1.
 
-## Quiz mode — test out of a word (DRAFT, questions open)
-- Word is pronounced aloud (normal speed, replayable); the card shows **no letters** (all blanks, one per letter or a single input — TBD). Student spells it from ear.
-- **100% = tested out**: the word jumps straight to Mastered, skipping any remaining levels, and drops out of the daily queue (keeps the final pre-test check, rule 5).
-- Scoring is the same % of letters correct; a miss is just an L4 attempt (see open questions for the penalty).
-- Words already mastered can be re-quizzed any time; quiz results feed the same attempt log / friction score.
-- Scheduling impact: tested-out words reduce `levelsLeft` to 0, freeing daily load for the rest.
+## Quiz mode — test out of a word (decisions locked)
+- **Entry:** whole-list Quiz only (a mode started from the top bar / settings), covering all not-yet-mastered words. No per-word button.
+- **Prompt:** audio only (normal speed), unlimited replay, no other cue. No letters shown.
+- **Input:** one text box for the whole word. Scoring aligns the typed text to the answer (edit-distance alignment, so one dropped or extra letter doesn't zero out the rest); accuracy = correctly placed letters / word length.
+- **100% = tested out:** word jumps straight to Mastered, skipping remaining levels, and leaves the daily queue (keeps the final pre-test check, rule 5). Reduces `levelsLeft` to 0, freeing daily load.
+- **Miss: no penalty.** Word keeps its current level and schedule; quiz is a free shot at skipping ahead. Results still go to the attempt log / friction score.
+- Mastered words can be re-quizzed any time.
