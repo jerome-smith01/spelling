@@ -1,10 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import devMockApi from './tools/devMockApi.js';
 
 // https://vite.dev/config/
-export default defineConfig({
+// `npm run dev:mock` (vite --mode mock) serves a fake logged-in API for layout checks
+export default defineConfig(({ mode }) => ({
   plugins: [
+    ...(mode === 'mock' ? [devMockApi()] : []),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -46,6 +49,6 @@ export default defineConfig({
     // (`npm run dev` in jerome-portfolio, port 4321 — do NOT set ADAPTER=node,
     // that swaps out the Cloudflare adapter and drops the D1 binding, which is
     // why /api/auth/me would 500 with "Database binding not found").
-    proxy: { '/api': 'http://localhost:4321' }
+    proxy: mode === 'mock' ? undefined : { '/api': 'http://localhost:4321' }
   }
-});
+}));

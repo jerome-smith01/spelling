@@ -1,4 +1,4 @@
-# Smart Hiding & AI Integration — Plan (DRAFT, awaiting approval)
+# Smart Hiding & AI Integration — Plan (implemented; see `../architecture/05_ai_engine.md` §11)
 
 ## Goal
 Make practice target the letters a lesson is actually about, and use AI to remove setup work: syllables appear automatically, a photo of the homework becomes a saved list, and students can practice the patterns they struggle with most.
