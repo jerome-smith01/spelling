@@ -12,6 +12,8 @@ import NotFoundPage from './pages/NotFoundPage';
 import { useTheme } from './hooks/useTheme';
 import { AuthProvider } from './hooks/useAuth';
 import { ListsProvider } from './hooks/useLists';
+import { TutorialProvider } from './hooks/useTutorial';
+import TutorialOverlay from './components/TutorialOverlay';
 import './styles/global.css';
 
 // Move keyboard/screen-reader focus to the page heading on route change
@@ -38,6 +40,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ListsProvider>
+       <TutorialProvider>
         <AppShell theme={theme} onToggleTheme={toggleTheme}>
           <FocusOnNavigate />
           <AuthBanner />
@@ -51,6 +54,8 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AppShell>
+        <TutorialOverlay />
+       </TutorialProvider>
       </ListsProvider>
     </AuthProvider>
   );

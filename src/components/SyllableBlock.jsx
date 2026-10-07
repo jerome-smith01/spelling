@@ -13,7 +13,7 @@ export default function SyllableBlock({
   activeSyllableIndex = null
 }) {
   return (
-    <div className="syllables-wrapper">
+    <div className="syllables-wrapper" data-tutorial="blanks">
       {syllables.map((syllableLetters, sylIdx) => {
         const isSyllableActive = activeSyllableIndex === sylIdx;
         return (

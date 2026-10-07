@@ -1,8 +1,10 @@
 import React from 'react';
 import { LEVELS } from '../utils/schedule';
+import { useTutorial } from '../hooks/useTutorial';
 
 /** Deck-specific settings: test date, starting level, grading thresholds, view. */
 export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, today, onReset }) {
+  const tutorial = useTutorial();
   const num = (v, lo, hi, fallback) => {
     const n = Number(v);
     return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : fallback;
@@ -46,6 +48,10 @@ export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, t
         <button type="button" className="btn-secondary-sm" onClick={() => {
           if (window.confirm('Reset all flashcard progress for this list?')) onReset();
         }}>Reset progress</button>
+      </div>
+      <div className="settings-field">
+        Tutorials
+        <button type="button" className="btn-secondary-sm" onClick={tutorial.enableAll}>Enable all tutorials</button>
       </div>
     </div>
   );

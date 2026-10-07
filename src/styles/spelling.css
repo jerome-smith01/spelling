@@ -369,3 +369,22 @@
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem 1rem; }
 .settings-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: var(--muted-foreground); }
 .settings-field input, .settings-field select { padding: 0.35rem 0.6rem; border-radius: var(--radius-md); border: 1px solid var(--card-border); background: var(--card-bg); color: var(--foreground); font-size: 0.85rem; }
+
+/* ---------- Tutorial overlay ---------- */
+.tut-root { position: fixed; inset: 0; z-index: 2000; }
+.tut-mask { position: absolute; inset: 0; }
+.tut-ring { position: absolute; border: 3px dashed #79f0d2; border-radius: 14px; pointer-events: none; animation: tut-breathe 1.8s ease-in-out infinite; }
+@keyframes tut-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(121, 240, 210, 0.55); }
+  50% { transform: scale(1.025); box-shadow: 0 0 0 10px rgba(121, 240, 210, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .tut-ring { animation: none; } }
+.tut-card { position: absolute; background: var(--card-bg); color: var(--foreground); border: 1px solid var(--card-border); border-radius: 20px; padding: 1.1rem 1.25rem; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; gap: 0.5rem; }
+.tut-title { margin: 0; font-size: 1.1rem; font-weight: 800; }
+.tut-body { margin: 0; font-size: 0.92rem; line-height: 1.4; color: var(--muted-foreground); }
+.tut-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; }
+.tut-link { background: none; border: none; color: var(--muted-foreground); font-weight: 700; cursor: pointer; padding: 0.4rem 0.2rem; text-decoration: underline; }
+.tut-step { display: flex; gap: 0.3rem; }
+.tut-pip { width: 1.1rem; height: 0.3rem; border-radius: 4px; background: var(--card-border); }
+.tut-pip.on { background: #10b981; }
+.tut-prompt { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.9rem 1.1rem; border-radius: var(--radius-xl); border: 1px solid var(--selected-color-border); background: var(--selected-color-bg); }

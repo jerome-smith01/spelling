@@ -64,4 +64,13 @@ Replicate the tutorial pattern from the Bible app. Deliberately LAST — build o
 ## Build status (branch `claude/spelling-flashcard-redesign-mq8tsx`)
 Built: schedule logic + tests, per-list progress hook, flip deck, dot strip, collapsible Settings, Grid/Deck toggle, Quiz mode. `useHiding.js` is untouched (grid view still uses it); deck hiding comes from `hiddenIndicesForLevel`.
 Test helper: add `?today=YYYY-MM-DD` to the URL to simulate a different day for scheduling.
-Remaining: tutorial mode (last), then feedback round.
+Tutorial mode: built (see below). Remaining: your feedback round.
+
+## Tutorial mode (built; ported from the Bible app's `docs/architecture/03_tutorials.md`)
+- **Controller** (`useTutorial.jsx`): `checkAndStart` queues max **3 unseen steps per visit**; `advance` marks the step seen; `skip` marks all of the screen's steps seen; `cancel` (Esc / tap outside / leaving the screen) marks nothing, so it's offered again.
+- **Granular tracking:** per-`stepKey` flags in localStorage (`spelling_tutorial_v1`), plus a one-time opt-in ("Would you like a guided tour?") and a global on/off.
+- **Overlay** (`TutorialOverlay.jsx`): dimmed backdrop with a cutout, dashed mint breathing ring, coach card (Skip / Back / Next / Got it, progress pips) clamped to the viewport; page scroll locked while active; decorative layers `aria-hidden`; respects reduced motion.
+- **Targets:** `data-tutorial="…"` attributes. Steps whose target isn't on screen are skipped and stay unseen.
+- **Re-run:** ❓ Tour button (restarts the current screen's tour) and Settings → "Enable all tutorials".
+- **Practice steps (3 per visit):** welcome, listen, type blanks → levels, progress dots, test date/settings → quiz tab. **Quiz steps:** listen, spell the whole word.
+- **Not built yet (Bible app Comment-3):** interactive "do it yourself" steps that wait for the student to complete the action.

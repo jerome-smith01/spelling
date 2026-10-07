@@ -177,6 +177,7 @@ function PracticeView({ listId }) {
             style={{ fontWeight: 700 }}
             aria-expanded={settingsOpen}
             aria-controls="practice-settings"
+            data-tutorial="settings-button"
           >
             {settingsOpen ? '▲ Settings' : '⚙ Settings'}
           </button>

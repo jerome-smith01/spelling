@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { alignSpelling } from '../utils/schedule';
+import { useTutorial } from '../hooks/useTutorial';
+import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 
 const shuffle = (arr) => {
   const a = [...arr];
@@ -22,6 +24,18 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
   const [outcomes, setOutcomes] = useState([]);
   const inputRef = useRef(null);
   const word = order[idx];
+  const tutorial = useTutorial();
+
+  // First quiz: explain listen-and-spell (only steps whose target is on screen)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      tutorial.checkAndStart(TUTORIAL_KEYS.quiz, QUIZ_STEPS, {
+        isAvailable: (st) => !!document.querySelector(`[data-tutorial="${st.target}"]`)
+      });
+    }, 700);
+    return () => { clearTimeout(t); tutorial.cancel(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorial.decided, tutorial.enabled]);
 
   // Speak each new word (small delay so the previous utterance is cancelled cleanly)
   useEffect(() => {
@@ -92,6 +106,7 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
           <button
             type="button"
             className="speaker-btn"
+            data-tutorial="quiz-audio"
             style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
             onClick={() => onSpeak(word.id, word.word)}
             aria-label="Hear the word again"
@@ -101,6 +116,7 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
           <input
             ref={inputRef}
             className="quiz-input"
+            data-tutorial="quiz-input"
             value={text}
             onChange={(e) => setText(e.target.value.replace(/[^a-zA-Z' -]/g, ''))}
             autoCapitalize="none"

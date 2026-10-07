@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import WordCard from './WordCard';
 import QuizView from './QuizView';
+import TutorialPrompt from './TutorialPrompt';
+import { useTutorial } from '../hooks/useTutorial';
+import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import { LEVELS, hiddenIndicesForLevel, addDays, daysLeft } from '../utils/schedule';
+
+const targetExists = (st) => !st.target || !!document.querySelector(`[data-tutorial="${st.target}"]`);
 
 const fmtDay = (iso, today) => {
   if (!iso) return '';
@@ -31,6 +36,27 @@ export default function WordCardDeck({
   const [result, setResult] = useState(null); // set once Check flips the card
   const [cardKey, setCardKey] = useState(0);
   const backRef = useRef(null);
+  const tutorial = useTutorial();
+  const hasCard = words.length > 0;
+
+  // First visit to the practice screen: run the next unseen batch (max 3 steps) once the layout settles.
+  // Leaving the screen or switching modes cancels without marking anything seen.
+  useEffect(() => {
+    if (mode !== 'practice' || !hasCard) return undefined;
+    const t = setTimeout(() => {
+      tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, {
+        isAvailable: targetExists,
+        onBeforeStart: () => window.scrollTo?.({ top: 0 })
+      });
+    }, 700);
+    return () => { clearTimeout(t); tutorial.cancel(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, hasCard, tutorial.decided, tutorial.enabled]);
+
+  const startTour = () => {
+    const quiz = mode === 'quiz';
+    tutorial.restart(quiz ? TUTORIAL_KEYS.quiz : TUTORIAL_KEYS.practice, quiz ? QUIZ_STEPS : PRACTICE_STEPS, { isAvailable: targetExists });
+  };
 
   const byText = useMemo(() => Object.fromEntries(words.map(w => [w.word, w])), [words]);
   const current = queue.map(t => byText[t]).find(Boolean) || null;
@@ -65,11 +91,14 @@ export default function WordCardDeck({
 
   const tabs = (
     <div className="deck-bar">
-      <div className="deck-tabs" role="group" aria-label="Mode">
+      <div className="deck-tabs" role="group" aria-label="Mode" data-tutorial="modes">
         <button type="button" className="deck-tab" aria-pressed={mode === 'practice'} onClick={() => setMode('practice')}>Practice</button>
         <button type="button" className="deck-tab" aria-pressed={mode === 'quiz'} onClick={() => setMode('quiz')}>Quiz</button>
       </div>
-      <span>{testLine}</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {testLine}
+        <button type="button" className="btn-secondary-sm" onClick={startTour} aria-label="Restart the guided tour">❓ Tour</button>
+      </span>
     </div>
   );
 
@@ -90,7 +119,7 @@ export default function WordCardDeck({
   }
 
   const strip = (
-    <div>
+    <div data-tutorial="strip">
       <div className="deck-bar" style={{ marginBottom: '0.4rem' }}>
         <span>{dueCount} due today</span>
         <span>{words.filter(w => progress.words[w.word]?.mastered).length} of {words.length} mastered</span>
@@ -141,9 +170,10 @@ export default function WordCardDeck({
   return (
     <div className="deck">
       {tabs}
+      <TutorialPrompt onAccept={() => tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, { isAvailable: targetExists })} />
       {strip}
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <span className="deck-badge">Level {level} of {LEVELS.length} · {LEVELS[level - 1].label}</span>
+        <span className="deck-badge" data-tutorial="level">Level {level} of {LEVELS.length} · {LEVELS[level - 1].label}</span>
         <span className="deck-badge">{queue.length} in today's queue</span>
       </div>
 

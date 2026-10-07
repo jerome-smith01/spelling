@@ -116,7 +116,7 @@ export default function WordCard({
     >
       {/* Header: Pronunciation & Word info */}
       <div className="word-card-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div data-tutorial="audio" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <button
             type="button"
             onClick={() => onSpeak(word.id, word.word)}
