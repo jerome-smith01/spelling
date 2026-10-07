@@ -5,6 +5,20 @@
  * network calls around them.
  */
 import { apiFetch } from './apiService';
+import { parseFocusGroups } from '../utils/smartHide';
+import { sanitizeHints } from './storageService';
+
+/** A JSON column that may arrive as text, an array, or null. */
+const jsonArray = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v !== 'string' || !v) return [];
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
 
 /** SQLite "YYYY-MM-DD HH:MM:SS" (UTC) -> ISO string. */
 export function serverTimeToIso(value) {
@@ -21,7 +35,9 @@ export function remoteToLocal(r) {
     isDefault: r.is_default ? 1 : 0,
     updatedAt: serverTimeToIso(r.updated_at),
     dirty: false,
-    deleted: false
+    deleted: false,
+    focusGroups: parseFocusGroups(jsonArray(r.focus_groups)),
+    hints: sanitizeHints(jsonArray(r.hints))
   };
 }
 
@@ -115,7 +131,10 @@ export function reconcile(current, snapshot, merged, pushed, deleted) {
   return out;
 }
 
-const toBody = (l) => ({ name: l.name, words_raw: l.wordsRaw, is_default: l.isDefault ? 1 : 0 });
+const toBody = (l) => ({
+  name: l.name, words_raw: l.wordsRaw, is_default: l.isDefault ? 1 : 0,
+  focus_groups: l.focusGroups ?? [], hints: l.hints ?? []
+});
 
 /**
  * Pull remote lists, merge, push local changes.

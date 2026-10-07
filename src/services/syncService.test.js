@@ -109,3 +109,19 @@ describe('reconcile', () => {
     expect(out.map(l => l.id)).toEqual([B]);
   });
 });
+
+describe('remoteToLocal: smart-hiding fields', () => {
+  it('parses focus_groups and hints from JSON text', () => {
+    const l = remoteToLocal(remote(A, { focus_groups: '["ou","OW","bad!"]', hints: '["oy ends words"]' }));
+    expect(l.focusGroups).toEqual(['ou', 'ow']);
+    expect(l.hints).toEqual(['oy ends words']);
+  });
+  it('defaults to empty arrays for older rows', () => {
+    const l = remoteToLocal(remote(A));
+    expect(l.focusGroups).toEqual([]);
+    expect(l.hints).toEqual([]);
+  });
+  it('ignores corrupt JSON', () => {
+    expect(remoteToLocal(remote(A, { focus_groups: '{nope' })).focusGroups).toEqual([]);
+  });
+});

@@ -22,7 +22,7 @@ export function useWordList(listId) {
    * Save pasted words. Editing the built-in default creates a new list, so the
    * result includes the (possibly new) list id for the caller to navigate to.
    */
-  const importWords = (newRawText) => {
+  const importWords = (newRawText, extra) => {
     const parsed = parseWordList(newRawText);
     if (parsed.length === 0) {
       return { success: false, error: 'No valid words found in import text.' };
@@ -30,7 +30,7 @@ export function useWordList(listId) {
     if (new TextEncoder().encode(newRawText).length > 20 * 1024) {
       return { success: false, error: 'That list is too long (20 KB maximum).' };
     }
-    const savedId = saveWords(listId, newRawText.trim());
+    const savedId = saveWords(listId, newRawText.trim(), extra);
     return { success: true, count: parsed.length, listId: savedId };
   };
 

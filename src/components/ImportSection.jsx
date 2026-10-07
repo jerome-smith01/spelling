@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { parseFocusGroups } from '../utils/smartHide';
 
 const AI_PROMPT_TEMPLATE = `You are a spelling assistant. I will give you a list of spelling words, a photo of a spelling worksheet, or raw text.
 Return ONLY the words segmented into syllables using hyphens, one word per line, inside a single plain text code block.
@@ -17,16 +18,23 @@ export default function ImportSection({
   isExpanded,
   onClose,
   currentRaw,
+  currentFocus = [],
   onImport,
   onResetDefault
 }) {
   const [inputText, setInputText] = useState(currentRaw);
+  const [focusText, setFocusText] = useState(currentFocus.join(', '));
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     setInputText(currentRaw);
   }, [currentRaw]);
+
+  const focusKey = currentFocus.join(', ');
+  useEffect(() => {
+    setFocusText(focusKey);
+  }, [focusKey]);
 
   if (!isExpanded) return null;
 
@@ -49,7 +57,7 @@ export default function ImportSection({
 
   const handleSave = () => {
     setErrorMessage('');
-    const result = onImport(inputText);
+    const result = onImport(inputText, { focusGroups: parseFocusGroups(focusText) });
     if (result.success) {
       onClose(); // Collapse back to toolbar after successful save
     } else {
@@ -196,6 +204,35 @@ export default function ImportSection({
             boxSizing: 'border-box'
           }}
         />
+        <label
+          htmlFor="inline-focus-input"
+          style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--foreground)', margin: '0.9rem 0 0.4rem' }}
+        >
+          Focus letters <span style={{ fontWeight: 400, color: 'var(--muted-foreground)' }}>(optional, turns on smart hiding)</span>
+        </label>
+        <input
+          id="inline-focus-input"
+          type="text"
+          value={focusText}
+          onChange={(e) => setFocusText(e.target.value)}
+          placeholder="ou, ow, oi, oy"
+          aria-describedby="inline-focus-help"
+          autoComplete="off"
+          style={{
+            width: '100%',
+            padding: '0.55rem 0.75rem',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--card-border)',
+            backgroundColor: 'var(--card-bg)',
+            color: 'var(--foreground)',
+            fontFamily: 'monospace',
+            fontSize: '0.9rem',
+            boxSizing: 'border-box'
+          }}
+        />
+        <p id="inline-focus-help" style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', margin: '0.3rem 0 0' }}>
+          The letter groups this week's lesson is about. Practice hides these letters first.
+        </p>
         {errorMessage && (
           <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.4rem' }}>
             {errorMessage}

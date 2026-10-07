@@ -17,6 +17,7 @@ import { enqueue } from '../services/attemptQueue';
 import { saveLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useStruggle } from '../hooks/useStruggle';
+import { useStrugglePositions } from '../hooks/useStrugglePositions';
 import '../styles/spelling.css';
 
 // Rate (how slowly each syllable is spoken) and pause (the gap between syllables)
@@ -68,14 +69,15 @@ function PracticeView({ listId }) {
   // letter within a session, so a corrected miss counts as correct.
   const sessionId = useRef(crypto.randomUUID());
   const frictionByWord = useStruggle();
+  const struggleByWord = useStrugglePositions(list?.focusGroups?.length ? words.map(w => w.word) : []);
 
   const handleAttempts = (word, attempts) => {
     if (!VALID_WORD.test(word)) return;
     enqueue(attempts.map(a => ({ word, ...a, session_id: sessionId.current, list_id: listId })));
   };
 
-  const handleImport = (text) => {
-    const result = importWords(text);
+  const handleImport = (text, extra) => {
+    const result = importWords(text, extra);
     // Editing the built-in default creates a real list with its own URL
     if (result.success && result.listId !== listId) navigate(`/lists/${result.listId}`, { replace: true });
     return result;
@@ -316,6 +318,7 @@ function PracticeView({ listId }) {
           isExpanded={isImportExpanded}
           onClose={() => setIsImportExpanded(false)}
           currentRaw={rawList}
+          currentFocus={list?.focusGroups ?? []}
           onImport={handleImport}
           onResetDefault={resetToDefault}
         />
@@ -345,6 +348,9 @@ function PracticeView({ listId }) {
           activePlayback={activePlayback}
           onAttempts={handleAttempts}
           frictionByWord={frictionByWord}
+          focusGroups={list?.focusGroups ?? []}
+          hints={list?.hints ?? []}
+          struggleByWord={struggleByWord}
         />
       )}
     </div>

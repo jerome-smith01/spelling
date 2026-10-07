@@ -14,8 +14,10 @@ import {
   loadLists,
   saveLists,
   newListId,
+  sanitizeHints,
   visibleLists
 } from '../services/storageService';
+import { parseFocusGroups } from '../utils/smartHide';
 import { syncLists, reconcile } from '../services/syncService';
 import { flush as flushAttempts, queueLength, subscribe as subscribeQueue } from '../services/attemptQueue';
 import { DEFAULT_RAW_WORDS } from '../utils/wordParser';
@@ -33,7 +35,9 @@ const DEFAULT_LIST = Object.freeze({
   isDefault: 0,
   updatedAt: new Date(0).toISOString(),
   dirty: false,
-  deleted: false
+  deleted: false,
+  focusGroups: [],
+  hints: []
 });
 
 export function ListsProvider({ children }) {
@@ -58,19 +62,29 @@ export function ListsProvider({ children }) {
   // ── Mutations (always local-first; sync happens in the background) ──────────
   const stamp = () => new Date().toISOString();
 
-  const createList = useCallback((name, wordsRaw) => {
+  // `extra` carries optional list fields: { focusGroups, hints }
+  const createList = useCallback((name, wordsRaw, extra = {}) => {
     const id = newListId();
     commit([
       ...listsRef.current,
-      { id, name: name.trim() || 'Untitled list', wordsRaw, isDefault: 0, updatedAt: stamp(), dirty: true, deleted: false }
+      {
+        id, name: name.trim() || 'Untitled list', wordsRaw, isDefault: 0, updatedAt: stamp(), dirty: true, deleted: false,
+        focusGroups: parseFocusGroups(extra.focusGroups), hints: sanitizeHints(extra.hints)
+      }
     ]);
     return id;
   }, [commit]);
 
   /** Save edited words. Editing the virtual default creates a real list; returns the list id. */
-  const saveWords = useCallback((id, wordsRaw) => {
-    if (id === DEFAULT_LIST_ID) return createList('My Words', wordsRaw);
-    commit(listsRef.current.map(l => (l.id === id ? { ...l, wordsRaw, updatedAt: stamp(), dirty: true } : l)));
+  const saveWords = useCallback((id, wordsRaw, extra) => {
+    if (id === DEFAULT_LIST_ID) return createList('My Words', wordsRaw, extra);
+    const fields = extra
+      ? {
+        ...(extra.focusGroups !== undefined ? { focusGroups: parseFocusGroups(extra.focusGroups) } : {}),
+        ...(extra.hints !== undefined ? { hints: sanitizeHints(extra.hints) } : {})
+      }
+      : {};
+    commit(listsRef.current.map(l => (l.id === id ? { ...l, wordsRaw, ...fields, updatedAt: stamp(), dirty: true } : l)));
     return id;
   }, [commit, createList]);
 

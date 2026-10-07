@@ -6,12 +6,14 @@
  * server primary key, so a list's URL is identical on every device.
  *
  * List shape:
- *   { id, name, wordsRaw, isDefault, updatedAt (ISO), dirty, deleted }
+ *   { id, name, wordsRaw, isDefault, updatedAt (ISO), dirty, deleted,
+ *     focusGroups: string[] (smart hiding), hints: string[] (lesson hints) }
  *
  * The built-in default list is virtual (id "default"): it is never stored or
  * synced until the user edits it, at which point it becomes a real list.
  */
 import { DEFAULT_RAW_WORDS } from '../utils/wordParser';
+import { parseFocusGroups } from '../utils/smartHide';
 
 export const DEFAULT_LIST_ID = 'default';
 export const LISTS_KEY = 'spelling_tutor_lists_v5';
@@ -82,6 +84,18 @@ export function migrateLegacy(read = safeGet, now = () => new Date().toISOString
   ];
 }
 
+export const MAX_HINTS = 5;
+export const MAX_HINT_LENGTH = 200;
+
+/** Lesson hints: plain strings only, trimmed and length-clamped (always rendered as text). */
+export function sanitizeHints(hints) {
+  if (!Array.isArray(hints)) return [];
+  return hints
+    .filter(h => typeof h === 'string' && h.trim())
+    .map(h => h.trim().slice(0, MAX_HINT_LENGTH))
+    .slice(0, MAX_HINTS);
+}
+
 function sanitizeList(l) {
   if (!l || !isUuid(l.id) || typeof l.wordsRaw !== 'string') return null;
   return {
@@ -91,7 +105,9 @@ function sanitizeList(l) {
     isDefault: l.isDefault ? 1 : 0,
     updatedAt: typeof l.updatedAt === 'string' ? l.updatedAt : new Date().toISOString(),
     dirty: Boolean(l.dirty),
-    deleted: Boolean(l.deleted)
+    deleted: Boolean(l.deleted),
+    focusGroups: parseFocusGroups(l.focusGroups),
+    hints: sanitizeHints(l.hints)
   };
 }
 

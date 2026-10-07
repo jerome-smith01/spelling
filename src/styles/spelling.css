@@ -400,3 +400,14 @@
 .vkb-space { flex: 3 1 0; font-size: 0.9rem; color: var(--muted-foreground); }
 .vkb-enter { flex: 1.4 1 0; background: var(--color-primary); color: var(--primary-foreground); font-size: 1.05rem; font-weight: 700; }
 .vkb-enter:disabled { opacity: 0.5; cursor: default; }
+
+/* ---------- Smart hiding ---------- */
+.harvey-ball { flex: none; display: inline-block; vertical-align: middle; }
+.deck-dot.harvey { width: auto; height: auto; background: none; border-radius: 50%; padding: 1px; }
+.deck-dot.harvey.current { border-color: var(--foreground); }
+.deck-level { display: inline-flex; align-items: center; gap: 0.35rem; }
+.choice-blank { border-style: dashed; color: var(--color-primary); }
+.choice-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.75rem; }
+.choice-btn { min-width: 3.5rem; min-height: 2.75rem; padding: 0.4rem 0.9rem; border-radius: var(--radius-md); border: 2px solid var(--card-border); background: var(--muted); color: var(--foreground); font-size: 1.25rem; font-weight: 800; font-family: inherit; cursor: pointer; }
+.choice-btn[aria-pressed="true"] { background: var(--color-primary); border-color: var(--color-primary); color: var(--primary-foreground); }
+.deck-hint { margin: 0; font-size: 0.9rem; color: var(--foreground); background: var(--muted); border-radius: var(--radius-md); padding: 0.5rem 0.75rem; }
