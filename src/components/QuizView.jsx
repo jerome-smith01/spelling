@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { alignSpelling } from '../utils/schedule';
 import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
+import useCoarsePointer from '../hooks/useCoarsePointer';
+import VirtualKeyboard from './VirtualKeyboard';
 
 const shuffle = (arr) => {
   const a = [...arr];
@@ -23,6 +25,7 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
   const [result, setResult] = useState(null);
   const [outcomes, setOutcomes] = useState([]);
   const inputRef = useRef(null);
+  const mobile = useCoarsePointer();
   const word = order[idx];
   const tutorial = useTutorial();
 
@@ -41,7 +44,7 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
   useEffect(() => {
     if (!word) return undefined;
     const t = setTimeout(() => onSpeak(word.id, word.word), 350);
-    inputRef.current?.focus();
+    if (!mobile) inputRef.current?.focus();
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx]);
@@ -123,9 +126,20 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
             autoCorrect="off"
             autoComplete="off"
             spellCheck="false"
+            readOnly={mobile}
+            inputMode={mobile ? 'none' : undefined}
             aria-label="Type the word you heard"
           />
-          <button type="button" className="btn-verify" onClick={submit} disabled={!text.trim()}>Check</button>
+          {mobile ? (
+            <VirtualKeyboard
+              onChar={(c) => setText(t => t + c)}
+              onBackspace={() => setText(t => t.slice(0, -1))}
+              onEnter={submit}
+              enterDisabled={!text.trim()}
+            />
+          ) : (
+            <button type="button" className="btn-verify" onClick={submit} disabled={!text.trim()}>Check</button>
+          )}
         </>
       ) : (
         <>
