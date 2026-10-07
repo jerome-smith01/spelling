@@ -4,6 +4,7 @@
  * Levels: 1 = show 1 in 2 letters, 2 = 1 in 3, 3 = 1 in 4, 4 = all hidden.
  * Dates are local 'YYYY-MM-DD' strings so day math never shifts with timezones.
  */
+import { smartHiddenIndices } from './smartHide';
 
 export const LEVELS = [
   { level: 1, step: 2, label: '1 in 2 letters shown' },
@@ -30,8 +31,16 @@ export const addDays = (s, n) => {
 };
 export const daysBetween = (a, b) => Math.round((parse(b) - parse(a)) / 86400000);
 
-/** Letter indices to hide for a level. Always hides at least one letter. */
-export function hiddenIndicesForLevel(letterCount, level) {
+/**
+ * Letter indices to hide for a level. Always hides at least one letter.
+ * With `smart.groups` (a list's focus letters) the lesson's letters are hidden instead
+ * (see smartHide.js); a word without any of them falls back to 1-in-N hiding.
+ */
+export function hiddenIndicesForLevel(letterCount, level, smart = null) {
+  if (smart?.groups?.length) {
+    const s = smartHiddenIndices(smart.word, Math.min(Math.max(level, 1), MAX_LEVEL), smart.groups, smart.struggle);
+    if (s) return s;
+  }
   const step = LEVELS[Math.min(Math.max(level, 1), MAX_LEVEL) - 1].step;
   const hidden = new Set();
   for (let i = 0; i < letterCount; i++) {

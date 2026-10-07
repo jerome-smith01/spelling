@@ -28,6 +28,12 @@ export const analyzeWord = (word) =>
 export const analyzePattern = (pattern) =>
   apiFetch(`/api/spelling/patterns/${encodeURIComponent(pattern)}/analyze`, { method: 'POST', body: {} });
 
+/** Letter positions in each word that belong to the learner's active patterns: { positions: { word: [i] } } */
+export const getStrugglePositions = (words) =>
+  apiFetch('/api/spelling/patterns/positions', {
+    method: 'POST', body: { words: words.filter(w => /^[a-z][a-z' -]{0,39}$/.test(w)).slice(0, 200) }
+  });
+
 /** A friendly sentence for any failure from the analyze endpoints. */
 export function coachingErrorMessage(err) {
   if (err?.name === 'AuthError') return 'Log in again to see coaching tips.';

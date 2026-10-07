@@ -85,3 +85,46 @@ export function parseWordList(rawText) {
 
   return words;
 }
+
+// ── Auto-syllables helpers (smart hiding, Phase 2) ─────────────────────────────
+
+const LEAD = /^[\d.)\-*\s]+/;
+const splitLine = (line) => {
+  const lead = (line.match(LEAD) || [''])[0];
+  const rest = line.slice(lead.length);
+  const m = rest.match(/^(.*?)(\s*\([^)]+\)\s*)$/);
+  return { lead, spelling: (m ? m[1] : rest).trim(), tail: m ? m[2] : '' };
+};
+
+/**
+ * Words in raw text that have no hyphens and might have more than one syllable.
+ * `isOneSyllable` filters out words that never need splitting.
+ */
+export function wordsNeedingSplit(rawText, isOneSyllable = () => false) {
+  const out = [];
+  for (const line of String(rawText || '').split('\n')) {
+    const { spelling } = splitLine(line);
+    const w = spelling.toLowerCase();
+    if (!w || w.includes('-') || !/^[a-z']+$/.test(w) || isOneSyllable(w)) continue;
+    if (!out.includes(w)) out.push(w);
+  }
+  return out;
+}
+
+/**
+ * Rewrite raw text with syllable splits ({ word: 'syl-la-ble' }). Hyphens the user
+ * typed always win; a split is only applied if it is the same letters plus hyphens.
+ * Returns { text, changed: [words split] }.
+ */
+export function applySplits(rawText, splits) {
+  const changed = [];
+  const text = String(rawText || '').split('\n').map(line => {
+    const { lead, spelling, tail } = splitLine(line);
+    const w = spelling.toLowerCase();
+    const split = splits[w];
+    if (!split || w.includes('-') || split === w || split.replace(/-/g, '') !== w) return line;
+    changed.push(w);
+    return `${lead}${split}${tail}`;
+  }).join('\n');
+  return { text, changed };
+}

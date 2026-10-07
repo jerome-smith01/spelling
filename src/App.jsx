@@ -7,6 +7,7 @@ import ProgressPage from './pages/ProgressPage';
 import WordDetailPage from './pages/WordDetailPage';
 import ListsPage from './pages/ListsPage';
 import LabPage from './pages/LabPage';
+import ProfilePage from './pages/ProfilePage';
 import RootRedirect from './pages/RootRedirect';
 import NotFoundPage from './pages/NotFoundPage';
 import { useTheme } from './hooks/useTheme';
@@ -33,6 +34,7 @@ function FocusOnNavigate() {
  *   /lists/:listId             -> practice one list (id is a UUID)
  *   /progress                  -> progress dashboard (?list=<id> filter)
  *   /progress/words/:word      -> one word: letter-by-letter results and its tip
+ *   /profile                   -> grade + pattern progress table (Generate 5 words)
  */
 export default function App() {
   const { theme, toggleTheme } = useTheme();
@@ -50,6 +52,7 @@ export default function App() {
             <Route path="/lists/:listId" element={<PracticePage />} />
             <Route path="/progress" element={<ProgressPage />} />
             <Route path="/progress/words/:word" element={<WordDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/lab" element={<LabPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

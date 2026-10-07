@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useWordList } from '../hooks/useWordList';
+import { useWordList, parseWordList } from '../hooks/useWordList';
 import { useHiding } from '../hooks/useHiding';
 import { useDeckSchedule } from '../hooks/useDeckSchedule';
 import { useSpeech } from '../hooks/useSpeech';
@@ -17,6 +17,7 @@ import { enqueue } from '../services/attemptQueue';
 import { saveLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useStruggle } from '../hooks/useStruggle';
+import { useStrugglePositions } from '../hooks/useStrugglePositions';
 import '../styles/spelling.css';
 
 // Rate (how slowly each syllable is spoken) and pause (the gap between syllables)
@@ -58,6 +59,7 @@ export default function PracticePage() {
 function PracticeView({ listId }) {
   const navigate = useNavigate();
   const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
+  const { createList, atListLimit } = useLists();
   usePageTitle(list ? `${list.name} — Practice` : 'Practice');
 
   useEffect(() => {
@@ -68,17 +70,28 @@ function PracticeView({ listId }) {
   // letter within a session, so a corrected miss counts as correct.
   const sessionId = useRef(crypto.randomUUID());
   const frictionByWord = useStruggle();
+  const struggleByWord = useStrugglePositions(list?.focusGroups?.length ? words.map(w => w.word) : []);
 
   const handleAttempts = (word, attempts) => {
     if (!VALID_WORD.test(word)) return;
     enqueue(attempts.map(a => ({ word, ...a, session_id: sessionId.current, list_id: listId })));
   };
 
-  const handleImport = (text) => {
-    const result = importWords(text);
+  const handleImport = (text, extra) => {
+    const result = importWords(text, extra);
     // Editing the built-in default creates a real list with its own URL
     if (result.success && result.listId !== listId) navigate(`/lists/${result.listId}`, { replace: true });
     return result;
+  };
+  // Photo import makes a brand-new list and opens it
+  const handleCreateList = ({ name, wordsRaw, focusGroups, hints }) => {
+    if (atListLimit) return { success: false, error: 'You have reached the list limit. Delete a list first.' };
+    if (parseWordList(wordsRaw).length === 0) return { success: false, error: 'Add at least one word.' };
+    if (new TextEncoder().encode(wordsRaw).length > 20 * 1024) return { success: false, error: 'That list is too long (20 KB maximum).' };
+    const id = createList(name, wordsRaw.trim(), { focusGroups, hints });
+    setIsImportExpanded(false);
+    navigate(`/lists/${id}`);
+    return { success: true };
   };
   const {
     denominator,
@@ -316,7 +329,9 @@ function PracticeView({ listId }) {
           isExpanded={isImportExpanded}
           onClose={() => setIsImportExpanded(false)}
           currentRaw={rawList}
+          currentFocus={list?.focusGroups ?? []}
           onImport={handleImport}
+          onCreateList={handleCreateList}
           onResetDefault={resetToDefault}
         />
         </div>
@@ -345,6 +360,9 @@ function PracticeView({ listId }) {
           activePlayback={activePlayback}
           onAttempts={handleAttempts}
           frictionByWord={frictionByWord}
+          focusGroups={list?.focusGroups ?? []}
+          hints={list?.hints ?? []}
+          struggleByWord={struggleByWord}
         />
       )}
     </div>

@@ -15,6 +15,9 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+  /* Harvey-ball progress (traffic-light green, >= 3:1 against the card) */
+  --harvey-fill: #15803d;
+  --harvey-ring: #475569;
 }
 
 /* GPF Design Tokens — Dark Theme */
@@ -31,4 +34,6 @@
   --card-border: #3f3f46;
   --glass-bg: rgba(24, 24, 27, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
+  --harvey-fill: #4ade80;
+  --harvey-ring: #cbd5e1;
 }
