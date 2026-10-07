@@ -28,7 +28,7 @@ start "Astro Dev (4321)" /d "%ASTRO_DIR%" cmd /k "npx astro dev"
 
 echo [2/2] Starting Vite app on :5173 (this window)...
 echo Opening http://localhost:4321/spelling/ shortly...
-start "" /min cmd /c "timeout /t 10 /nobreak >nul & start http://localhost:4321/spelling/"
+start "" /min cmd /c "timeout /t 20 /nobreak >nul & start http://localhost:4321/spelling/"
 echo.
 call npm run dev
 pause
