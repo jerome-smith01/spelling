@@ -22,7 +22,9 @@ export default defineConfig(({ mode }) => ({
         description: 'Practice 3rd-grade curriculum spelling words with syllable guidance',
         theme_color: '#00008B',
         background_color: '#ffffff',
-        display: 'standalone',
+        display: 'fullscreen',
+        display_override: ['fullscreen', 'standalone'],
+        orientation: 'portrait',
         start_url: '/spelling/app/',
         scope: '/spelling/app/',
         icons: [

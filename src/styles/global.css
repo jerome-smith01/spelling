@@ -26,6 +26,16 @@ body {
   transition: background 0.4s ease, color 0.4s ease;
 }
 
+/* Installed PWA runs edge to edge: keep content clear of the notch / status bar / home bar */
+@media (display-mode: fullscreen), (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
 /* Global Animated Text Gradient / App Title */
 .text-gradient-animated,
 .app-title {

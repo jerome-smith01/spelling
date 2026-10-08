@@ -168,12 +168,13 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
             {result.pct === 100 ? (
               <div className="quiz-answer quiz-right" aria-label={`Correct: ${word.word}`}>{word.word}</div>
             ) : (
-              <>
+              <fieldset className="quiz-compare">
+                <legend>Incorrect</legend>
                 <div className="quiz-label">You spelled</div>
                 <div className="quiz-answer quiz-wrong">{typedWord}</div>
                 <div className="quiz-label">Correct spelling</div>
                 <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
-              </>
+              </fieldset>
             )}
             <p className="deck-message" style={{ margin: 0 }}>
               {result.testedOut
