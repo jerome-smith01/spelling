@@ -165,17 +165,16 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
           </>
         ) : (
           <div className="quiz-result" aria-live="polite">
-            {result.pct === 100 ? (
-              <div className="quiz-answer quiz-right" aria-label={`Correct: ${word.word}`}>{word.word}</div>
-            ) : (
-              <fieldset className="quiz-compare">
+            {result.pct !== 100 && (
+              <fieldset className="quiz-box quiz-box-wrong">
                 <legend>Incorrect</legend>
-                <div className="quiz-label">You spelled</div>
-                <div className="quiz-answer quiz-wrong">{typedWord}</div>
-                <div className="quiz-label">Correct spelling</div>
-                <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
+                <div className="quiz-answer quiz-wrong" aria-label={`You spelled ${typedWord}`}>{typedWord}</div>
               </fieldset>
             )}
+            <fieldset className="quiz-box quiz-box-right">
+              <legend>Correct</legend>
+              <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
+            </fieldset>
             <p className="deck-message" style={{ margin: 0 }}>
               {result.testedOut
                 ? '✓ Tested out! This word is mastered.'
