@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { autoSplitText } from '../utils/autoSyllables';
 import { parseWordList } from '../utils/wordParser';
 import PhotoImport from './PhotoImport';
+import WordsTextarea from './WordsTextarea';
 import AiPromptCard, { BiggerListNote } from './AiPromptCard';
 import GenerateSyllablesButton from './GenerateSyllablesButton';
 
@@ -107,7 +108,7 @@ export default function NewDeckFlow({ existingNames, onCreate, onCancel }) {
           <label htmlFor="new-deck-words" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--foreground)' }}>
             Words, one per line (hyphens show syllables{isLoggedIn ? '; we add them if you leave them out' : ''})
           </label>
-          <textarea id="new-deck-words" rows={6} autoFocus value={words}
+          <WordsTextarea id="new-deck-words" autoFocus value={words}
             onChange={(e) => { setWords(e.target.value); setError(''); }}
             placeholder={'lov-ing\njoy-ful\nkit-ten'}
             style={{ ...field, fontFamily: 'monospace', resize: 'vertical' }} />

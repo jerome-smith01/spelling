@@ -5,6 +5,7 @@ import { importPhoto } from '../services/smartApi';
 import { reencodePhoto, PhotoError, ALLOWED_TYPES } from '../utils/imageReencode';
 import { autoSplitText } from '../utils/autoSyllables';
 import { parseFocusGroups } from '../utils/smartHide';
+import WordsTextarea from './WordsTextarea';
 
 const box = {
   backgroundColor: 'var(--muted)',
@@ -107,7 +108,7 @@ export default function PhotoImport({ onCreateList, title }) {
         </div>
         <div>
           <label htmlFor="photo-words" style={label}>Words (hyphens show syllables)</label>
-          <textarea id="photo-words" rows={6} value={review.words} onChange={set('words')}
+          <WordsTextarea id="photo-words" value={review.words} onChange={set('words')}
             style={{ ...field, fontFamily: 'monospace', resize: 'vertical' }} />
         </div>
         <div>

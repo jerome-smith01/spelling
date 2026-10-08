@@ -6,6 +6,7 @@ import { isOneSyllable } from '../utils/syllableDictionary';
 import { wordsNeedingSplit } from '../utils/wordParser';
 import { autoSplitText } from '../utils/autoSyllables';
 import PhotoImport from './PhotoImport';
+import WordsTextarea from './WordsTextarea';
 import AiPromptCard from './AiPromptCard';
 import GenerateSyllablesButton from './GenerateSyllablesButton';
 
@@ -132,9 +133,8 @@ export default function ImportSection({
         >
           Words (hyphens for syllables; optional (phonetics) for tricky words):
         </label>
-        <textarea
+        <WordsTextarea
           id="inline-words-input"
-          rows={6}
           value={inputText}
           onChange={(e) => { setInputText(e.target.value); setSplitNotice(''); }}
           placeholder="lov-ing&#10;joy-ful&#10;pret-ty (prit-tee)&#10;hand-some (hand-sum)&#10;kit-ten&#10;pup-py"
