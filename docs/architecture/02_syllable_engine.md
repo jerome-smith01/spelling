@@ -70,6 +70,9 @@ Managed by [`src/components/ImportSection.jsx`](../../src/components/ImportSecti
 * Instead of a blocking modal overlay, clicking **"Import Words"** smoothly expands the **Spelling Practice Controls** card inline.
 * Integrates the **🪄 AI Prompt Generator** (with one-click clipboard copy formatted in a plain-text code block) and a live list textarea.
 * Saves and syncs directly to `localStorage`, immediately re-rendering the word cards below upon clicking **"Save & Practice"**.
+* **Focus letters** field (smart hiding), **Upload homework photo** (`PhotoImport`), auto-syllables on Save for logged-in users, and the AI prompt generator behind an **Advanced** toggle. See `05_ai_engine.md` §11.
+
+> Smart hiding changes *which* letters hide for lists with focus letters (`src/utils/smartHide.js`, called from `hiddenIndicesForLevel`); the 1-in-N levels above are unchanged for every other list.
 
 ---
 

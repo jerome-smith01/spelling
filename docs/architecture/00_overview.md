@@ -10,6 +10,7 @@ This document outlines the core architectural principles, invariants, and patter
 > - **Local-first UI, background sync:** The UI always reads/writes `localStorage`; cloud sync is background work that may fail without affecting practice. Attempts are idempotent (`client_id`).
 > - **Unique URLs:** Every screen and every list has its own URL under `/spelling/app/` (see `04_auth_and_sync.md`); list ids are UUIDs and access is enforced server-side.
 > - **Session Cookie Auth:** Never store JWTs in `localStorage`. Authentication relies strictly on the `HttpOnly` session cookie issued by `goodplusfast.com`.
+> - **Uploads are never stored:** homework photos are validated, re-encoded in the browser, held in memory for one model call and discarded. All AI output (words, titles, hints) is parsed, validated, length-clamped and rendered as text.
 > - **AI Capacity Limits:** All Cloudflare Workers AI interactions must verify the kill switch and neuron cap in the shared `ai_admin_config` (in `good_plus_fast_db`) before executing, including fire-and-forget auto-triggers to prevent cost overruns.
 
 ---
@@ -23,6 +24,7 @@ This document outlines the core architectural principles, invariants, and patter
 | Cloudflare API & D1 Schema | [`03_backend_and_schema.md`](./03_backend_and_schema.md) | `spelling-tutor-api`, `spelling_db` |
 | Auth, URLs & User Data Sync | [`04_auth_and_sync.md`](./04_auth_and_sync.md) | `useAuth`, `useLists`, `syncService`, `attemptQueue` |
 | Struggle & Pattern Engine, shared AI quota | [`05_ai_engine.md`](./05_ai_engine.md) *(Phase 5)* | `scoring.ts`, `patternTagger.ts`, `useStruggle` |
+| Smart hiding, auto-syllables, photo import, profile & generated words | [`05_ai_engine.md` §11](./05_ai_engine.md) · [plan](../action_plans/smart_hiding_ai_plan.md) | `smartHide.js`, `ChoicePicker`, `HarveyBall`, `PhotoImport`, `ProfilePage`, `photoImport.ts`, `generateWords.ts` |
 | Text-to-Speech Decision | [`06_tts_decision.md`](./06_tts_decision.md) *(Phase 7)* | Kokoro pre-gen + R2, `speechSynthesis` fallback |
 | Android & Mobile Packaging | *(deferred — see Phase 7 note in launch plan)* | Capacitor Android Bridge |
 
@@ -35,4 +37,5 @@ This document outlines the core architectural principles, invariants, and patter
 * **Deployment:** Cloudflare Pages (`spelling-tutor.pages.dev`) reverse-proxied under `goodplusfast.com/spelling/app/*`
 * **Backend API:** Hono running on Cloudflare Workers (`spelling-tutor-api`)
 * **Database:** Cloudflare D1 (`spelling-tutor-db` joined with `good_plus_fast_db` for session verification)
-* **AI Engine:** Cloudflare Workers AI (`@cf/meta/llama-3.1-8b-instruct`)
+* **AI Engine:** Cloudflare Workers AI: `@cf/meta/llama-3.1-8b-instruct` (tips, reports, syllables, generated words) and `@cf/meta/llama-3.2-11b-vision-instruct` (homework photo import)
+* **Local layout testing:** `npm run dev:mock` serves a fake logged-in API (`tools/devMockApi.js`); `tools/01.launch_dev.bat` uses it, `tools/07.launch_dev_real.bat` runs the real Astro site

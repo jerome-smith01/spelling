@@ -48,6 +48,8 @@ flowchart LR
 - `name` (TEXT): Name of the spelling list (e.g. "Week 4 — Prefixes")
 - `words_raw` (TEXT): Hyphenated syllable text lines (e.g. `con-trol\npro-ject`)
 - `is_default` (INTEGER): `1` if this is currently the active list, `0` otherwise
+- `focus_groups` (TEXT, nullable): JSON array of the lesson's letter groups, e.g. `["ou","ow"]`; turns on smart hiding (migration `0006`). `NULL` on update = keep the stored value
+- `hints` (TEXT, nullable): JSON array (max 5) of short lesson hints shown as plain text after a miss (migration `0006`)
 - `created_at` (DATETIME)
 - `updated_at` (DATETIME)
 
@@ -82,6 +84,12 @@ flowchart LR
 ### `practice_sessions` / `pattern_stats` (migration `0003`)
 See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, list_id, started_at, last_seen_at)`; `pattern_stats(learner_id, pattern, attempts, misses, distinct_words, sessions_missed, missed_words_json, status, first_qualified_at, cleared_at, report_json, report_generated_at, updated_at)` keyed by `(learner_id, pattern)`.
 
+### Smart hiding tables (migrations `0007`-`0010`)
+- `syllable_cache(word PK, split, created_at)` (`0007`): one row per word the AI split, shared by all users; `split = ''` means the answer failed validation.
+- `photo_import_log(id, user_id, ip_hash, created_at)` (`0008`): per-user daily and per-IP hourly photo limits. The IP is stored hashed; the photo is never stored.
+- `learner_profiles(learner_id PK, grade, updated_at)` (`0009`): student grade 0 (K) to 8, default 3. `pattern_stats` gains `last_practiced_at`. `word_generation_log(id, learner_id, pattern, accepted_json, rejected_json, created_at)`: daily cap and a record of rejected words.
+- `pattern_candidates(pattern, source, example_words_json, count, first_seen, last_seen)` (`0010`): letter groups the tagger doesn't recognise (`source` = `untagged` | `photo`). Aggregates only, no learner ids.
+
 ### `weekly_digests` / `digest_prefs` (migration `0004`)
 `weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
 
@@ -100,7 +108,13 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 | `POST` | `/api/spelling/attempts` | Yes | Submit up to 500 attempts (`client_id` for idempotency); returns `{ recorded, duplicates, words_updated }` |
 | `GET` | `/api/spelling/scores` | Yes | List all word struggle scores |
 | `GET` | `/api/spelling/scores/hardest` | Yes | Top N hardest words (`friction_score > 0`) |
-| `GET` | `/api/spelling/patterns` | Yes | Learner's spelling patterns with label, status, examples and cached report |
+| `GET` | `/api/spelling/patterns` | Yes | Learner's spelling patterns with label, status, accuracy, last practiced, examples and cached report |
+| `POST` | `/api/spelling/patterns/positions` | Yes | `{ words }` -> letter positions covered by the learner's active patterns (smart hiding level-3 override) |
+| `POST` | `/api/spelling/patterns/:pattern/generate` | Yes | 5 grade-appropriate words with the pattern; 3 requests/learner/day |
+| `POST` | `/api/spelling/syllables` | Yes | `{ words }` -> `{ splits }` for words the app's dictionary doesn't know (cached) |
+| `POST` | `/api/spelling/import/photo` | Yes | Raw JPEG/PNG/WebP body (max 4 MB) -> `{ title, words, focus_groups, hints }`; 5/day per user, 10/hour per IP |
+| `GET` / `PUT` | `/api/spelling/profile` | Yes | `{ grade }` (0-8) |
+| `GET` | `/api/spelling/admin/pattern-candidates` | Admin | The aggregates in the Tuesday email |
 | `POST` | `/api/spelling/scores/:word/analyze` | Yes | Kid tip for a tricky word (Phase 5b) |
 | `POST` | `/api/spelling/patterns/:pattern/analyze` | Yes | Parent report for an active pattern (Phase 5b) |
 | `GET` | `/api/spelling/scores/:word` | Yes | One word: score, per-letter results, tip (Phase 5c) |

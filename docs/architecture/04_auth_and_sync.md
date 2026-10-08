@@ -49,7 +49,7 @@ Login links go to `/login?redirect=<current path+query+hash>`. The main site val
 
 The UI reads and writes `localStorage` (`spelling_tutor_lists_v5`); sync runs in the background (`useLists.jsx` → `syncService.js`).
 
-List: `{ id, name, wordsRaw, isDefault, updatedAt, dirty, deleted }`. Editing the virtual default creates a real list.
+List: `{ id, name, wordsRaw, isDefault, updatedAt, dirty, deleted, focusGroups, hints }` (the last two are smart hiding; synced as `focus_groups` / `hints`). Editing the virtual default creates a real list.
 
 `mergeLists(local, remote)` (pure, tested):
 
