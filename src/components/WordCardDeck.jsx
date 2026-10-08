@@ -35,10 +35,10 @@ function nextMessage(next, today, labels = REGULAR_LABELS) {
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
   words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
-  focusGroups = [], struggleByWord = {}, hints = []
+  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice'
 }) {
   const { queue, dueCount, today, testDate, progress, stateFor, jumpTo, commit, advance, practiceAnyway, commitQuiz, refreshQueue } = schedule;
-  const [mode, setMode] = useState('practice');
+  const [mode, setMode] = useState(initialMode);
   const [result, setResult] = useState(null); // set once Check flips the card
   const [cardKey, setCardKey] = useState(0);
   const backRef = useRef(null);

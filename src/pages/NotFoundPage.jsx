@@ -26,7 +26,7 @@ export default function NotFoundPage({
       <h2 tabIndex={-1} style={{ margin: '0 0 0.5rem', color: 'var(--foreground)' }}>{title}</h2>
       <p style={{ color: 'var(--muted-foreground)', margin: '0 0 1.25rem', lineHeight: 1.5 }}>{message}</p>
       <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <Link to="/lists" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700 }}>My lists</Link>
+        <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700 }}>My decks</Link>
         <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none' }}>Practice</Link>
         {status !== 'authenticated' && (
           <a href={buildLoginUrl()} className="btn-secondary-sm" style={{ textDecoration: 'none' }}>

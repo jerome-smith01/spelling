@@ -32,6 +32,27 @@ describe('App wiring', () => {
     expect(await screen.findByLabelText('Spelling Practice Controls')).toBeInTheDocument();
   });
 
+  it('shows the deck dashboard at / with practice and quiz entry points', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+    expect(await screen.findByRole('heading', { name: 'My decks' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Practice / })).toHaveAttribute('href', '/lists/default');
+    expect(screen.getByRole('link', { name: /^Quiz / })).toHaveAttribute('href', '/lists/default?mode=quiz');
+    expect(screen.queryByLabelText('Spelling Practice Controls')).not.toBeInTheDocument();
+  });
+
+  it('opens the quiz straight from the dashboard link', async () => {
+    render(
+      <MemoryRouter initialEntries={['/lists/default?mode=quiz']}>
+        <App />
+      </MemoryRouter>
+    );
+    expect(await screen.findByLabelText('Exit quiz')).toBeInTheDocument();
+  });
+
   it('shows a not-found page for an unknown route', async () => {
     render(
       <MemoryRouter initialEntries={['/nope']}>

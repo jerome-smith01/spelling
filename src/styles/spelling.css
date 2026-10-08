@@ -457,3 +457,19 @@
 }
 .generated-words { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin: 0; }
 .generated-words li { padding: 0.3rem 0.7rem; border-radius: 9999px; background: var(--muted); border: 1px solid var(--card-border); font-weight: 700; font-size: 1rem; }
+
+/* ---------- Immersive practice screen (covers the app chrome) ---------- */
+.practice-immersive { position: fixed; inset: 0; z-index: 900; overflow-y: auto; background: var(--background); padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem calc(1rem + env(safe-area-inset-bottom)); }
+.practice-inner { max-width: 1024px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+.practice-top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+
+/* ---------- Deck dashboard ---------- */
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.9rem; list-style: none; padding: 0; margin: 0; }
+.dash-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; color: var(--foreground); }
+.dash-card-title { margin: 0; font-size: 1.1rem; font-weight: 800; overflow-wrap: anywhere; }
+.dash-card-meta { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--muted-foreground); }
+.dash-bar { height: 0.5rem; border-radius: 9999px; background: var(--card-border); overflow: hidden; }
+.dash-bar > span { display: block; height: 100%; background: var(--selected-color, #16a34a); }
+.dash-actions { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
+.dash-actions a { flex: 1; text-align: center; text-decoration: none; font-weight: 700; }
+.dash-due { color: var(--color-primary); }

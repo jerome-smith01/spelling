@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useWordList, parseWordList } from '../hooks/useWordList';
 import { useHiding } from '../hooks/useHiding';
 import { useDeckSchedule } from '../hooks/useDeckSchedule';
@@ -58,6 +58,7 @@ export default function PracticePage() {
 
 function PracticeView({ listId }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
   const { createList, atListLimit } = useLists();
   usePageTitle(list ? `${list.name} — Practice` : 'Practice');
@@ -148,55 +149,49 @@ function PracticeView({ listId }) {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1.5rem',
-      maxWidth: '1024px',
-      margin: '0 auto'
-    }}>
-      {/* Current list title */}
-      <h2
-        tabIndex={-1}
-        style={{
-          margin: 0,
-          fontSize: '1.5rem',
-          fontWeight: 800,
-          color: 'var(--foreground)',
-          overflowWrap: 'anywhere'
-        }}
-      >
-        {list?.name}
-      </h2>
+    <div className="practice-immersive">
+    <div className="practice-inner">
+      {/* Top bar: back to the dashboard, deck name, settings */}
+      <div className="practice-top" role="region" aria-label="Spelling Practice Controls">
+        <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700 }}>← Decks</Link>
+        <h2
+          tabIndex={-1}
+          style={{
+            margin: 0,
+            fontSize: '1.15rem',
+            fontWeight: 800,
+            color: 'var(--foreground)',
+            overflowWrap: 'anywhere',
+            textAlign: 'center',
+            flex: 1
+          }}
+        >
+          {list?.name}
+        </h2>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(prev => !prev)}
+          className="btn-secondary-sm"
+          style={{ fontWeight: 700 }}
+          aria-expanded={settingsOpen}
+          aria-controls="practice-settings"
+          data-tutorial="settings-button"
+        >
+          {settingsOpen ? '▲ Settings' : '⚙ Settings'}
+        </button>
+      </div>
 
-      {/* Top Toolbar: Expandable Spelling Practice Controls */}
-      <section style={{
+      {settingsOpen && (
+      <section aria-label="Practice settings" style={{
         backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--card-border)',
         borderRadius: 'var(--radius-xl)',
         padding: '1rem 1.25rem',
-        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'all 0.3s ease'
-      }} aria-label="Spelling Practice Controls">
-        {/* List selector (each list has its own URL) */}
-        <div style={{ marginBottom: settingsOpen ? '0.9rem' : 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <WordListManager listId={listId} />
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(prev => !prev)}
-            className="btn-secondary-sm"
-            style={{ fontWeight: 700 }}
-            aria-expanded={settingsOpen}
-            aria-controls="practice-settings"
-            data-tutorial="settings-button"
-          >
-            {settingsOpen ? '▲ Settings' : '⚙ Settings'}
-          </button>
-        </div>
-
-        {settingsOpen && (
+        gap: '0.9rem'
+      }}>
+        <WordListManager listId={listId} />
         <div id="practice-settings" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <DeckSettings
           prefs={schedule.prefs}
@@ -335,8 +330,8 @@ function PracticeView({ listId }) {
           onResetDefault={resetToDefault}
         />
         </div>
-        )}
       </section>
+      )}
 
       {/* Main Words Grid */}
       {isGrid ? (
@@ -363,8 +358,10 @@ function PracticeView({ listId }) {
           focusGroups={list?.focusGroups ?? []}
           hints={list?.hints ?? []}
           struggleByWord={struggleByWord}
+          initialMode={searchParams.get('mode') === 'quiz' ? 'quiz' : 'practice'}
         />
       )}
+    </div>
     </div>
   );
 }

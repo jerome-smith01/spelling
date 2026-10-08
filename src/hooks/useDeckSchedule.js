@@ -35,6 +35,17 @@ function currentDay() {
   return toDateStr(new Date());
 }
 
+/** Read-only snapshot of a deck's progress for the dashboard (no hook state needed). */
+export function loadDeckSummary(listId, wordTexts) {
+  const prefs = read(PREFS_KEY, { ...DEFAULT_PREFS, view: 'deck' });
+  const progress = read(progressKey(listId), { testDate: null, words: {} });
+  return {
+    total: wordTexts.length,
+    learned: wordTexts.filter(w => progress.words[w]?.mastered).length,
+    due: buildQueue(wordTexts, progress, currentDay(), prefs).length
+  };
+}
+
 /**
  * Per-list deck progress + today's session queue.
  * Prefs (view, start level, thresholds) are shared across lists; test date and
