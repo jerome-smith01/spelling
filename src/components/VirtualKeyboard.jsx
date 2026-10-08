@@ -6,7 +6,7 @@ const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
  * Letters-only on-screen keyboard (no digits or symbols), so the phone's
  * native keyboard and its spell check never come into play.
  */
-export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled }) {
+export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled, enterLabel = 'Check' }) {
   const [shift, setShift] = useState(false);
 
   const press = (c) => {
@@ -39,7 +39,7 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
       ))}
       <div className="vkb-row">
         <button type="button" className="vkb-key vkb-space" onClick={() => onChar(' ')} aria-label="Space">space</button>
-        <button type="button" className="vkb-key vkb-enter" onClick={onEnter} disabled={enterDisabled}>Check</button>
+        <button type="button" className="vkb-key vkb-enter" onClick={onEnter} disabled={enterDisabled}>{enterLabel}</button>
       </div>
     </div>
   );

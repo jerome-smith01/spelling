@@ -35,6 +35,23 @@ function currentDay() {
   return toDateStr(new Date());
 }
 
+/** Read-only snapshot of a deck's progress for the dashboard (no hook state needed). */
+export function loadDeckSummary(listId, wordTexts) {
+  const prefs = read(PREFS_KEY, { ...DEFAULT_PREFS, view: 'deck' });
+  const progress = read(progressKey(listId), { testDate: null, words: {} });
+  return {
+    total: wordTexts.length,
+    learned: wordTexts.filter(w => progress.words[w]?.mastered).length,
+    due: buildQueue(wordTexts, progress, currentDay(), prefs).length,
+    // words whose latest score fell below the drop threshold = how hard the deck is right now
+    struggling: wordTexts.filter(w => {
+      const st = progress.words[w];
+      return st && st.lastScore !== null && st.lastScore !== undefined && st.lastScore < prefs.dropPct;
+    }).length,
+    lastReviewed: wordTexts.map(w => progress.words[w]?.reviewedOn || '').sort().pop() || ''
+  };
+}
+
 /**
  * Per-list deck progress + today's session queue.
  * Prefs (view, start level, thresholds) are shared across lists; test date and
@@ -89,7 +106,7 @@ export function useDeckSchedule(listId, wordTexts) {
     setQueue(q => [word, ...q.filter(w => w !== word)]);
   }, []);
 
-  /** Nothing left due: keep going through every word that isn't mastered (or all if none). */
+  /** Nothing left due: keep going through every word that isn't learned (or all if none). */
   const practiceAnyway = useCallback(() => {
     const p = progressRef.current;
     const open = wordTexts.filter(w => !p.words[w]?.mastered);
@@ -99,7 +116,7 @@ export function useDeckSchedule(listId, wordTexts) {
 
   const commitQuiz = useCallback((word, pct) => {
     const result = applyQuizResult(progressRef.current, word, pct, ctx());
-    if (result.testedOut) {
+    if (result.testedOut || result.unlearned) {
       progressRef.current = result.progress;
       setProgress(result.progress);
     }

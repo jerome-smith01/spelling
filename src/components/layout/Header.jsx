@@ -63,8 +63,7 @@ export default function Header({ theme, onToggleTheme }) {
           borderRadius: '9999px'
         }} aria-label="Main Navigation">
           {[
-            { to: '/', label: 'Practice', active: pathname === '/' || pathname.startsWith('/lists/') },
-            { to: '/lists', label: 'My Lists', active: pathname === '/lists' },
+            { to: '/', label: 'Decks', active: pathname === '/' || pathname.startsWith('/lists') },
             { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') },
             { to: '/profile', label: 'Profile', active: pathname === '/profile' },
             ...(canAccessLab(user) ? [{ to: '/lab', label: 'Lab', active: pathname === '/lab' }] : [])

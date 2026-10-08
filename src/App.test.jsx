@@ -3,6 +3,7 @@ import React from 'react';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 
 // No network in tests: behave as a signed-out visitor
@@ -30,6 +31,42 @@ describe('App wiring', () => {
     );
     expect(await screen.findByRole('navigation', { name: 'Main Navigation' })).toBeInTheDocument();
     expect(await screen.findByLabelText('Spelling Practice Controls')).toBeInTheDocument();
+  });
+
+  it('shows the deck dashboard at / with practice and quiz entry points', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+    expect(await screen.findByRole('heading', { name: 'My decks' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Practice / })).toHaveAttribute('href', '/lists/default');
+    expect(screen.getByRole('link', { name: /^Quiz / })).toHaveAttribute('href', '/lists/default?mode=quiz');
+    expect(screen.queryByLabelText('Spelling Practice Controls')).not.toBeInTheDocument();
+  });
+
+  it('sorts decks, and remembers the choice', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
+    const sort = await screen.findByLabelText('Sort by');
+    expect(Array.from(sort.options).map(o => o.text)).toEqual([
+      'Most recently added', 'Most words', 'Most difficult', 'Most recently reviewed', 'Most learned'
+    ]);
+    await user.selectOptions(sort, 'learned');
+    expect(localStorage.getItem('spelling_tutor_dash_sort_v1')).toBe('learned');
+  });
+
+  it('opens the quiz straight from the dashboard link', async () => {
+    render(
+      <MemoryRouter initialEntries={['/lists/default?mode=quiz']}>
+        <App />
+      </MemoryRouter>
+    );
+    expect(await screen.findByLabelText('Exit quiz')).toBeInTheDocument();
   });
 
   it('shows a not-found page for an unknown route', async () => {

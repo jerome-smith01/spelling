@@ -121,7 +121,7 @@ function scheduleDue(today, gap, testDate) {
 export function applyResult(progress, word, pct, { prefs = DEFAULT_PREFS, today, testDate = null } = {}) {
   const cur = getWordState(progress, word, prefs, today);
   const outcome = outcomeFor(pct, prefs);
-  const st = { ...cur, lastScore: pct, attempts: cur.attempts + 1 };
+  const st = { ...cur, lastScore: pct, attempts: cur.attempts + 1, reviewedOn: today };
   let requeue = false;
   let next;
 
@@ -158,13 +158,20 @@ export function applyResult(progress, word, pct, { prefs = DEFAULT_PREFS, today,
   return { progress: { ...progress, words: { ...progress.words, [word]: st } }, requeue, outcome, next };
 }
 
-/** Quiz result: 100% tests the word out; anything else changes nothing. */
+/**
+ * Quiz result: 100% tests the word out. A miss on an already-learned word un-learns it
+ * (the latest attempt decides): back down a level and due today. Other misses change nothing.
+ */
 export function applyQuizResult(progress, word, pct, { prefs = DEFAULT_PREFS, today, testDate = null } = {}) {
-  if (pct < 100) return { progress, testedOut: false };
   const cur = getWordState(progress, word, prefs, today);
+  if (pct < 100) {
+    if (!cur.mastered) return { progress, testedOut: false };
+    const st = { ...cur, mastered: false, level: Math.max(1, cur.level - 1), due: today, lastScore: pct, attempts: cur.attempts + 1, reviewedOn: today };
+    return { progress: { ...progress, words: { ...progress.words, [word]: st } }, testedOut: false, unlearned: true };
+  }
   const last = lastPracticeDay(testDate);
   const st = {
-    ...cur, level: MAX_LEVEL, mastered: true, lastScore: 100, attempts: cur.attempts + 1,
+    ...cur, level: MAX_LEVEL, mastered: true, lastScore: 100, attempts: cur.attempts + 1, reviewedOn: today,
     due: last && last > today ? last : null
   };
   return { progress: { ...progress, words: { ...progress.words, [word]: st } }, testedOut: true };

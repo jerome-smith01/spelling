@@ -27,7 +27,7 @@ function nextMessage(next, today, labels = REGULAR_LABELS) {
     case 'stay': return 'So close! Same level. It will come back later this session.';
     case 'again-today': return `Great! The test is close, so it comes back later this session at ${labels[next.level - 1].toLowerCase()}.`;
     case 'advance': return `Great! Next time: ${labels[next.level - 1].toLowerCase()}, ${fmtDay(next.due, today)}.`;
-    case 'mastered': return next.due ? `Mastered! 🎉 One last check ${fmtDay(next.due, today)}.` : 'Mastered! 🎉';
+    case 'mastered': return next.due ? `Learned! 🎉 One last check ${fmtDay(next.due, today)}.` : 'Learned! 🎉';
     default: return '';
   }
 }
@@ -35,10 +35,10 @@ function nextMessage(next, today, labels = REGULAR_LABELS) {
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
   words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
-  focusGroups = [], struggleByWord = {}, hints = []
+  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice'
 }) {
   const { queue, dueCount, today, testDate, progress, stateFor, jumpTo, commit, advance, practiceAnyway, commitQuiz, refreshQueue } = schedule;
-  const [mode, setMode] = useState('practice');
+  const [mode, setMode] = useState(initialMode);
   const [result, setResult] = useState(null); // set once Check flips the card
   const [cardKey, setCardKey] = useState(0);
   const backRef = useRef(null);
@@ -124,12 +124,12 @@ export default function WordCardDeck({
   );
 
   if (mode === 'quiz') {
-    const open = words.filter(w => !progress.words[w.word]?.mastered);
     return (
       <div className="deck">
         {tabs}
         <QuizView
-          words={open}
+          words={words}
+          isMastered={(w) => !!progress.words[w]?.mastered}
           onSpeak={onSpeak}
           onAttempts={onAttempts}
           commitQuiz={commitQuiz}
@@ -143,7 +143,7 @@ export default function WordCardDeck({
     <div data-tutorial="strip">
       <div className="deck-bar" style={{ marginBottom: '0.4rem' }}>
         <span>{dueCount} due today</span>
-        <span>{words.filter(w => progress.words[w.word]?.mastered).length} of {words.length} mastered</span>
+        <span>{words.filter(w => progress.words[w.word]?.mastered).length} of {words.length} learned</span>
       </div>
       <div className="deck-strip" role="list" aria-label="Words">
         {words.map(w => {

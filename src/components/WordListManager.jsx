@@ -77,7 +77,7 @@ export default function WordListManager({ listId }) {
           <button type="button" onClick={onDelete} className="btn-secondary-sm" style={{ color: '#ef4444' }}>Delete</button>
         </>
       )}
-      <Link to="/lists" className="btn-secondary-sm" style={{ textDecoration: 'none' }}>All lists</Link>
+      <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none' }}>All decks</Link>
       {(statusText || syncMessage) && (
         <span role="status" style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
           {statusText}{syncStatus === 'partial' && syncMessage ? ` — ${syncMessage}` : ''}

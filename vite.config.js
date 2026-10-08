@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // New worker activates immediately and old precaches are deleted
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // Never serve the SPA shell for API calls (they live outside the SW scope, but be explicit)
         navigateFallbackDenylist: [/^\/api\//]
       },
@@ -22,7 +26,9 @@ export default defineConfig(({ mode }) => ({
         description: 'Practice 3rd-grade curriculum spelling words with syllable guidance',
         theme_color: '#00008B',
         background_color: '#ffffff',
-        display: 'standalone',
+        display: 'fullscreen',
+        display_override: ['fullscreen', 'standalone'],
+        orientation: 'portrait',
         start_url: '/spelling/app/',
         scope: '/spelling/app/',
         icons: [

@@ -120,7 +120,13 @@ describe('applyQuizResult', () => {
     expect(r.testedOut).toBe(true);
     expect(r.progress.words.kitten).toMatchObject({ mastered: true, level: 4 });
   });
-  it('a miss changes nothing', () => {
+  it('a miss on a learned word un-learns it (latest attempt wins)', () => {
+    const learned = applyQuizResult(empty, 'kitten', 100, ctx).progress;
+    const r = applyQuizResult(learned, 'kitten', 60, ctx);
+    expect(r.unlearned).toBe(true);
+    expect(r.progress.words.kitten).toMatchObject({ mastered: false, level: 3, due: MON, lastScore: 60 });
+  });
+  it('a miss on an unlearned word changes nothing', () => {
     const r = applyQuizResult(empty, 'kitten', 70, ctx);
     expect(r.testedOut).toBe(false);
     expect(r.progress).toBe(empty);

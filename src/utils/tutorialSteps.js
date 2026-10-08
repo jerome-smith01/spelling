@@ -25,12 +25,12 @@ export const PRACTICE_STEPS = [
   {
     stepKey: 'practice_levels', target: 'level', position: 'below',
     title: 'Levels',
-    body: 'Words get harder as you master them: 1 in 2 letters shown, then 1 in 3, then 1 in 4, then no letters. 100% moves a word up; under 60% moves it back.'
+    body: 'Words get harder as you learn them: 1 in 2 letters shown, then 1 in 3, then 1 in 4, then no letters. 100% moves a word up; under 60% moves it back.'
   },
   {
     stepKey: 'practice_progress', target: 'strip', position: 'below',
     title: 'Your progress',
-    body: 'One dot per word, colored by level. A ✓ means mastered. Tap any dot to practice that word right now.'
+    body: 'One dot per word, colored by level. A ✓ means learned. Tap any dot to practice that word right now.'
   },
   {
     stepKey: 'practice_testdate', target: 'settings-button', position: 'below',
@@ -40,7 +40,7 @@ export const PRACTICE_STEPS = [
   {
     stepKey: 'practice_quiz', target: 'modes', position: 'below',
     title: 'Test out with a Quiz',
-    body: 'Switch to Quiz to skip words you already know. Listen, spell it with no letters showing, and 100% marks the word mastered. A miss costs nothing.'
+    body: 'Switch to Quiz to skip words you already know. Listen, spell it with no letters showing, and 100% marks the word learned. Miss a learned word and it goes back to practice.'
   }
 ];
 
@@ -53,6 +53,6 @@ export const QUIZ_STEPS = [
   {
     stepKey: 'quiz_type', target: 'quiz-input', position: 'below',
     title: 'Spell the whole word',
-    body: 'Type the word with no help. Get it 100% right and it is mastered. Miss it and nothing changes.'
+    body: 'Type the word with no help. Get it 100% right and it is learned. Miss a learned word and it goes back to practice.'
   }
 ];
