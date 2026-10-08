@@ -46,4 +46,15 @@ describe('NewDeckFlow', () => {
     await user.click(screen.getByRole('button', { name: 'Save & Practice' }));
     expect(onCreate).toHaveBeenCalledWith({ name: 'Week 2', wordsRaw: 'kit-ten' });
   });
+
+  it('typing step keeps the bigger-list note, the Advanced AI prompt and a Generate syllables button', async () => {
+    const { user } = setup();
+    await user.type(screen.getByLabelText(/Name your new deck/), 'Week 3');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: /Type the words instead/ }));
+    expect(screen.getByText(/Bigger list\?/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Generate syllables/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Advanced/ }));
+    expect(screen.getByRole('button', { name: 'Copy AI Prompt' })).toBeInTheDocument();
+  });
 });

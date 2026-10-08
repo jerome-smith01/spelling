@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import { autoSplitText } from '../utils/autoSyllables';
 import { parseWordList } from '../utils/wordParser';
 import PhotoImport from './PhotoImport';
+import AiPromptCard, { BiggerListNote } from './AiPromptCard';
+import GenerateSyllablesButton from './GenerateSyllablesButton';
 
 const box = {
   backgroundColor: 'var(--card-bg)',
@@ -100,6 +102,8 @@ export default function NewDeckFlow({ existingNames, onCreate, onCancel }) {
       )}
       {step === 'type' && (
         <>
+          <BiggerListNote />
+          <AiPromptCard />
           <label htmlFor="new-deck-words" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--foreground)' }}>
             Words, one per line (hyphens show syllables{isLoggedIn ? '; we add them if you leave them out' : ''})
           </label>
@@ -107,6 +111,7 @@ export default function NewDeckFlow({ existingNames, onCreate, onCancel }) {
             onChange={(e) => { setWords(e.target.value); setError(''); }}
             placeholder={'lov-ing\njoy-ful\nkit-ten'}
             style={{ ...field, fontFamily: 'monospace', resize: 'vertical' }} />
+          <GenerateSyllablesButton text={words} onText={setWords} />
           {error && <p role="alert" style={{ color: '#ef4444', fontSize: '0.8rem', margin: 0 }}>{error}</p>}
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <button type="button" className="btn-secondary-sm" onClick={() => { setStep('choose'); setError(''); }}>← Use a photo</button>

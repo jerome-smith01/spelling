@@ -6,19 +6,8 @@ import { isOneSyllable } from '../utils/syllableDictionary';
 import { wordsNeedingSplit } from '../utils/wordParser';
 import { autoSplitText } from '../utils/autoSyllables';
 import PhotoImport from './PhotoImport';
-
-const AI_PROMPT_TEMPLATE = `You are a spelling assistant. I will give you a list of spelling words, a photo of a spelling worksheet, or raw text.
-Return ONLY the words segmented into syllables using hyphens, one word per line, inside a single plain text code block.
-For words where text-to-speech might mispronounce isolated syllables, you may optionally append phonetic pronunciation in parentheses: e.g. "pret-ty (prit-tee)".
-No numbers, no explanations, no markdown or punctuation other than hyphens and optional phonetic parentheses.
-
-Example output:
-lov-ing
-joy-ful
-pret-ty (prit-tee)
-hand-some (hand-sum)
-kit-ten
-pup-py`;
+import AiPromptCard from './AiPromptCard';
+import GenerateSyllablesButton from './GenerateSyllablesButton';
 
 export default function ImportSection({
   isExpanded,
@@ -31,11 +20,9 @@ export default function ImportSection({
 }) {
   const [inputText, setInputText] = useState(currentRaw);
   const [focusText, setFocusText] = useState(currentFocus.join(', '));
-  const [copyFeedback, setCopyFeedback] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [splitNotice, setSplitNotice] = useState('');
   const [busy, setBusy] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { isLoggedIn } = useAuth();
 
   useEffect(() => {
@@ -48,23 +35,6 @@ export default function ImportSection({
   }, [focusKey]);
 
   if (!isExpanded) return null;
-
-  const handleCopyPrompt = async () => {
-    try {
-      await navigator.clipboard.writeText(AI_PROMPT_TEMPLATE);
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = AI_PROMPT_TEMPLATE;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
-    }
-  };
 
   const unsplit = wordsNeedingSplit(inputText, isOneSyllable);
 
@@ -146,71 +116,7 @@ export default function ImportSection({
       {onCreateList && <PhotoImport onCreateList={onCreateList} />}
 
       {/* Advanced: copy the AI prompt to use with any AI tool (bigger lists) */}
-      <div>
-        <button
-          type="button"
-          className="btn-secondary-sm"
-          onClick={() => setAdvancedOpen(o => !o)}
-          aria-expanded={advancedOpen}
-          aria-controls="import-advanced"
-          style={{ fontWeight: 700 }}
-        >
-          {advancedOpen ? '▲ Advanced' : '▼ Advanced'}
-        </button>
-      </div>
-
-      {/* AI Prompt Generator Card */}
-      {advancedOpen && (
-      <div id="import-advanced" style={{
-        backgroundColor: 'var(--muted)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '1rem',
-        border: '1px solid var(--card-border)'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '0.4rem',
-          flexWrap: 'wrap',
-          gap: '0.5rem'
-        }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--foreground)' }}>
-            🪄 AI Prompt Generator
-          </span>
-          <button
-            type="button"
-            onClick={handleCopyPrompt}
-            className="btn-secondary-sm"
-            style={{
-              color: copyFeedback ? 'var(--selected-color-border)' : 'var(--foreground)',
-              fontWeight: 700,
-              fontSize: '0.75rem'
-            }}
-          >
-            {copyFeedback ? '✓ Copied!' : 'Copy AI Prompt'}
-          </button>
-        </div>
-        <p style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', margin: '0 0 0.5rem 0', lineHeight: 1.4 }}>
-          Paste this prompt into ChatGPT, Claude, or Gemini along with a photo or raw list from your student's school sheet:
-        </p>
-        <pre style={{
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--card-border)',
-          borderRadius: 'var(--radius-sm)',
-          padding: '0.75rem',
-          fontSize: '0.75rem',
-          fontFamily: 'monospace',
-          whiteSpace: 'pre-wrap',
-          maxHeight: '110px',
-          overflowY: 'auto',
-          color: 'var(--foreground)',
-          margin: 0
-        }}>
-          {AI_PROMPT_TEMPLATE}
-        </pre>
-      </div>
-      )}
+      <AiPromptCard />
 
       {/* Word List Textarea */}
       <div>
@@ -247,6 +153,9 @@ export default function ImportSection({
             boxSizing: 'border-box'
           }}
         />
+        <div style={{ marginTop: '0.5rem' }}>
+          <GenerateSyllablesButton text={inputText} onText={(t) => { setInputText(t); setSplitNotice(''); }} />
+        </div>
         {splitNotice && (
           <p role="status" style={{ fontSize: '0.8rem', marginTop: '0.4rem', color: 'var(--foreground)' }}>
             ✂️ {splitNotice}
