@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { alignSpelling } from '../utils/schedule';
 import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
@@ -19,7 +19,7 @@ const shuffle = (arr) => {
  * 100% tests the word out (mastered). A miss changes nothing.
  */
 export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExit }) {
-  const order = useMemo(() => shuffle(words), []); // fixed for the whole quiz
+  const [order, setOrder] = useState(() => shuffle(words)); // fixed for each round
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState('');
   const [result, setResult] = useState(null);
@@ -51,27 +51,45 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
 
   if (order.length === 0) {
     return (
-      <div className="deck-card-center">
+      <div className="quiz-immersive">
+        <div className="quiz-stage">
         <p style={{ fontWeight: 700, margin: 0 }}>Every word is already mastered. 🎉</p>
         <button type="button" className="btn-verify" onClick={onExit}>Back to practice</button>
+        </div>
       </div>
     );
   }
 
   if (!word) {
     const out = outcomes.filter(o => o.testedOut).length;
+    const missed = outcomes.filter(o => !o.testedOut);
+    const retry = () => {
+      const missedSet = new Set(missed.map(o => o.word));
+      setOrder(shuffle(order.filter(w => missedSet.has(w.word))));
+      setIdx(0);
+      setOutcomes([]);
+      setResult(null);
+      setText('');
+    };
     return (
-      <div className="deck-card-center">
+      <div className="quiz-immersive">
+        <div className="quiz-stage">
         <div style={{ fontSize: '2.5rem' }}>📝</div>
         <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>
           Tested out of {out} of {outcomes.length} {outcomes.length === 1 ? 'word' : 'words'}
         </p>
-        {outcomes.some(o => !o.testedOut) && (
+        {missed.length > 0 && (
           <p className="deck-message" style={{ margin: 0 }}>
-            Still to practice: {outcomes.filter(o => !o.testedOut).map(o => o.word).join(', ')}
+            Still to practice: {missed.map(o => o.word).join(', ')}
           </p>
         )}
-        <button type="button" className="btn-verify" onClick={onExit}>Back to practice</button>
+        {missed.length > 0 && (
+          <button type="button" className="btn-verify" onClick={retry}>
+            Retry {missed.length === 1 ? 'missed word' : `${missed.length} missed words`}
+          </button>
+        )}
+        <button type="button" className={missed.length > 0 ? 'btn-secondary-sm' : 'btn-verify'} onClick={onExit}>Back to practice</button>
+        </div>
       </div>
     );
   }
@@ -84,7 +102,7 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
       letter: word.word[i], position: i, correct: ok ? 1 : 0, typed: ok ? word.word[i] : (typed[i] || '')
     })));
     const r = commitQuiz(word.word, pct);
-    setResult({ pct, testedOut: r.testedOut, matched });
+    setResult({ pct, testedOut: r.testedOut, matched, typed: text.trim() });
     setOutcomes(o => [...o, { word: word.word, testedOut: r.testedOut }]);
   };
 
@@ -100,64 +118,81 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
     if (result) next(); else submit();
   };
 
+  const typedWord = result?.typed || '';
+  const keyboardEnter = result ? next : submit;
+
   return (
-    <div className="deck-card-center" onKeyDown={onKeyDown}>
-      <div className="deck-badge">Quiz · word {idx + 1} of {order.length}</div>
-      {!result ? (
-        <>
-          <p className="deck-message" style={{ margin: 0 }}>Listen, then spell the word.</p>
-          <button
-            type="button"
-            className="speaker-btn"
-            data-tutorial="quiz-audio"
-            style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
-            onClick={() => onSpeak(word.id, word.word)}
-            aria-label="Hear the word again"
-          >
-            🔊
-          </button>
-          <input
-            ref={inputRef}
-            className="quiz-input"
-            data-tutorial="quiz-input"
-            value={text}
-            onChange={(e) => setText(e.target.value.replace(/[^a-zA-Z' -]/g, ''))}
-            autoCapitalize="none"
-            autoCorrect="off"
-            autoComplete="off"
-            spellCheck="false"
-            readOnly={mobile}
-            inputMode={mobile ? 'none' : undefined}
-            aria-label="Type the word you heard"
-          />
-          {mobile ? (
-            <VirtualKeyboard
-              onChar={(c) => setText(t => t + c)}
-              onBackspace={() => setText(t => t.slice(0, -1))}
-              onEnter={submit}
-              enterDisabled={!text.trim()}
+    <div className="quiz-immersive" onKeyDown={onKeyDown}>
+      <div className="quiz-top">
+        <div className="deck-badge">Word {idx + 1} of {order.length}</div>
+        <button type="button" className="btn-secondary-sm" onClick={onExit} aria-label="Exit quiz">✕ Exit</button>
+      </div>
+      <div className="quiz-stage">
+        {!result ? (
+          <>
+            <button
+              type="button"
+              className="speaker-btn"
+              data-tutorial="quiz-audio"
+              style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
+              onClick={() => onSpeak(word.id, word.word)}
+              aria-label="Hear the word again"
+            >
+              🔊
+            </button>
+            <input
+              ref={inputRef}
+              className="quiz-input"
+              data-tutorial="quiz-input"
+              value={text}
+              onChange={(e) => setText(e.target.value.replace(/[^a-zA-Z' -]/g, ''))}
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck="false"
+              readOnly={mobile}
+              inputMode={mobile ? 'none' : undefined}
+              aria-label="Type the word you heard"
             />
+          </>
+        ) : (
+          <div className="quiz-result" aria-live="polite">
+            {result.pct === 100 ? (
+              <div className="quiz-answer quiz-right" aria-label={`Correct: ${word.word}`}>{word.word}</div>
+            ) : (
+              <>
+                <div className="quiz-label">You spelled</div>
+                <div className="quiz-answer quiz-wrong">{typedWord}</div>
+                <div className="quiz-label">Correct spelling</div>
+                <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
+              </>
+            )}
+            <p className="deck-message" style={{ margin: 0 }}>
+              {result.testedOut
+                ? '✓ Tested out! This word is mastered.'
+                : 'Not quite. No penalty, it stays at its current level.'}
+            </p>
+          </div>
+        )}
+      </div>
+      {mobile ? (
+        <VirtualKeyboard
+          onChar={(c) => { if (!result) setText(t => t + c); }}
+          onBackspace={() => { if (!result) setText(t => t.slice(0, -1)); }}
+          onEnter={keyboardEnter}
+          enterDisabled={!result && !text.trim()}
+          enterLabel={result ? (idx + 1 < order.length ? 'Next word' : 'See results') : 'Check'}
+        />
+      ) : (
+        <div className="quiz-actions">
+          {result ? (
+            <button type="button" className="btn-verify" onClick={next} autoFocus>
+              {idx + 1 < order.length ? 'Next word' : 'See results'}
+            </button>
           ) : (
             <button type="button" className="btn-verify" onClick={submit} disabled={!text.trim()}>Check</button>
           )}
-        </>
-      ) : (
-        <>
-          <div className="deck-back-word" aria-label={`The word is ${word.word}`}>
-            {word.word.split('').map((ch, i) => (
-              <div key={i} className={`letter-box ${result.matched[i] ? 'correct' : 'incorrect'}`}>{ch}</div>
-            ))}
-          </div>
-          <div className="deck-score">{result.pct}%</div>
-          <p className="deck-message" style={{ margin: 0 }}>
-            {result.testedOut
-              ? '✓ Tested out! This word is mastered.'
-              : 'Not quite. No penalty, it stays at its current level.'}
-          </p>
-          <button type="button" className="btn-verify" onClick={next} autoFocus>
-            {idx + 1 < order.length ? 'Next word' : 'See results'}
-          </button>
-        </>
+        </div>
       )}
     </div>
   );
