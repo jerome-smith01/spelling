@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // New worker activates immediately and old precaches are deleted
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         // Never serve the SPA shell for API calls (they live outside the SW scope, but be explicit)
         navigateFallbackDenylist: [/^\/api\//]
       },
