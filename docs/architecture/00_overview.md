@@ -37,5 +37,5 @@ This document outlines the core architectural principles, invariants, and patter
 * **Deployment:** Cloudflare Pages (`spelling-tutor.pages.dev`) reverse-proxied under `goodplusfast.com/spelling/app/*`
 * **Backend API:** Hono running on Cloudflare Workers (`spelling-tutor-api`)
 * **Database:** Cloudflare D1 (`spelling-tutor-db` joined with `good_plus_fast_db` for session verification)
-* **AI Engine:** Cloudflare Workers AI: `@cf/meta/llama-3.1-8b-instruct` (tips, reports, syllables, generated words) and `@cf/meta/llama-3.2-11b-vision-instruct` (homework photo import)
+* **AI Engine:** Cloudflare Workers AI: `@cf/meta/llama-3.2-3b-instruct` (tips, reports, syllables, generated words; replaced the retired llama-3.1-8b-instruct) and `@cf/meta/llama-3.2-11b-vision-instruct` (homework photo import)
 * **Local layout testing:** `npm run dev:mock` serves a fake logged-in API (`tools/devMockApi.js`); `tools/01.launch_dev.bat` uses it, `tools/07.launch_dev_real.bat` runs the real Astro site
