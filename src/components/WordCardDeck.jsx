@@ -27,7 +27,7 @@ function nextMessage(next, today, labels = REGULAR_LABELS) {
     case 'stay': return 'So close! Same level. It will come back later this session.';
     case 'again-today': return `Great! The test is close, so it comes back later this session at ${labels[next.level - 1].toLowerCase()}.`;
     case 'advance': return `Great! Next time: ${labels[next.level - 1].toLowerCase()}, ${fmtDay(next.due, today)}.`;
-    case 'mastered': return next.due ? `Mastered! 🎉 One last check ${fmtDay(next.due, today)}.` : 'Mastered! 🎉';
+    case 'mastered': return next.due ? `Learned! 🎉 One last check ${fmtDay(next.due, today)}.` : 'Learned! 🎉';
     default: return '';
   }
 }
@@ -143,7 +143,7 @@ export default function WordCardDeck({
     <div data-tutorial="strip">
       <div className="deck-bar" style={{ marginBottom: '0.4rem' }}>
         <span>{dueCount} due today</span>
-        <span>{words.filter(w => progress.words[w.word]?.mastered).length} of {words.length} mastered</span>
+        <span>{words.filter(w => progress.words[w.word]?.mastered).length} of {words.length} learned</span>
       </div>
       <div className="deck-strip" role="list" aria-label="Words">
         {words.map(w => {

@@ -87,7 +87,7 @@ describe('WordCardDeck', () => {
     vi.restoreAllMocks();
   });
 
-  it('quiz mode: can quiz again on all words including mastered', async () => {
+  it('quiz mode: can quiz again on all words including learned', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0);
     const user = userEvent.setup();
     render(<Harness />);
@@ -98,7 +98,7 @@ describe('WordCardDeck', () => {
       await user.click(screen.getByRole('button', { name: /Next word|See results/ }));
     }
     expect(screen.queryByRole('button', { name: /Not yet mastered/ })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'All words, including mastered (2)' }));
+    await user.click(screen.getByRole('button', { name: 'All words, including learned (2)' }));
     expect(screen.getByText('Word 1 of 2')).toBeInTheDocument();
     vi.restoreAllMocks();
   });

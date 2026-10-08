@@ -45,7 +45,7 @@ export default function DigestCard({ digest }) {
         ))}
       </dl>
       {digest.masteredWords?.length > 0 && (
-        <p style={{ marginBottom: 0 }}><strong>Newly mastered:</strong> {digest.masteredWords.join(', ')}</p>
+        <p style={{ marginBottom: 0 }}><strong>Newly learned:</strong> {digest.masteredWords.join(', ')}</p>
       )}
     </section>
   );

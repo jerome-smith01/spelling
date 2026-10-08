@@ -65,8 +65,8 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
     const missedSet = new Set(missed.map(o => o.word));
     const choices = [
       { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
-      { key: 'open', label: 'Not yet mastered', list: words.filter(w => !isMastered(w.word)) },
-      { key: 'all', label: 'All words, including mastered', list: words }
+      { key: 'open', label: 'Not yet learned', list: words.filter(w => !isMastered(w.word)) },
+      { key: 'all', label: 'All words, including learned', list: words }
     ].filter(c => c.list.length > 0);
     return (
       <div className="quiz-immersive">
@@ -88,7 +88,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
               )}
             </>
           ) : (
-            <p style={{ fontWeight: 700, margin: 0 }}>Every word is already mastered. 🎉</p>
+            <p style={{ fontWeight: 700, margin: 0 }}>Every word is already learned. 🎉</p>
           )}
           <p className="quiz-label" style={{ margin: 0 }}>{done ? 'Quiz again' : 'Quiz anyway'}: what to focus on?</p>
           {choices.map(c => (
@@ -110,7 +110,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
       letter: word.word[i], position: i, correct: ok ? 1 : 0, typed: ok ? word.word[i] : (typed[i] || '')
     })));
     const r = commitQuiz(word.word, pct);
-    setResult({ pct, testedOut: r.testedOut, matched, typed: text.trim() });
+    setResult({ pct, testedOut: r.testedOut, unlearned: !!r.unlearned, matched, typed: text.trim() });
     setOutcomes(o => [...o, { word: word.word, testedOut: r.testedOut }]);
   };
 
@@ -177,8 +177,10 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
             </fieldset>
             <p className="deck-message" style={{ margin: 0 }}>
               {result.testedOut
-                ? '✓ Tested out! This word is mastered.'
-                : 'Not quite. No penalty, it stays at its current level.'}
+                ? '✓ Tested out! This word is learned.'
+                : result.unlearned
+                  ? 'Not quite. This word is no longer learned, so it is back in practice.'
+                  : 'Not quite. No penalty, it stays at its current level.'}
             </p>
           </div>
         )}

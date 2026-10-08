@@ -86,10 +86,10 @@ export function quartersFor(state) {
   return Math.max(0, Math.min(3, (state.level || 1) - 1));
 }
 
-/** "Level 2 of 4" / "Mastered" / "Not started" — always shown next to a Harvey ball. */
+/** "Level 2 of 4" / "Learned" / "Not started" — always shown next to a Harvey ball. */
 export function levelText(state, max = 4) {
   if (!state) return 'Not started';
-  if (state.mastered) return 'Mastered';
+  if (state.mastered) return 'Learned';
   return `Level ${state.level} of ${max}`;
 }
 

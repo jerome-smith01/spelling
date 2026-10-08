@@ -15,7 +15,7 @@ describe('WordBuckets', () => {
   it('lists each word in the right bucket with counts, linking to its detail page', () => {
     renderBuckets([w('cat', 0, { perfect_streak: 3 }), w('loving', 90), w('boat', 20)]);
 
-    const mastered = screen.getByRole('region', { name: /Mastered \(1\)/ });
+    const mastered = screen.getByRole('region', { name: /Learned \(1\)/ });
     expect(within(mastered).getByRole('link', { name: 'cat' })).toHaveAttribute('href', '/progress/words/cat');
     const struggling = screen.getByRole('region', { name: /Struggling \(1\)/ });
     expect(within(struggling).getByRole('link', { name: 'loving' })).toBeInTheDocument();
@@ -26,7 +26,7 @@ describe('WordBuckets', () => {
   it('shows a friendly line for empty buckets', () => {
     renderBuckets([w('dog', 0)]);
     expect(screen.getByText('No tricky words right now.')).toBeInTheDocument();
-    expect(screen.getByText(/master it/i)).toBeInTheDocument();
+    expect(screen.getByText(/learn it/i)).toBeInTheDocument();
   });
 
   it('encodes unusual words in the link', () => {

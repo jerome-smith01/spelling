@@ -10,12 +10,12 @@ const card = {
 };
 
 const BUCKETS = [
-  { key: 'mastered', title: 'Mastered', emoji: '✅', empty: 'Spell a word right in 3 visits in a row to master it.' },
+  { key: 'mastered', title: 'Learned', emoji: '✅', empty: 'Spell a word right in 3 visits in a row to learn it.' },
   { key: 'struggling', title: 'Struggling', emoji: '🔥', empty: 'No tricky words right now.' },
   { key: 'needsPractice', title: 'Needs practice', emoji: '📝', empty: 'Nothing here.' }
 ];
 
-/** Mastered / Struggling / Needs-practice groups. Each word links to its detail page. */
+/** Learned / Struggling / Needs-practice groups. Each word links to its detail page. */
 export default function WordBuckets({ scores }) {
   const buckets = bucketWords(scores);
 

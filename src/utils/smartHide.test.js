@@ -79,7 +79,7 @@ describe('Harvey ball helpers', () => {
   it('labels the level in words', () => {
     expect(levelText(undefined)).toBe('Not started');
     expect(levelText({ level: 2 })).toBe('Level 2 of 4');
-    expect(levelText({ level: 4, mastered: true })).toBe('Mastered');
+    expect(levelText({ level: 4, mastered: true })).toBe('Learned');
   });
 });
 

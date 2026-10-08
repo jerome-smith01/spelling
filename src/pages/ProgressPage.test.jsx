@@ -86,7 +86,7 @@ describe('ProgressPage', () => {
     renderPage();
 
     expect(await screen.findByText('A great week of practice!')).toBeInTheDocument();
-    expect(within(screen.getByRole('region', { name: /Mastered \(1\)/ })).getByText('cat')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: /Learned \(1\)/ })).getByText('cat')).toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: /Struggling \(1\)/ })).getByText('loving')).toBeInTheDocument();
     expect(within(screen.getByRole('region', { name: /Needs practice \(1\)/ })).getByText('boat')).toBeInTheDocument();
     expect(screen.getByText('Silent letters')).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe('ProgressPage', () => {
   it('filters the words by list', async () => {
     api.impl.getScores = () => Promise.resolve(SCORES);
     renderPage('/progress?list=l1');
-    const mastered = await screen.findByRole('region', { name: /Mastered \(1\)/ });
+    const mastered = await screen.findByRole('region', { name: /Learned \(1\)/ });
     expect(within(mastered).getByText('cat')).toBeInTheDocument();
     expect(screen.getByRole('region', { name: /Struggling \(0\)/ })).toBeInTheDocument();   // loving is not in Week 1
     expect(screen.getByRole('region', { name: /Needs practice \(1\)/ })).toBeInTheDocument(); // boat is

@@ -89,7 +89,7 @@ export function useDeckSchedule(listId, wordTexts) {
     setQueue(q => [word, ...q.filter(w => w !== word)]);
   }, []);
 
-  /** Nothing left due: keep going through every word that isn't mastered (or all if none). */
+  /** Nothing left due: keep going through every word that isn't learned (or all if none). */
   const practiceAnyway = useCallback(() => {
     const p = progressRef.current;
     const open = wordTexts.filter(w => !p.words[w]?.mastered);
@@ -99,7 +99,7 @@ export function useDeckSchedule(listId, wordTexts) {
 
   const commitQuiz = useCallback((word, pct) => {
     const result = applyQuizResult(progressRef.current, word, pct, ctx());
-    if (result.testedOut) {
+    if (result.testedOut || result.unlearned) {
       progressRef.current = result.progress;
       setProgress(result.progress);
     }
