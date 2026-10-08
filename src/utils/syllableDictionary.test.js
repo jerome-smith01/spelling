@@ -17,6 +17,8 @@ describe('syllable dictionary', () => {
   it('spots one-syllable words', () => {
     for (const w of ['cat', 'boy', 'cloud', 'make', 'shout', 'yes']) expect(isOneSyllable(w)).toBe(true);
     for (const w of ['fountain', 'little', 'shower', 'baby']) expect(isOneSyllable(w)).toBe(false);
+    // side-by-side vowels that are not one sound can hide a syllable break
+    for (const w of ['lion', 'poem', 'quiet', 'idea']) expect(isOneSyllable(w)).toBe(false);
   });
 });
 
