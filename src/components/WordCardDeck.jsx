@@ -124,12 +124,12 @@ export default function WordCardDeck({
   );
 
   if (mode === 'quiz') {
-    const open = words.filter(w => !progress.words[w.word]?.mastered);
     return (
       <div className="deck">
         {tabs}
         <QuizView
-          words={open}
+          words={words}
+          isMastered={(w) => !!progress.words[w]?.mastered}
           onSpeak={onSpeak}
           onAttempts={onAttempts}
           commitQuiz={commitQuiz}

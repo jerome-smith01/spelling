@@ -82,8 +82,24 @@ describe('WordCardDeck', () => {
     await user.type(screen.getByLabelText('Type the word you heard'), 'kitten');
     await user.click(screen.getByRole('button', { name: 'Check' }));
     await user.click(screen.getByRole('button', { name: 'See results' }));
-    await user.click(screen.getByRole('button', { name: 'Retry missed word' }));
+    await user.click(screen.getByRole('button', { name: 'Missed word (1)' }));
     expect(screen.getByText('Word 1 of 1')).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it('quiz mode: can quiz again on all words including mastered', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'Quiz' }));
+    for (const w of ['puppy', 'kitten']) {
+      await user.type(screen.getByLabelText('Type the word you heard'), w);
+      await user.click(screen.getByRole('button', { name: 'Check' }));
+      await user.click(screen.getByRole('button', { name: /Next word|See results/ }));
+    }
+    expect(screen.queryByRole('button', { name: /Not yet mastered/ })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'All words, including mastered (2)' }));
+    expect(screen.getByText('Word 1 of 2')).toBeInTheDocument();
     vi.restoreAllMocks();
   });
 });

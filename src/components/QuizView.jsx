@@ -18,8 +18,8 @@ const shuffle = (arr) => {
  * Quiz mode: the word is spoken, nothing is shown, the student types it.
  * 100% tests the word out (mastered). A miss changes nothing.
  */
-export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExit }) {
-  const [order, setOrder] = useState(() => shuffle(words)); // fixed for each round
+export default function QuizView({ words, isMastered = () => false, onSpeak, onAttempts, commitQuiz, onExit }) {
+  const [order, setOrder] = useState(() => shuffle(words.filter(w => !isMastered(w.word)))); // fixed for each round
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState('');
   const [result, setResult] = useState(null);
@@ -47,48 +47,56 @@ export default function QuizView({ words, onSpeak, onAttempts, commitQuiz, onExi
     if (!mobile) inputRef.current?.focus();
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx]);
+  }, [idx, order]);
 
-  if (order.length === 0) {
-    return (
-      <div className="quiz-immersive">
-        <div className="quiz-stage">
-        <p style={{ fontWeight: 700, margin: 0 }}>Every word is already mastered. 🎉</p>
-        <button type="button" className="btn-verify" onClick={onExit}>Back to practice</button>
-        </div>
-      </div>
-    );
-  }
+  const start = (list) => {
+    setOrder(shuffle(list));
+    setIdx(0);
+    setOutcomes([]);
+    setResult(null);
+    setText('');
+  };
 
+  // Pick what to quiz on: shown before the first round (if nothing is open) and after each round
   if (!word) {
+    const done = outcomes.length > 0;
     const out = outcomes.filter(o => o.testedOut).length;
     const missed = outcomes.filter(o => !o.testedOut);
-    const retry = () => {
-      const missedSet = new Set(missed.map(o => o.word));
-      setOrder(shuffle(order.filter(w => missedSet.has(w.word))));
-      setIdx(0);
-      setOutcomes([]);
-      setResult(null);
-      setText('');
-    };
+    const missedSet = new Set(missed.map(o => o.word));
+    const choices = [
+      { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
+      { key: 'open', label: 'Not yet mastered', list: words.filter(w => !isMastered(w.word)) },
+      { key: 'all', label: 'All words, including mastered', list: words }
+    ].filter(c => c.list.length > 0);
     return (
       <div className="quiz-immersive">
+        <div className="quiz-top">
+          <span />
+          <button type="button" className="btn-secondary-sm" onClick={onExit} aria-label="Exit quiz">✕ Exit</button>
+        </div>
         <div className="quiz-stage">
-        <div style={{ fontSize: '2.5rem' }}>📝</div>
-        <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>
-          Tested out of {out} of {outcomes.length} {outcomes.length === 1 ? 'word' : 'words'}
-        </p>
-        {missed.length > 0 && (
-          <p className="deck-message" style={{ margin: 0 }}>
-            Still to practice: {missed.map(o => o.word).join(', ')}
-          </p>
-        )}
-        {missed.length > 0 && (
-          <button type="button" className="btn-verify" onClick={retry}>
-            Retry {missed.length === 1 ? 'missed word' : `${missed.length} missed words`}
-          </button>
-        )}
-        <button type="button" className={missed.length > 0 ? 'btn-secondary-sm' : 'btn-verify'} onClick={onExit}>Back to practice</button>
+          {done ? (
+            <>
+              <div style={{ fontSize: '2.5rem' }}>📝</div>
+              <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>
+                Tested out of {out} of {outcomes.length} {outcomes.length === 1 ? 'word' : 'words'}
+              </p>
+              {missed.length > 0 && (
+                <p className="deck-message" style={{ margin: 0 }}>
+                  Still to practice: {missed.map(o => o.word).join(', ')}
+                </p>
+              )}
+            </>
+          ) : (
+            <p style={{ fontWeight: 700, margin: 0 }}>Every word is already mastered. 🎉</p>
+          )}
+          <p className="quiz-label" style={{ margin: 0 }}>{done ? 'Quiz again' : 'Quiz anyway'}: what to focus on?</p>
+          {choices.map(c => (
+            <button key={c.key} type="button" className="btn-verify" onClick={() => start(c.list)}>
+              {c.key === 'missed' && c.list.length === 1 ? 'Missed word (1)' : `${c.label} (${c.list.length})`}
+            </button>
+          ))}
+          <button type="button" className="btn-secondary-sm" onClick={onExit}>Back to practice</button>
         </div>
       </div>
     );
