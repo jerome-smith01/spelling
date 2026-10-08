@@ -53,7 +53,10 @@ describe('NewDeckFlow', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('button', { name: /Type the words instead/ }));
     expect(screen.getByText(/Bigger list\?/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Generate syllables/ })).toBeInTheDocument();
+    const gen = screen.getByRole('button', { name: /Generate syllables/ });
+    expect(gen).toBeDisabled(); // logged out in this test file
+    expect(gen).toHaveAccessibleDescription('Log in to use AI features.');
+    expect(gen.parentElement).toHaveAttribute('title', 'Log in to use AI features.');
     await user.click(screen.getByRole('button', { name: /Advanced/ }));
     expect(screen.getByRole('button', { name: 'Copy AI Prompt' })).toBeInTheDocument();
   });
