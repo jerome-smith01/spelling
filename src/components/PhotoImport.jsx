@@ -39,7 +39,7 @@ function errorText(err) {
  * the browser, read by the server's vision model, auto-syllabified, and shown for
  * review; nothing is saved until the user taps Save.
  */
-export default function PhotoImport({ onCreateList }) {
+export default function PhotoImport({ onCreateList, title }) {
   const { isLoggedIn } = useAuth();
   const inputRef = useRef(null);
   const [status, setStatus] = useState('idle'); // idle | working | review
@@ -69,7 +69,7 @@ export default function PhotoImport({ onCreateList }) {
       const list = await importPhoto(blob);
       const { text } = await autoSplitText((list.words || []).join('\n'));
       setReview({
-        title: list.title || 'Homework list',
+        title: title || list.title || 'Homework list',
         words: text,
         focus: (list.focus_groups || []).join(', '),
         hints: (list.hints || []).join('\n')
