@@ -161,7 +161,7 @@ Fill = levels **passed**:
 - Clicking a pattern opens its report (existing) and a **Generate 5 words** button.
 
 ### Generate 5 words
-- Always 5 words per request. Daily cap: **3 requests / user / day** (one constant), separate counter from the 20/day tip cap, plus the shared kill switch.
+- Always 5 words per request. Daily cap: **20 requests / user / day** (one constant), separate counter from the 20/day tip cap, plus the shared kill switch.
 - Choice after generating: **Add to existing list** (picker) or **Create new list** (named after the pattern, e.g. "Diphthongs practice").
 - Guardrails — the model proposes, code decides:
   - Pattern tagger must confirm the word contains the pattern

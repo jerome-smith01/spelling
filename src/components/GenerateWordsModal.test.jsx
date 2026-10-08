@@ -50,6 +50,6 @@ describe('GenerateWordsModal', () => {
   it('explains the daily cap', async () => {
     generatePatternWords.mockRejectedValue(Object.assign(new Error('x'), { status: 429 }));
     render(<GenerateWordsModal pattern={pattern} onClose={() => {}} onSaved={() => {}} />);
-    expect(await screen.findByRole('alert')).toHaveTextContent("today's 3 word requests");
+    expect(await screen.findByRole('alert')).toHaveTextContent("all of today's word requests");
   });
 });

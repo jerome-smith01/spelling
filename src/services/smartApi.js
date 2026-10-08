@@ -42,7 +42,7 @@ export async function importPhoto(blob) {
 export const getProfile = () => apiFetch('/api/spelling/profile');
 export const setGrade = (grade) => apiFetch('/api/spelling/profile', { method: 'PUT', body: { grade } });
 
-/** { words, requested, rejected } — up to 5 grade-appropriate words with the pattern (3 requests/day). */
+/** { words, requested, rejected } — up to 5 grade-appropriate words with the pattern (20 requests/day). */
 export const generatePatternWords = (pattern, exclude = []) =>
   apiFetch(`/api/spelling/patterns/${encodeURIComponent(pattern)}/generate`, {
     method: 'POST', body: { exclude: exclude.slice(0, 500) }

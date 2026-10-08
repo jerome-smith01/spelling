@@ -110,7 +110,7 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 | `GET` | `/api/spelling/scores/hardest` | Yes | Top N hardest words (`friction_score > 0`) |
 | `GET` | `/api/spelling/patterns` | Yes | Learner's spelling patterns with label, status, accuracy, last practiced, examples and cached report |
 | `POST` | `/api/spelling/patterns/positions` | Yes | `{ words }` -> letter positions covered by the learner's active patterns (smart hiding level-3 override) |
-| `POST` | `/api/spelling/patterns/:pattern/generate` | Yes | 5 grade-appropriate words with the pattern; 3 requests/learner/day |
+| `POST` | `/api/spelling/patterns/:pattern/generate` | Yes | 5 grade-appropriate words with the pattern; 20 successful requests/learner/day |
 | `POST` | `/api/spelling/syllables` | Yes | `{ words }` -> `{ splits }` for words the app's dictionary doesn't know (cached) |
 | `POST` | `/api/spelling/import/photo` | Yes | Raw JPEG/PNG/WebP body (max 4 MB) -> `{ title, words, focus_groups, hints }`; 5/day per user, 10/hour per IP |
 | `GET` / `PUT` | `/api/spelling/profile` | Yes | `{ grade }` (0-8) |
