@@ -5,6 +5,7 @@ import { parseWordList } from '../utils/wordParser';
 import { loadDeckSummary } from '../hooks/useDeckSchedule';
 import { loadLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
+import NewDeckFlow from '../components/NewDeckFlow';
 import '../styles/spelling.css';
 
 /** Route: / — every deck with its progress; the way into practice and quiz (each its own screen). */
@@ -37,21 +38,31 @@ export default function DashboardPage() {
   // Array.sort is stable, so ties keep their original order
   const sorted = useMemo(() => [...decks].sort(SORTS[sort].cmp), [decks, sort]);
 
-  const onNew = () => {
-    if (atListLimit) return;
-    const name = window.prompt('Name for the new deck (it starts as a copy of the default words):', 'New deck');
-    if (!name || !name.trim()) return;
-    navigate(`/lists/${createList(name, defaultList.wordsRaw)}`);
+  const [creating, setCreating] = useState(false);
+  const onCreate = ({ name, wordsRaw, focusGroups, hints }) => {
+    if (atListLimit) return { success: false, error: 'You have reached the 25 deck limit. Delete a deck first.' };
+    if (parseWordList(wordsRaw).length === 0) return { success: false, error: 'Add at least one word.' };
+    if (new TextEncoder().encode(wordsRaw).length > 20 * 1024) return { success: false, error: 'That list is too long (20 KB maximum).' };
+    const id = createList(name, wordsRaw.trim(), { focusGroups, hints });
+    navigate(`/lists/${id}`);
+    return { success: true };
   };
 
   return (
     <section style={{ maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
         <h2 tabIndex={-1} style={{ margin: 0, color: 'var(--foreground)' }}>My decks</h2>
-        <button type="button" onClick={onNew} disabled={atListLimit} className="btn-secondary-sm" style={{ fontWeight: 700 }}>
+        <button type="button" onClick={() => setCreating(true)} disabled={atListLimit || creating} className="btn-secondary-sm" style={{ fontWeight: 700 }}>
           + New deck
         </button>
       </div>
+      {creating && (
+        <NewDeckFlow
+          existingNames={decks.map(d => d.name)}
+          onCreate={onCreate}
+          onCancel={() => setCreating(false)}
+        />
+      )}
       {atListLimit && (
         <p role="status" style={{ margin: 0, color: '#ef4444', fontSize: '0.85rem' }}>
           You have reached the 25 deck limit. Delete a deck to add another.

@@ -5,6 +5,7 @@ import { importPhoto } from '../services/smartApi';
 import { reencodePhoto, PhotoError, ALLOWED_TYPES } from '../utils/imageReencode';
 import { autoSplitText } from '../utils/autoSyllables';
 import { parseFocusGroups } from '../utils/smartHide';
+import WordsTextarea from './WordsTextarea';
 
 const box = {
   backgroundColor: 'var(--muted)',
@@ -39,7 +40,7 @@ function errorText(err) {
  * the browser, read by the server's vision model, auto-syllabified, and shown for
  * review; nothing is saved until the user taps Save.
  */
-export default function PhotoImport({ onCreateList }) {
+export default function PhotoImport({ onCreateList, title }) {
   const { isLoggedIn } = useAuth();
   const inputRef = useRef(null);
   const [status, setStatus] = useState('idle'); // idle | working | review
@@ -69,7 +70,7 @@ export default function PhotoImport({ onCreateList }) {
       const list = await importPhoto(blob);
       const { text } = await autoSplitText((list.words || []).join('\n'));
       setReview({
-        title: list.title || 'Homework list',
+        title: title || list.title || 'Homework list',
         words: text,
         focus: (list.focus_groups || []).join(', '),
         hints: (list.hints || []).join('\n')
@@ -107,7 +108,7 @@ export default function PhotoImport({ onCreateList }) {
         </div>
         <div>
           <label htmlFor="photo-words" style={label}>Words (hyphens show syllables)</label>
-          <textarea id="photo-words" rows={6} value={review.words} onChange={set('words')}
+          <WordsTextarea id="photo-words" value={review.words} onChange={set('words')}
             style={{ ...field, fontFamily: 'monospace', resize: 'vertical' }} />
         </div>
         <div>

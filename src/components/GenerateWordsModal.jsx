@@ -9,7 +9,7 @@ import { autoSplitText } from '../utils/autoSyllables';
 const NEW = '__new__';
 
 function errorText(err) {
-  if (err?.status === 429) return "You've used today's 3 word requests. Please try again tomorrow.";
+  if (err?.status === 429) return "You've used all of today's word requests. Please try again tomorrow.";
   if (err?.status === 503) return 'Word ideas are resting for today. Please try again tomorrow.';
   return coachingErrorMessage(err);
 }

@@ -21,6 +21,8 @@ export function lookupSyllables(word) {
   return table().get(String(word || '').toLowerCase()) ?? null;
 }
 
+const ONE_SOUND_VOWELS = new Set(['ai', 'ay', 'ea', 'ee', 'oa', 'oo', 'ou', 'ow', 'oi', 'oy', 'au', 'aw', 'ew', 'ey', 'eau']);
+
 /**
  * Cheap check for words that can't have more than one syllable (one vowel sound:
  * cat, boy, cloud, make), so they never cost an AI call.
@@ -29,5 +31,7 @@ export function isOneSyllable(word) {
   const w = String(word || '').toLowerCase().replace(/[^a-z]/g, '');
   const trimmed = /[^aeiouy]e$/.test(w) && !/[^aeiouy]le$/.test(w) ? w.slice(0, -1) : w; // silent final e
   const groups = trimmed.replace(/^y/, '').match(/[aeiouy]+/g) || [];
-  return groups.length <= 1;
+  // A run of vowels is one sound only if it is a known single-sound pair (ai, ea, ou, oy...).
+  // Anything else (lion, poem, quiet, idea) may hold two syllables, so the AI gets to decide.
+  return groups.length <= 1 && groups.every(g => g.length === 1 || ONE_SOUND_VOWELS.has(g));
 }
