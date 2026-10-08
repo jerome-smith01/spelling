@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 
@@ -101,5 +101,29 @@ describe('WordCardDeck', () => {
     await user.click(screen.getByRole('button', { name: 'All words, including learned (2)' }));
     expect(screen.getByText('Word 1 of 2')).toBeInTheDocument();
     vi.restoreAllMocks();
+  });
+
+  it('on touch devices spelling uses the on-screen keyboard, not the device keyboard', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    try {
+      const user = userEvent.setup();
+      render(<Harness />);
+      const kb = screen.getByRole('group', { name: 'Keyboard' });
+      const boxes = screen.getAllByLabelText(/Letter \d of word/);
+      boxes.forEach(b => { expect(b).toHaveAttribute('readonly'); expect(b).toHaveAttribute('inputmode', 'none'); });
+      expect(within(kb).getByRole('button', { name: 'Check' })).toBeDisabled();
+      // kitten at level 1 hides i, t, n; backspace fixes a slip
+      for (const c of ['i', 'x']) await user.click(within(kb).getByRole('button', { name: c }));
+      await user.click(within(kb).getByRole('button', { name: 'Delete' }));
+      for (const c of ['t', 'n']) await user.click(within(kb).getByRole('button', { name: c }));
+      await user.click(within(kb).getByRole('button', { name: 'Check' }));
+      expect(await screen.findByText('100%')).toBeInTheDocument();
+      // the same keyboard stays put; its Enter key now says Next card
+      await user.click(within(screen.getByRole('group', { name: 'Keyboard' })).getByRole('button', { name: 'Next card' }));
+      expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
+    } finally {
+      window.matchMedia = original;
+    }
   });
 });

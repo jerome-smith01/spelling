@@ -410,6 +410,9 @@
 
 /* Virtual keyboard (quiz mode, touch devices only) */
 .vkb { width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem 0.25rem; background: var(--muted); border-radius: var(--radius-lg); }
+.vkb-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 950; display: flex; justify-content: center; padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom)); background: var(--background); border-top: 1px solid var(--card-border); }
+.deck-has-dock { padding-bottom: calc(17rem + env(safe-area-inset-bottom)); }
+.letter-box.input-mode:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary); }
 .vkb-row { display: flex; gap: 0.35rem; justify-content: center; }
 .vkb-row-inset { padding: 0 4%; }
 .vkb-key { flex: 1 1 0; min-width: 0; height: 3rem; border: 0; border-radius: var(--radius-md); background: var(--card-bg); color: var(--foreground); font-size: 1.25rem; font-weight: 500; font-family: inherit; box-shadow: 0 1px 0 var(--card-border); cursor: pointer; touch-action: manipulation; }

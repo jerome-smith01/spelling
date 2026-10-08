@@ -10,7 +10,9 @@ export default function SyllableBlock({
   inputRefs,
   hiddenSequence,
   word,
-  activeSyllableIndex = null
+  activeSyllableIndex = null,
+  touchKeyboard = false,
+  onActivate
 }) {
   return (
     <div className="syllables-wrapper" data-tutorial="blanks">
@@ -54,6 +56,8 @@ export default function SyllableBlock({
                     inputRef={(el) => { inputRefs.current[item.index] = el; }}
                     ariaLabel={`Letter ${item.index + 1} of word ${word}`}
                     validationState={valState}
+                    touchKeyboard={touchKeyboard}
+                    onActivate={() => onActivate?.(item.index)}
                   />
                 );
               }

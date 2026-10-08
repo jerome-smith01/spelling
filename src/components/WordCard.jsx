@@ -3,6 +3,7 @@ import SyllableBlock from './SyllableBlock';
 import StruggleIndicator from './StruggleIndicator';
 import AITipModal from './AITipModal';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
+import useCoarsePointer from '../hooks/useCoarsePointer';
 
 export default function WordCard({
   word,
@@ -16,7 +17,9 @@ export default function WordCard({
   friction = 0,
   deckMode = false,
   onResult,
-  autoFocus = false
+  autoFocus = false,
+  keyboardRef = null,
+  onCanCheck
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
@@ -24,6 +27,11 @@ export default function WordCard({
   const inputRefs = useRef({});
   const cardRef = useRef(null);
   const hasScrolledRef = useRef(false);
+  // Phones/tablets in the deck type on the app's own keyboard, never the device keyboard
+  const coarse = useCoarsePointer();
+  const touchKeyboard = deckMode && coarse && !!keyboardRef;
+  const activeRef = useRef(null);
+  const inputsRef = useRef({});
 
   // Active speech playback states
   const isCardSpeakingSlow = activePlayback?.wordId === word.id && activePlayback?.isSlow;
@@ -33,6 +41,8 @@ export default function WordCard({
   // Clear inputs and validation results when hidden configuration changes
   useEffect(() => {
     setUserInputs({});
+    inputsRef.current = {};
+    activeRef.current = null;
     setValidationResults(null);
     hasScrolledRef.current = false;
   }, [hiddenIndices]);
@@ -59,6 +69,7 @@ export default function WordCard({
     .filter(i => hiddenIndices.has(i));
 
   const handleInputChange = (index, char) => {
+    inputsRef.current = { ...inputsRef.current, [index]: char };
     setUserInputs(prev => ({
       ...prev,
       [index]: char
@@ -99,9 +110,40 @@ export default function WordCard({
     }
   };
 
+  // On-screen keyboard: fill the active blank, then move to the next one
+  const focusBlank = (idx) => {
+    activeRef.current = idx;
+    inputRefs.current[idx]?.focus({ preventScroll: true });
+  };
+  const activeBlank = () => activeRef.current ?? hiddenSequence.find(i => !inputsRef.current[i]) ?? hiddenSequence[0];
+  if (keyboardRef) {
+    keyboardRef.current = {
+      press: (c) => {
+        const idx = activeBlank();
+        if (idx === undefined) return;
+        handleInputChange(idx, c.toLowerCase().slice(0, 1));
+        const next = hiddenSequence[hiddenSequence.indexOf(idx) + 1];
+        if (next !== undefined) focusBlank(next);
+      },
+      backspace: () => {
+        let idx = activeBlank();
+        if (idx === undefined) return;
+        if (!inputsRef.current[idx]) {
+          const prev = hiddenSequence[hiddenSequence.indexOf(idx) - 1];
+          if (prev === undefined) return;
+          idx = prev;
+        }
+        handleInputChange(idx, '');
+        focusBlank(idx);
+      },
+      check: handleVerify
+    };
+  }
+
   const hasHidden = hiddenIndices.size > 0;
   const isAllCorrect = validationResults && Object.values(validationResults).every(v => v === 'correct');
   const allFilled = hasHidden && hiddenSequence.every(idx => (userInputs[idx] || '').trim() !== '');
+  useEffect(() => { onCanCheck?.(allFilled); }, [allFilled]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <article
@@ -177,6 +219,8 @@ export default function WordCard({
         hiddenSequence={hiddenSequence}
         word={word.word}
         activeSyllableIndex={activeSyllableIndex}
+        touchKeyboard={touchKeyboard}
+        onActivate={(idx) => { activeRef.current = idx; }}
       />
 
       {/* Footer Controls: Hide, Show, and Verify Button */}
@@ -200,7 +244,7 @@ export default function WordCard({
           </button>
         </div>
 
-        {hasHidden && (
+        {hasHidden && !touchKeyboard && (
           <button
             type="button"
             onClick={handleVerify}

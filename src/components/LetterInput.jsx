@@ -7,7 +7,9 @@ export default function LetterInput({
   onBackspace,
   inputRef,
   ariaLabel,
-  validationState = 'neutral'
+  validationState = 'neutral',
+  touchKeyboard = false,
+  onActivate
 }) {
   const handleKeyDown = (e) => {
     if (e.key === 'Backspace' && value === '') {
@@ -17,6 +19,7 @@ export default function LetterInput({
   };
 
   const handleFocus = (e) => {
+    onActivate?.();
     // Select any existing letter so the next keystroke overwrites it,
     // instead of requiring the student to move right + backspace.
     e.target.select();
@@ -56,6 +59,8 @@ export default function LetterInput({
         autoCapitalize="none"
         autoCorrect="off"
         spellCheck="false"
+        readOnly={touchKeyboard}
+        inputMode={touchKeyboard ? 'none' : undefined}
         aria-label={ariaLabel}
         className="letter-input"
       />

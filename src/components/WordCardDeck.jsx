@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import WordCard from './WordCard';
 import QuizView from './QuizView';
+import VirtualKeyboard from './VirtualKeyboard';
+import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
 import HarveyBall from './HarveyBall';
@@ -42,6 +44,9 @@ export default function WordCardDeck({
   const [result, setResult] = useState(null); // set once Check flips the card
   const [cardKey, setCardKey] = useState(0);
   const backRef = useRef(null);
+  const kbRef = useRef(null);
+  const coarse = useCoarsePointer();
+  const [canCheck, setCanCheck] = useState(false);
   const tutorial = useTutorial();
   const hasCard = words.length > 0;
 
@@ -188,8 +193,9 @@ export default function WordCardDeck({
   }
 
   const letters = current.syllables.flat();
+  const dock = coarse && !useChoice;
   return (
-    <div className="deck">
+    <div className={`deck${dock ? ' deck-has-dock' : ''}`}>
       {tabs}
       <TutorialPrompt onAccept={() => tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, { isAvailable: targetExists })} />
       {strip}
@@ -239,6 +245,8 @@ export default function WordCardDeck({
               friction={frictionByWord[current.word] || 0}
               deckMode
               autoFocus
+              keyboardRef={kbRef}
+              onCanCheck={setCanCheck}
               onResult={handleResult}
             />
             )}
@@ -275,6 +283,17 @@ export default function WordCardDeck({
           </div>
         </div>
       </div>
+      {dock && (
+        <div className="vkb-dock">
+          <VirtualKeyboard
+            onChar={(c) => { if (!result) kbRef.current?.press(c); }}
+            onBackspace={() => { if (!result) kbRef.current?.backspace(); }}
+            onEnter={() => (result ? goNext() : kbRef.current?.check())}
+            enterDisabled={!result && !canCheck}
+            enterLabel={result ? 'Next card' : 'Check'}
+          />
+        </div>
+      )}
     </div>
   );
 }
