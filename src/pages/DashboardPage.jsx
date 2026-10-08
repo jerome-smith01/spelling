@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLists } from '../hooks/useLists';
 import { parseWordList } from '../utils/wordParser';
@@ -8,16 +8,34 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import '../styles/spelling.css';
 
 /** Route: / — every deck with its progress; the way into practice and quiz (each its own screen). */
+const SORT_KEY = 'spelling_tutor_dash_sort_v1';
+const SORTS = {
+  recent: { label: 'Most recently added', cmp: (a, b) => b.added.localeCompare(a.added) },
+  words: { label: 'Most words', cmp: (a, b) => b.total - a.total },
+  difficult: { label: 'Most difficult', cmp: (a, b) => b.struggling - a.struggling || a.learned / (a.total || 1) - b.learned / (b.total || 1) },
+  reviewed: { label: 'Most recently reviewed', cmp: (a, b) => b.lastReviewed.localeCompare(a.lastReviewed) },
+  learned: { label: 'Most learned', cmp: (a, b) => b.learned - a.learned }
+};
+
 export default function DashboardPage() {
   usePageTitle('My decks');
   const navigate = useNavigate();
   const { lists, defaultList, createList, atListLimit } = useLists();
   const lastId = loadLastListId();
+  const [sort, setSort] = useState(() => {
+    try { const v = localStorage.getItem(SORT_KEY); return SORTS[v] ? v : 'recent'; } catch { return 'recent'; }
+  });
+  const changeSort = (v) => {
+    setSort(v);
+    try { localStorage.setItem(SORT_KEY, v); } catch { /* storage unavailable */ }
+  };
 
   const decks = useMemo(() => [defaultList, ...lists].map(l => {
     const words = parseWordList(l.wordsRaw).map(w => w.word);
-    return { id: l.id, name: l.name, ...loadDeckSummary(l.id, words) };
+    return { id: l.id, name: l.name, added: l.updatedAt || '', ...loadDeckSummary(l.id, words) };
   }), [defaultList, lists]);
+  // Array.sort is stable, so ties keep their original order
+  const sorted = useMemo(() => [...decks].sort(SORTS[sort].cmp), [decks, sort]);
 
   const onNew = () => {
     if (atListLimit) return;
@@ -39,8 +57,14 @@ export default function DashboardPage() {
           You have reached the 25 deck limit. Delete a deck to add another.
         </p>
       )}
+      <label className="settings-field" style={{ maxWidth: '16rem' }}>
+        Sort by
+        <select value={sort} onChange={(e) => changeSort(e.target.value)}>
+          {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+      </label>
       <ul className="dash-grid">
-        {decks.map(d => {
+        {sorted.map(d => {
           const pct = d.total ? Math.round((d.learned / d.total) * 100) : 0;
           return (
             <li key={d.id} className="dash-card" aria-label={`Deck ${d.name}`}>

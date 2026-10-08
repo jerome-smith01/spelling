@@ -42,7 +42,13 @@ export function loadDeckSummary(listId, wordTexts) {
   return {
     total: wordTexts.length,
     learned: wordTexts.filter(w => progress.words[w]?.mastered).length,
-    due: buildQueue(wordTexts, progress, currentDay(), prefs).length
+    due: buildQueue(wordTexts, progress, currentDay(), prefs).length,
+    // words whose latest score fell below the drop threshold = how hard the deck is right now
+    struggling: wordTexts.filter(w => {
+      const st = progress.words[w];
+      return st && st.lastScore !== null && st.lastScore !== undefined && st.lastScore < prefs.dropPct;
+    }).length,
+    lastReviewed: wordTexts.map(w => progress.words[w]?.reviewedOn || '').sort().pop() || ''
   };
 }
 
