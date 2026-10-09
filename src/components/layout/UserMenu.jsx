@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { ACCOUNT_URL, buildLoginUrl } from '../../services/apiService';
 
@@ -37,6 +37,16 @@ export default function UserMenu() {
   const { status, user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
+  const menuRef = useRef(null);
+  // The button can sit anywhere in the wrapped header: open toward whichever side has room
+  const [align, setAlign] = useState('right');
+
+  useLayoutEffect(() => {
+    if (!open || !wrapRef.current || !menuRef.current) return;
+    const wrap = wrapRef.current.getBoundingClientRect();
+    const width = menuRef.current.offsetWidth;
+    setAlign(wrap.right - width < 8 ? 'left' : 'right');
+  }, [open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -131,9 +141,11 @@ export default function UserMenu() {
       {open && (
         <div
           role="menu"
+          ref={menuRef}
           style={{
             position: 'absolute',
-            right: 0,
+            ...(align === 'left' ? { left: 0 } : { right: 0 }),
+            maxWidth: 'calc(100vw - 1rem)',
             top: 'calc(100% + 0.5rem)',
             minWidth: '13rem',
             background: 'var(--card-bg)',
