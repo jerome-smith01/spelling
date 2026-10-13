@@ -24,7 +24,9 @@ export default function WordCard({
   onCanCheck,
   onBack,
   onSkip,
-  canBack = false
+  canBack = false,
+  autoPlay,
+  onAutoPlayChange
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
@@ -203,13 +205,21 @@ export default function WordCard({
               ✓ Solved!
             </span>
           )}
-          <span style={{
-            fontSize: '0.75rem',
-            color: 'var(--muted-foreground)',
-            fontWeight: 600
-          }}>
-            {word.syllables.length} {word.syllables.length === 1 ? 'syllable' : 'syllables'}
-          </span>
+          {onAutoPlayChange ? (
+            <span className="autoplay-toggle">
+              <span id={`autoplay-${word.id}`}>Autoplay</span>
+              <button type="button" role="switch" className="switch" aria-checked={!!autoPlay}
+                aria-labelledby={`autoplay-${word.id}`} onClick={() => onAutoPlayChange(!autoPlay)} />
+            </span>
+          ) : (
+            <span style={{
+              fontSize: '0.75rem',
+              color: 'var(--muted-foreground)',
+              fontWeight: 600
+            }}>
+              {word.syllables.length} {word.syllables.length === 1 ? 'syllable' : 'syllables'}
+            </span>
+          )}
         </div>
       </div>
 

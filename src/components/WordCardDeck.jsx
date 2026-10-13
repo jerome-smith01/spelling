@@ -285,6 +285,8 @@ export default function WordCardDeck({
               onAttempts={onAttempts}
               friction={frictionByWord[current.word] || 0}
               deckMode
+              autoPlay={schedule.prefs.autoSpeak !== false}
+              onAutoPlayChange={(v) => schedule.setPrefs({ autoSpeak: v })}
               autoFocus
               keyboardRef={kbRef}
               onCanCheck={setCanCheck}
