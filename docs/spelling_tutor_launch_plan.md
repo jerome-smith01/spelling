@@ -21,6 +21,7 @@
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 | 9 | [Admin: Uncaptured-Pattern Report](#phase-9) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5a |
 | 10 | [Automatic Syllable Pronunciation (Prototype)](#phase-10) | 🔲 Not Started — plan only, no code yet | Claude Sonnet (High) | Antigravity | Phase 2 |
+| 11 | [Family & Classroom Accounts](action_plans/family_and_classroom_plan.md) | 🔲 Not Started — plan only, decisions pending | — | Claude Code | Phase 5c |
 
 ---
 
@@ -98,7 +99,7 @@ flowchart TD
 > **Before Phase 5c:** Confirm which email sender the Flashy Cards admin emails use, and whether it's OK to send opt-in digest emails to end users (parents) through it.
 
 > [!NOTE]
-> **Family accounts (future phase):** Parents or teachers and children or students will share a family account. Parents set and assign words and monitor progress; children complete them. The new Phase 5 tables use a `learner_id` column, set equal to `user_id` for now, so child profiles can be mapped in later without a data migration.
+> **Family accounts (future phase):** Parents or teachers and children or students will share a family account. Parents set and assign words and monitor progress; children complete them. The new Phase 5 tables use a `learner_id` column, set equal to `user_id` for now, so child profiles can be mapped in later without a data migration. Planned in [`action_plans/family_and_classroom_plan.md`](action_plans/family_and_classroom_plan.md) (note: `word_scores` is still keyed by `user_id` and needs a table rebuild).
 
 > [!NOTE]
 > **Android (deferred):** Staying a PWA for now; Capacitor/Android Studio only if the Play Store becomes a goal.
