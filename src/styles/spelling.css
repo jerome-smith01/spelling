@@ -461,6 +461,7 @@
 .vkb-space { flex: 3 1 0; font-size: 0.9rem; color: var(--muted-foreground); }
 .vkb-audio { flex: 1 1 0; display: flex; align-items: center; justify-content: center; background: var(--card-border); }
 .vkb-enter { display: flex; align-items: center; justify-content: center; flex: 1.4 1 0; background: var(--color-primary); color: var(--primary-foreground); font-size: 1.05rem; font-weight: 700; }
+.vkb-enter-icon { flex: 1 1 0; }
 .vkb-enter:disabled { opacity: 0.5; cursor: default; }
 
 /* ---------- Smart hiding ---------- */

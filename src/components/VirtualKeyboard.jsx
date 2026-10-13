@@ -44,7 +44,7 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
           <button type="button" className="vkb-key vkb-audio" onClick={onPlaySlow} aria-label="Hear the word syllable by syllable"><SlowPlayIcon /></button>
         )}
         <button type="button" className="vkb-key vkb-space" onClick={() => onChar(' ')} aria-label="Space">space</button>
-        <button type="button" className="vkb-key vkb-enter" onClick={onEnter} disabled={enterDisabled}
+        <button type="button" className={`vkb-key vkb-enter${enterLabel === 'Check' ? ' vkb-enter-icon' : ''}`} onClick={onEnter} disabled={enterDisabled}
           aria-label={enterLabel}>{enterLabel === 'Check' ? <TaskAltIcon size="1.5rem" /> : enterLabel}</button>
         {onPlay && (
           <button type="button" className="vkb-key vkb-audio" onClick={onPlay} aria-label="Hear the word at normal speed"><PlayIcon /></button>
