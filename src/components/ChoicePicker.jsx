@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
+import { PlayIcon, SlowPlayIcon } from './AudioIcons';
 
 /**
  * Smart-hiding level 1: the lesson's letters are blank and the student picks
@@ -52,12 +53,12 @@ export default function ChoicePicker({
           <button type="button" className={`speaker-btn ${speakingNormal ? 'active' : ''}`}
             onClick={() => onSpeak(word.id, word.word)}
             aria-label={speakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}>
-            {speakingNormal ? '⏹️' : '🔊'}
+            {speakingNormal ? '⏹️' : <PlayIcon />}
           </button>
           <button type="button" className={`speaker-btn ${speakingSlow ? 'active' : ''}`}
             onClick={() => onSpeakSyllables?.(word.id, buildPronunciationSyllables(word))}
             aria-label={speakingSlow ? `Stop audio for ${word.word}` : `Hear ${word.word} syllable by syllable`}>
-            {speakingSlow ? '⏹️' : '🐢'}
+            {speakingSlow ? '⏹️' : <SlowPlayIcon />}
           </button>
         </div>
         <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>

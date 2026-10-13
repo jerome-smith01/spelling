@@ -238,6 +238,44 @@
   transform: none;
 }
 
+/* End session: below the card, right-aligned to it */
+.deck-end { display: flex; justify-content: flex-end; margin-top: 0.75rem; }
+
+/* Back / Check / Skip row on the practice card front */
+.deck-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+.btn-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background-color: var(--muted);
+  color: var(--foreground);
+  cursor: pointer;
+}
+.btn-nav:hover:not(:disabled) { background-color: var(--selected-color-bg); color: var(--selected-color-border); }
+.btn-nav:disabled { opacity: 0.4; cursor: default; }
+@media (max-width: 600px) {
+  .deck-actions { gap: 0.5rem; }
+  .btn-nav { min-width: 2.75rem; height: 2.75rem; justify-content: center; padding: 0; }
+  .btn-nav-label { display: none; }
+  .btn-check { flex: 1; height: 2.75rem; justify-content: center; }
+}
+
 /* Hue slider in the custom color editor: rainbow track, big touch-friendly thumb */
 .hue-slider {
   -webkit-appearance: none;

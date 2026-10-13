@@ -39,10 +39,11 @@ export default function WordCardDeck({
   words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
   focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice'
 }) {
-  const { queue, dueCount, today, testDate, progress, stateFor, jumpTo, commit, advance, practiceAnyway, commitQuiz, refreshQueue } = schedule;
+  const { queue, dueCount, today, testDate, progress, stateFor, jumpTo, commit, advance, practiceAnyway, commitQuiz, refreshQueue, endSession } = schedule;
   const [mode, setMode] = useState(initialMode);
   const [result, setResult] = useState(null); // set once Check flips the card
   const [cardKey, setCardKey] = useState(0);
+  const historyRef = useRef([]); // words already shown this visit, for Back
   const backRef = useRef(null);
   const kbRef = useRef(null);
   const coarse = useCoarsePointer();
@@ -105,7 +106,23 @@ export default function WordCardDeck({
   };
 
   const goNext = () => {
+    historyRef.current.push(current.word);
     advance(result.res.requeue);
+    setResult(null);
+    setCardKey(k => k + 1);
+  };
+
+  // Preview of Back / Skip: Skip moves on without grading (the word is requeued);
+  // Back returns to the card shown just before this one.
+  const skipCard = () => {
+    historyRef.current.push(current.word);
+    advance(true);
+    setCardKey(k => k + 1);
+  };
+  const goBack = () => {
+    const prev = historyRef.current.pop();
+    if (!prev) return;
+    jumpTo(prev);
     setResult(null);
     setCardKey(k => k + 1);
   };
@@ -146,10 +163,6 @@ export default function WordCardDeck({
 
   const strip = (
     <div data-tutorial="strip">
-      <div className="deck-bar" style={{ marginBottom: '0.4rem' }}>
-        <span>{dueCount} due today</span>
-        <span>{words.filter(w => progress.words[w.word]?.mastered).length} of {words.length} learned</span>
-      </div>
       <div className="deck-strip" role="list" aria-label="Words">
         {words.map(w => {
           const st = progress.words[w.word];
@@ -248,6 +261,9 @@ export default function WordCardDeck({
               keyboardRef={kbRef}
               onCanCheck={setCanCheck}
               onResult={handleResult}
+              onBack={goBack}
+              onSkip={skipCard}
+              canBack={historyRef.current.length > 0}
             />
             )}
           </div>
@@ -282,6 +298,11 @@ export default function WordCardDeck({
             )}
           </div>
         </div>
+      </div>
+      <div className="deck-end">
+        <button type="button" className="btn-secondary-sm" onClick={() => { endSession(); setResult(null); }}>
+          End session
+        </button>
       </div>
       {dock && (
         <div className="vkb-dock">

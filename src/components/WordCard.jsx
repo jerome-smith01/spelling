@@ -4,6 +4,8 @@ import StruggleIndicator from './StruggleIndicator';
 import AITipModal from './AITipModal';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import useCoarsePointer from '../hooks/useCoarsePointer';
+import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { ChevronLeftIcon, ChevronRightIcon, TaskAltIcon } from './ActionIcons';
 
 export default function WordCard({
   word,
@@ -19,7 +21,10 @@ export default function WordCard({
   onResult,
   autoFocus = false,
   keyboardRef = null,
-  onCanCheck
+  onCanCheck,
+  onBack,
+  onSkip,
+  canBack = false
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
@@ -166,7 +171,7 @@ export default function WordCard({
             aria-label={isCardSpeakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}
             title={isCardSpeakingNormal ? 'Stop audio' : `Hear ${word.word} (normal speed)`}
           >
-            {isCardSpeakingNormal ? '⏹️' : '🔊'}
+            {isCardSpeakingNormal ? '⏹️' : <PlayIcon />}
           </button>
           <button
             type="button"
@@ -180,7 +185,7 @@ export default function WordCard({
             aria-label={isCardSpeakingSlow ? `Stop audio for ${word.word}` : `Hear ${word.word} syllable by syllable`}
             title={isCardSpeakingSlow ? 'Stop audio' : `Hear ${word.word} syllable by syllable`}
           >
-            {isCardSpeakingSlow ? '⏹️' : '🐢'}
+            {isCardSpeakingSlow ? '⏹️' : <SlowPlayIcon />}
           </button>
         </div>
 
@@ -244,7 +249,25 @@ export default function WordCard({
           </button>
         </div>
 
-        {hasHidden && !touchKeyboard && (
+        {deckMode && onSkip ? (
+          <div className="deck-actions">
+            <button type="button" className="btn-nav" onClick={onBack} disabled={!canBack}
+              aria-label="Back to the previous card">
+              <ChevronLeftIcon /><span className="btn-nav-label">Back</span>
+            </button>
+            {hasHidden && (
+              <button type="button" onClick={handleVerify} className="btn-verify btn-check"
+                disabled={!allFilled} aria-label={`Check your spelling for ${word.word}`}
+                aria-disabled={!allFilled}>
+                <TaskAltIcon /> Check
+              </button>
+            )}
+            <button type="button" className="btn-nav" onClick={onSkip}
+              aria-label="Skip this card for now">
+              <span className="btn-nav-label">Skip</span><ChevronRightIcon />
+            </button>
+          </div>
+        ) : hasHidden && !touchKeyboard && (
           <button
             type="button"
             onClick={handleVerify}

@@ -130,6 +130,9 @@ export function useDeckSchedule(listId, wordTexts) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordsKey, today, prefs]);
 
+  /** Stop the session early: progress is already saved per attempt, so just empty today's queue. */
+  const endSession = useCallback(() => setQueue([]), []);
+
   const resetProgress = useCallback(() => {
     const fresh = { testDate: progressRef.current.testDate, words: {} };
     progressRef.current = fresh;
@@ -148,6 +151,6 @@ export function useDeckSchedule(listId, wordTexts) {
   return {
     prefs, setPrefs, today, testDate: progress.testDate, setTestDate,
     progress, stateFor, queue, dueCount,
-    commit, advance, jumpTo, practiceAnyway, commitQuiz, refreshQueue, resetProgress
+    commit, advance, jumpTo, practiceAnyway, commitQuiz, refreshQueue, endSession, resetProgress
   };
 }

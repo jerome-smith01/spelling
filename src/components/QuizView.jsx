@@ -4,6 +4,7 @@ import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import VirtualKeyboard from './VirtualKeyboard';
+import { PlayIcon } from './AudioIcons';
 
 const shuffle = (arr) => {
   const a = [...arr];
@@ -146,7 +147,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
               onClick={() => onSpeak(word.id, word.word)}
               aria-label="Hear the word again"
             >
-              🔊
+              <PlayIcon size="1.5em" />
             </button>
             <input
               ref={inputRef}
