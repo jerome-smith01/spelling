@@ -5,13 +5,20 @@ import VirtualKeyboard from './VirtualKeyboard';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
-import HarveyBall from './HarveyBall';
+import StageBall from './StageBall';
+import ProgressBars from './ProgressBars';
+import DeckLegend from './DeckLegend';
+import { ChevronRightIcon, TaskAltIcon } from './ActionIcons';
+import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
+import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { useTutorial } from '../hooks/useTutorial';
 import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
-import { LEVELS, hiddenIndicesForLevel, addDays, daysLeft } from '../utils/schedule';
-import { findTargets, hintsForWord, levelText, quartersFor, SMART_LEVEL_LABELS } from '../utils/smartHide';
-
-const REGULAR_LABELS = LEVELS.map(l => l.label);
+import { hiddenIndicesForLevel, addDays, daysLeft } from '../utils/schedule';
+import { findTargets, hintsForWord } from '../utils/smartHide';
+import {
+  makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly
+} from '../utils/session';
 
 const targetExists = (st) => !st.target || !!document.querySelector(`[data-tutorial="${st.target}"]`);
 
@@ -23,27 +30,23 @@ const fmtDay = (iso, today) => {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 };
 
-function nextMessage(next, today, labels = REGULAR_LABELS) {
-  switch (next.kind) {
-    case 'drop': return `Dropping back to ${labels[next.level - 1].toLowerCase()}. It will come back later this session.`;
-    case 'stay': return 'So close! Same level. It will come back later this session.';
-    case 'again-today': return `Great! The test is close, so it comes back later this session at ${labels[next.level - 1].toLowerCase()}.`;
-    case 'advance': return `Great! Next time: ${labels[next.level - 1].toLowerCase()}, ${fmtDay(next.due, today)}.`;
-    case 'mastered': return next.due ? `Learned! 🎉 One last check ${fmtDay(next.due, today)}.` : 'Learned! 🎉';
-    default: return '';
-  }
-}
-
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
   words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
   focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice'
 }) {
-  const { queue, dueCount, today, testDate, progress, stateFor, jumpTo, commit, advance, practiceAnyway, commitQuiz, refreshQueue, endSession } = schedule;
+  const { queue, today, testDate, progress, stateFor, commit, practiceAnyway, commitQuiz, refreshQueue } = schedule;
   const [mode, setMode] = useState(initialMode);
   const [result, setResult] = useState(null); // set once Check flips the card
   const [cardKey, setCardKey] = useState(0);
-  const historyRef = useRef([]); // words already shown this visit, for Back
+  // The session's cards, in a fixed order: dot N is the Nth card (see utils/session.js)
+  const [session, setSession] = useState(() => makeSession(queue));
+  const queueKey = queue.join('|');
+  const sessionKeyRef = useRef(queueKey);
+  const [restartTick, setRestartTick] = useState(0);
+  const restartRef = useRef(false);
+  const restartSession = () => { restartRef.current = true; setRestartTick(t => t + 1); };
+  const [legendOpen, setLegendOpen] = useState(false);
   const backRef = useRef(null);
   const kbRef = useRef(null);
   const coarse = useCoarsePointer();
@@ -71,7 +74,20 @@ export default function WordCardDeck({
   };
 
   const byText = useMemo(() => Object.fromEntries(words.map(w => [w.word, w])), [words]);
-  const current = queue.map(t => byText[t]).find(Boolean) || null;
+  const curWord = currentWord(session);
+  const current = (curWord && byText[curWord]) || null;
+
+  // Start a fresh session when the queue's words change (new list) or a restart is asked for
+  // ("Keep practicing", leaving a quiz). A rebuild with the same words keeps the session.
+  useEffect(() => {
+    if (!restartRef.current && sessionKeyRef.current === queueKey) return;
+    restartRef.current = false;
+    sessionKeyRef.current = queueKey;
+    setSession(makeSession(queue));
+    setResult(null);
+    setCardKey(k => k + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueKey, restartTick]);
 
   // Freeze the level while a card is on screen (grading changes stored level immediately)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,7 +108,6 @@ export default function WordCardDeck({
     [current?.word, focusGroups.join(',')]
   );
   const smartWord = targets.length > 0;
-  const labels = smartWord ? SMART_LEVEL_LABELS : REGULAR_LABELS;
   // Level 1 is multiple choice when the lesson offers at least two groups to choose from
   const useChoice = smartWord && level === 1 && focusGroups.length >= 2;
 
@@ -102,30 +117,20 @@ export default function WordCardDeck({
 
   const handleResult = ({ pct, results, typed }) => {
     const res = commit(current.word, pct);
+    setSession(sess => recordResult(sess, pct));
     setResult({ pct, results, typed, res });
   };
 
-  const goNext = () => {
-    historyRef.current.push(current.word);
-    advance(result.res.requeue);
+  const move = (fn) => {
+    setSession(fn);
     setResult(null);
     setCardKey(k => k + 1);
   };
-
-  // Preview of Back / Skip: Skip moves on without grading (the word is requeued);
-  // Back returns to the card shown just before this one.
-  const skipCard = () => {
-    historyRef.current.push(current.word);
-    advance(true);
-    setCardKey(k => k + 1);
-  };
-  const goBack = () => {
-    const prev = historyRef.current.pop();
-    if (!prev) return;
-    jumpTo(prev);
-    setResult(null);
-    setCardKey(k => k + 1);
-  };
+  const goNext = () => move(advanceSession);
+  const skipCard = () => move(sess => advanceSession(recordSkip(sess)));
+  const goBack = () => move(sess => goTo(sess, sess.idx - 1));
+  const goToCard = (i) => move(sess => goTo(sess, i));
+  const endSession = () => move(endEarly);
 
   const left = daysLeft(today, testDate);
   const testLine = testDate
@@ -155,30 +160,31 @@ export default function WordCardDeck({
           onSpeak={onSpeak}
           onAttempts={onAttempts}
           commitQuiz={commitQuiz}
-          onExit={() => { refreshQueue(); setMode('practice'); }}
+          onExit={() => { refreshQueue(); restartSession(); setMode('practice'); }}
         />
       </div>
     );
   }
 
+  const statusLabel = { ok: 'scored 100%', miss: 'missed', skip: 'skipped' };
+  const dotIcon = { ok: <CheckIcon />, miss: <CloseIcon />, skip: <QuestionIcon /> };
   const strip = (
     <div data-tutorial="strip">
-      <div className="deck-strip" role="list" aria-label="Words">
-        {words.map(w => {
-          const st = progress.words[w.word];
-          const text = levelText(st, LEVELS.length);
+      <div className="deck-strip session" role="list" aria-label="Session cards">
+        {session.order.map((word, i) => {
+          const st = session.status[word];
+          const isCurrent = !session.ended && i === session.idx;
           return (
             <button
-              key={w.id}
+              key={word}
               type="button"
               role="listitem"
-              className={`deck-dot harvey ${current?.word === w.word ? 'current' : ''}`}
-              title={`${w.word}: ${text}`}
-              aria-label={`${w.word}: ${text}. Practice this word`}
-              disabled={!!result}
-              onClick={() => { jumpTo(w.word); setCardKey(k => k + 1); }}
+              className={`sess-dot ${st || ''} ${isCurrent ? 'current' : ''}`}
+              aria-label={`Card ${i + 1} of ${session.order.length}: ${statusLabel[st] || (isCurrent ? 'current' : 'not reached yet')}${isCurrent ? '' : '. Go to this card'}`}
+              aria-current={isCurrent ? 'step' : undefined}
+              onClick={() => goToCard(i)}
             >
-              <HarveyBall quarters={quartersFor(st)} size={20} />
+              {dotIcon[st]}
             </button>
           );
         })}
@@ -197,7 +203,7 @@ export default function WordCardDeck({
           <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>All done for today!</p>
           {upcoming && <p className="deck-message" style={{ margin: 0 }}>Next words come back {fmtDay(upcoming, today)}.</p>}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <button type="button" className="btn-verify" onClick={() => { practiceAnyway(); setCardKey(k => k + 1); }}>Keep practicing</button>
+            <button type="button" className="btn-verify" onClick={() => { practiceAnyway(); restartSession(); }}>Keep practicing</button>
             <button type="button" className="btn-secondary-sm" onClick={() => setMode('quiz')}>Take a quiz</button>
           </div>
         </div>
@@ -212,14 +218,6 @@ export default function WordCardDeck({
       {tabs}
       <TutorialPrompt onAccept={() => tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, { isAvailable: targetExists })} />
       {strip}
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <span className="deck-badge deck-level" data-tutorial="level">
-          <HarveyBall quarters={quartersFor(progress.words[current.word])} size={16} />
-          Level {level} of {LEVELS.length} · {labels[level - 1]}
-        </span>
-        <span className="deck-badge">{queue.length} in today's queue</span>
-      </div>
-
       <div className={`deck-flip ${result ? 'flipped' : ''}`}>
         <div className="deck-flip-inner">
           <div
@@ -263,7 +261,7 @@ export default function WordCardDeck({
               onResult={handleResult}
               onBack={goBack}
               onSkip={skipCard}
-              canBack={historyRef.current.length > 0}
+              canBack={session.idx > 0}
             />
             )}
           </div>
@@ -275,6 +273,13 @@ export default function WordCardDeck({
                 tabIndex={-1}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); goNext(); } }}
               >
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button type="button" className="speaker-btn" onClick={() => onSpeak(current.id, current.word)}
+                    aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
+                  <button type="button" className="speaker-btn"
+                    onClick={() => onSpeakSyllables?.(current.id, buildPronunciationSyllables(current))}
+                    aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
+                </div>
                 <div className="deck-back-word" aria-label={`The word is ${current.word}`} style={{ marginTop: '1rem' }}>
                   {letters.map(l => {
                     const hidden = hiddenIndices.has(l.index);
@@ -288,11 +293,40 @@ export default function WordCardDeck({
                     );
                   })}
                 </div>
-                <div className="deck-score">{result.pct}%</div>
+                <div className="deck-summary">
+                  <div className="deck-summary-col">
+                    <div className="deck-section-label">Grade</div>
+                    <div className="deck-score">{result.pct}%</div>
+                  </div>
+                  <div className="deck-summary-col">
+                    {result.res.next.kind === 'mastered' ? (
+                      <>
+                        <div className="deck-section-label">Stage {level} complete</div>
+                        <span className="stage-reward" role="img" aria-label="Word learned"><TaskAltIcon size="2rem" /></span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="deck-section-label">
+                          {result.res.next.level === level ? `Stage ${level}` : `Stage ${level} to ${result.res.next.level}`}
+                        </div>
+                        <div className="stage-row">
+                          <StageBall level={level} label={`Stage ${level}`} />
+                          {result.res.next.level !== level && (
+                            <>
+                              <ChevronRightIcon />
+                              <StageBall level={result.res.next.level} label={`Stage ${result.res.next.level}`} />
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
                 {result.pct < 100 && hintsForWord(current.word, focusGroups, hints).slice(0, 1).map(h => (
                   <p key={h} className="deck-hint">💡 {h}</p>
                 ))}
-                <p className="deck-message" style={{ margin: 0 }}>{nextMessage(result.res.next, today, labels)}</p>
+                <div className="deck-section-label">Progress</div>
+                <ProgressBars attempts={progress.words[current.word]?.history || []} />
                 <button type="button" className="btn-verify" onClick={goNext}>Next card</button>
               </div>
             )}
@@ -300,10 +334,10 @@ export default function WordCardDeck({
         </div>
       </div>
       <div className="deck-end">
-        <button type="button" className="btn-secondary-sm" onClick={() => { endSession(); setResult(null); }}>
-          End session
-        </button>
+        <button type="button" className="btn-secondary-sm" onClick={() => setLegendOpen(true)}>Legend</button>
+        <button type="button" className="btn-secondary-sm" onClick={endSession}>End session</button>
       </div>
+      {legendOpen && <DeckLegend onClose={() => setLegendOpen(false)} />}
       {dock && (
         <div className="vkb-dock">
           <VirtualKeyboard

@@ -1,7 +1,8 @@
 /**
  * Progressive flashcard scheduling (pure functions, no storage or React).
  *
- * Levels: 1 = show 1 in 2 letters, 2 = 1 in 3, 3 = 1 in 4, 4 = all hidden.
+ * Levels: 1 = show 1 in 2 letters, 2 = 1 in 3, 3 = 1 in 4, 4 = 1 in 5,
+ * 5 = all hidden (the last level; passing it masters the word).
  * Dates are local 'YYYY-MM-DD' strings so day math never shifts with timezones.
  */
 import { smartHiddenIndices } from './smartHide';
@@ -10,12 +11,15 @@ export const LEVELS = [
   { level: 1, step: 2, label: '1 in 2 letters shown' },
   { level: 2, step: 3, label: '1 in 3 letters shown' },
   { level: 3, step: 4, label: '1 in 4 letters shown' },
-  { level: 4, step: null, label: 'No letters shown' }
+  { level: 4, step: 5, label: '1 in 5 letters shown' },
+  { level: 5, step: null, label: 'No letters shown' }
 ];
 export const MAX_LEVEL = LEVELS.length;
+// Most recent graded attempts kept per word (for the card's Progress bars)
+export const HISTORY_LIMIT = 10;
 export const DEFAULT_PREFS = { startLevel: 1, advancePct: 100, dropPct: 60 };
-// Gap in days after passing level 1..3 when no test date is set
-const NO_DATE_GAPS = [1, 2, 4];
+// Gap in days after passing level 1..4 when no test date is set
+const NO_DATE_GAPS = [1, 2, 4, 7];
 const REQUEUE_AFTER = 3;
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -41,7 +45,7 @@ export function hiddenIndicesForLevel(letterCount, level, smart = null) {
     const s = smartHiddenIndices(smart.word, Math.min(Math.max(level, 1), MAX_LEVEL), smart.groups, smart.struggle);
     if (s) return s;
   }
-  const step = LEVELS[Math.min(Math.max(level, 1), MAX_LEVEL) - 1].step;
+  const { step } = LEVELS[Math.min(Math.max(level, 1), MAX_LEVEL) - 1];
   const hidden = new Set();
   for (let i = 0; i < letterCount; i++) {
     if (step === null || i % step !== 0) hidden.add(i);
@@ -121,7 +125,10 @@ function scheduleDue(today, gap, testDate) {
 export function applyResult(progress, word, pct, { prefs = DEFAULT_PREFS, today, testDate = null } = {}) {
   const cur = getWordState(progress, word, prefs, today);
   const outcome = outcomeFor(pct, prefs);
-  const st = { ...cur, lastScore: pct, attempts: cur.attempts + 1, reviewedOn: today };
+  const st = {
+    ...cur, lastScore: pct, attempts: cur.attempts + 1, reviewedOn: today,
+    history: [...(cur.history || []), { pct, level: cur.level }].slice(-HISTORY_LIMIT)
+  };
   let requeue = false;
   let next;
 

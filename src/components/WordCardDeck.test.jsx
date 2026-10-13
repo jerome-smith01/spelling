@@ -29,29 +29,58 @@ describe('WordCardDeck', () => {
   beforeEach(() => localStorage.clear());
   afterEach(cleanup);
 
+  const dots = () => within(screen.getByRole('list', { name: 'Session cards' })).getAllByRole('listitem');
+
   it('shows one card, grades it, flips, and moves to the next word', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99); // shuffle keeps [kitten, puppy]
     const user = userEvent.setup();
     render(<Harness />);
-    expect(screen.getByText('2 due today')).toBeInTheDocument();
+    expect(dots()).toHaveLength(2);
     // kitten at level 1 hides letters 1,3,5 -> i, t, n
     await fill(user, ['i', 't', 'n']);
     await user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
     expect(await screen.findByText('100%')).toBeInTheDocument();
-    expect(screen.getByText(/Next time: 1 in 3 letters shown, tomorrow/)).toBeInTheDocument();
+    expect(screen.getByText('Grade')).toBeInTheDocument();
+    expect(screen.getByText('Stage 1 to 2')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Last 1 attempts/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next card' }));
     expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
-    expect(screen.getByText('1 due today')).toBeInTheDocument();
+    expect(dots()[0]).toHaveAccessibleName(/Card 1 of 2: scored 100%/);
+    expect(dots()[1]).toHaveAttribute('aria-current', 'step');
+    vi.restoreAllMocks();
   });
 
-  it('a miss drops/requeues instead of finishing the word', async () => {
+  it('a miss shows an X dot and the card is retried in place after the loop', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
     const user = userEvent.setup();
     render(<Harness />);
     await fill(user, ['x', 'x', 'x']);
     await user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
     expect(await screen.findByText('0%')).toBeInTheDocument();
-    expect(screen.getByText(/back later this session/i)).toBeInTheDocument();
+    expect(dots()[0]).toHaveAccessibleName(/missed/);
     await user.click(screen.getByRole('button', { name: 'Next card' }));
     expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Skip this card for now' }));
+    expect(dots()[1]).toHaveAccessibleName(/skipped/);
+    // loops back to the first card that isn't 100% yet
+    expect(screen.getByLabelText('Spelling card for kitten')).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it('Back, clicking a dot, and End session move around the session', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.getByRole('button', { name: 'Back to the previous card' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Skip this card for now' }));
+    expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Back to the previous card' }));
+    expect(screen.getByLabelText('Spelling card for kitten')).toBeInTheDocument();
+    await user.click(dots()[1]);
+    expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'End session' }));
+    expect(screen.getByText('All done for today!')).toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it('quiz mode: a correct spelling tests the word out', async () => {
@@ -106,6 +135,7 @@ describe('WordCardDeck', () => {
   it('on touch devices spelling uses the on-screen keyboard, not the device keyboard', async () => {
     const original = window.matchMedia;
     window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    vi.spyOn(Math, 'random').mockReturnValue(0.99); // shuffle keeps [kitten, puppy]
     try {
       const user = userEvent.setup();
       render(<Harness />);
@@ -123,6 +153,7 @@ describe('WordCardDeck', () => {
       await user.click(within(screen.getByRole('group', { name: 'Keyboard' })).getByRole('button', { name: 'Next card' }));
       expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
     } finally {
+      vi.restoreAllMocks();
       window.matchMedia = original;
     }
   });

@@ -39,21 +39,20 @@ describe('Smart hiding in the deck', () => {
     const user = userEvent.setup();
     const onAttempts = vi.fn();
     render(<Harness onAttempts={onAttempts} />);
-    expect(screen.getByText(/Level 1 of 4 · Pick the focus letters/)).toBeInTheDocument();
     for (const g of GROUPS) expect(screen.getByRole('button', { name: g })).toBeInTheDocument();
     expect(screen.queryByLabelText(/Letter \d of word/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'ou' }));
     await user.click(screen.getByRole('button', { name: /Check your answer for thousand/ }));
     expect(await screen.findByText('100%')).toBeInTheDocument();
-    expect(screen.getByText(/Next time: type the focus letters, tomorrow/)).toBeInTheDocument();
+    expect(screen.getByText('Stage 1 to 2')).toBeInTheDocument();
     // logged with typed = the chosen group's letters
     expect(onAttempts).toHaveBeenCalledWith('thousand', [
       { letter: 'o', position: 2, correct: 1, typed: 'o' },
       { letter: 'u', position: 3, correct: 1, typed: 'u' }
     ]);
-    // Harvey ball in the strip now shows one quarter
-    expect(screen.getByRole('listitem', { name: /thousand: Level 2 of 4/ })).toBeInTheDocument();
+    // the session dot for this card is now a check
+    expect(screen.getByRole('listitem', { name: /Card 1 of 1: scored 100%/ })).toBeInTheDocument();
   });
 
   it('a wrong pick at L1 stays at L1 and shows the lesson hint', async () => {
@@ -62,7 +61,7 @@ describe('Smart hiding in the deck', () => {
     await user.click(screen.getByRole('button', { name: 'ow' }));
     await user.click(screen.getByRole('button', { name: /Check your answer for thousand/ }));
     expect(await screen.findByText('0%')).toBeInTheDocument();
-    expect(screen.getByText(/So close! Same level/)).toBeInTheDocument();
+    expect(screen.getByText('Stage 1')).toBeInTheDocument();
     expect(screen.getByText(/ou says "ow" as in out/)).toBeInTheDocument();
   });
 
@@ -70,19 +69,17 @@ describe('Smart hiding in the deck', () => {
     seedLevel('thousand', 2);
     const user = userEvent.setup();
     render(<Harness />);
-    expect(screen.getByText(/Level 2 of 4 · Type the focus letters/)).toBeInTheDocument();
     const boxes = screen.getAllByLabelText(/Letter \d of word/);
     expect(boxes).toHaveLength(2);
     for (const b of boxes) await user.type(b, 'x');
     await user.click(screen.getByRole('button', { name: /Check your spelling for thousand/ }));
-    expect(await screen.findByText(/Dropping back to pick the focus letters/)).toBeInTheDocument();
+    expect(await screen.findByText('Stage 2 to 1')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next card' }));
     expect(screen.getByRole('button', { name: 'ou' })).toBeInTheDocument();
   });
 
   it('words without the lesson pattern use regular hiding', () => {
     render(<Harness raw="kit-ten" />);
-    expect(screen.getByText(/Level 1 of 4 · 1 in 2 letters shown/)).toBeInTheDocument();
     expect(screen.getAllByLabelText(/Letter \d of word/)).toHaveLength(3);
   });
 });

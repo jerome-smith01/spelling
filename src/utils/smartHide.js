@@ -62,7 +62,8 @@ export function smartHiddenIndices(word, level, groups, struggleIndices = []) {
   const targets = findTargets(word, groups);
   if (targets.length === 0) return null;
   const hidden = targetIndexSet(targets);
-  if (level >= 4) return new Set(Array.from({ length: n }, (_, i) => i));
+  if (level >= 5) return new Set(Array.from({ length: n }, (_, i) => i));
+  if (level === 4) return new Set(Array.from({ length: n }, (_, i) => i).filter(i => i % 5 !== 0));
   if (level === 3) {
     const struggle = [...(struggleIndices || [])].filter(i => Number.isInteger(i) && i >= 0 && i < n && !hidden.has(i));
     if (struggle.length) struggle.forEach(i => hidden.add(i));
@@ -71,11 +72,12 @@ export function smartHiddenIndices(word, level, groups, struggleIndices = []) {
   return hidden;
 }
 
-/** Level wording for smart lists (same 4 levels as LEVELS in schedule.js). */
+/** Level wording for smart lists (same 5 levels as LEVELS in schedule.js). */
 export const SMART_LEVEL_LABELS = [
   'Pick the focus letters',
   'Type the focus letters',
   'Focus letters + every other letter',
+  '1 in 5 letters shown',
   'No letters shown'
 ];
 
