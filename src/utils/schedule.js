@@ -17,7 +17,7 @@ export const LEVELS = [
 export const MAX_LEVEL = LEVELS.length;
 // Most recent graded attempts kept per word (for the card's Progress bars)
 export const HISTORY_LIMIT = 10;
-export const DEFAULT_PREFS = { startLevel: 1, advancePct: 100, dropPct: 60 };
+export const DEFAULT_PREFS = { startLevel: 1, advancePct: 100, dropPct: 60, autoSpeak: false };
 // Gap in days after passing level 1..4 when no test date is set
 const NO_DATE_GAPS = [1, 2, 4, 7];
 const REQUEUE_AFTER = 3;
