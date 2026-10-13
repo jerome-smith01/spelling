@@ -88,7 +88,7 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 - `syllable_cache(word PK, split, created_at)` (`0007`): one row per word the AI split, shared by all users; `split = ''` means the answer failed validation.
 - `photo_import_log(id, user_id, ip_hash, created_at)` (`0008`): per-user daily and per-IP hourly photo limits. The IP is stored hashed; the photo is never stored.
 - `learner_profiles(learner_id PK, grade, updated_at)` (`0009`): student grade 0 (K) to 8, default 3. `pattern_stats` gains `last_practiced_at`. `word_generation_log(id, learner_id, pattern, accepted_json, rejected_json, created_at)`: daily cap and a record of rejected words.
-- `pattern_candidates(pattern, source, example_words_json, count, first_seen, last_seen)` (`0010`): letter groups the tagger doesn't recognise (`source` = `untagged` | `photo`). Aggregates only, no learner ids.
+- `pattern_candidates(pattern, source, example_words_json, count, first_seen, last_seen, handled_at)` (`0010`, `handled_at` added in `0011`): letter groups the tagger doesn't recognise (`source` = `untagged` | `photo`). Aggregates only, no learner ids. Shown on the admin portal's Spelling patterns page; `handled_at` hides a group until it is seen again.
 
 ### `weekly_digests` / `digest_prefs` (migration `0004`)
 `weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
@@ -114,7 +114,7 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 | `POST` | `/api/spelling/syllables` | Yes | `{ words }` -> `{ splits }` for words the app's dictionary doesn't know (cached) |
 | `POST` | `/api/spelling/import/photo` | Yes | Raw JPEG/PNG/WebP body (max 4 MB) -> `{ title, words, focus_groups, hints }`; 5/day per user, 10/hour per IP |
 | `GET` / `PUT` | `/api/spelling/profile` | Yes | `{ grade }` (0-8) |
-| `GET` | `/api/spelling/admin/pattern-candidates` | Admin | The aggregates in the Tuesday email |
+| `GET` | `/api/spelling/admin/pattern-candidates` | Admin | New-pattern candidates (30 days, top 100), the list the admin portal shows |
 | `POST` | `/api/spelling/scores/:word/analyze` | Yes | Kid tip for a tricky word (Phase 5b) |
 | `POST` | `/api/spelling/patterns/:pattern/analyze` | Yes | Parent report for an active pattern (Phase 5b) |
 | `GET` | `/api/spelling/scores/:word` | Yes | One word: score, per-letter results, tip (Phase 5c) |
