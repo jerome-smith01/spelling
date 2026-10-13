@@ -180,7 +180,7 @@
 
 .letter-box.incorrect {
   background-color: transparent !important;
-  border: 2px solid var(--selected-color) !important;
+  border: 2px dashed var(--selected-color-border) !important;
   color: var(--foreground);
 }
 
