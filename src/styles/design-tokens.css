@@ -21,6 +21,10 @@
   /* Action green: Check / Next card keys, Check buttons, on-state switches */
   --action-green: #1f9c63;
   --on-action-green: #ffffff;
+  /* Audio purple: play buttons and the autoplay switch */
+  --audio-purple: #7c3aed;
+  --audio-purple-hover: #6d28d9;
+  --on-audio-purple: #ffffff;
 }
 
 /* GPF Design Tokens — Dark Theme */
@@ -41,4 +45,7 @@
   --harvey-ring: #cbd5e1;
   --action-green: #43b581;
   --on-action-green: #0b2a1c;
+  --audio-purple: #a78bfa;
+  --audio-purple-hover: #c4b5fd;
+  --on-audio-purple: #1e1b4b;
 }
