@@ -44,7 +44,7 @@ describe('Smart hiding in the deck', () => {
 
     await user.click(screen.getByRole('button', { name: 'ou' }));
     await user.click(screen.getByRole('button', { name: /Check your answer for thousand/ }));
-    expect(await screen.findByText('Progress history')).toBeInTheDocument();
+    expect(await screen.findByText('Progress History')).toBeInTheDocument();
     // logged with typed = the chosen group's letters
     expect(onAttempts).toHaveBeenCalledWith('thousand', [
       { letter: 'o', position: 2, correct: 1, typed: 'o' },
@@ -59,7 +59,7 @@ describe('Smart hiding in the deck', () => {
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: 'ow' }));
     await user.click(screen.getByRole('button', { name: /Check your answer for thousand/ }));
-    expect(await screen.findByText('Progress history')).toBeInTheDocument();
+    expect(await screen.findByText('Progress History')).toBeInTheDocument();
     expect(screen.getByText(/ou says "ow" as in out/)).toBeInTheDocument();
   });
 
@@ -71,7 +71,7 @@ describe('Smart hiding in the deck', () => {
     expect(boxes).toHaveLength(2);
     for (const b of boxes) await user.type(b, 'x');
     await user.click(screen.getByRole('button', { name: /Check your spelling for thousand/ }));
-    expect(await screen.findByText('Progress history')).toBeInTheDocument();
+    expect(await screen.findByText('Progress History')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next card' }));
     expect(screen.getByRole('button', { name: 'ou' })).toBeInTheDocument();
   });

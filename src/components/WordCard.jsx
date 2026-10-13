@@ -271,7 +271,7 @@ export default function WordCard({
           <button
             type="button"
             onClick={handleVerify}
-            className="btn-verify"
+            className="btn-verify btn-check"
             disabled={!allFilled}
             aria-label={`Check your spelling for ${word.word}`}
             aria-disabled={!allFilled}
