@@ -399,7 +399,7 @@
 .deck-back { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.9rem; align-items: center; text-align: center; }
 .deck-back-word { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem; }
 .deck-back-letter { position: relative; }
-.deck-back-typed { position: absolute; top: -2.9rem; left: 0; right: 0; height: 2.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; color: #dc2626; text-decoration: line-through; }
+.deck-back-typed { position: absolute; top: -2.9rem; left: 0; right: 0; height: 2.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; color: #dc2626; }
 .dark .deck-back-typed, [data-theme='dark'] .deck-back-typed { color: #fca5a5; }
 .deck-score { font-size: 2rem; font-weight: 800; color: var(--foreground); }
 .deck-message { color: var(--muted-foreground); font-weight: 600; }
@@ -525,7 +525,7 @@
 }
 .dark, [data-theme='dark'] {
   --stage-1: #2f6b50; --stage-2: #3a8c68; --stage-3: #43b581; --stage-4: #7fe0b0; --stage-5: #a7f3d0;
-  --sess-ok: #43b581; --sess-ok-fg: #10231a;
+  --sess-ok: #43b581; --sess-ok-fg: #ffffff;
   --sess-grey-bg: #3a3d44; --sess-grey-border: #a9afbb; --sess-grey-fg: #e3e6eb;
 }
 .sess-dot {

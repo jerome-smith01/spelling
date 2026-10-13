@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import SyllableBlock from './SyllableBlock';
 import StruggleIndicator from './StruggleIndicator';
 import AITipModal from './AITipModal';
+import AutoplayToggle from './AutoplayToggle';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import { PlayIcon, SlowPlayIcon } from './AudioIcons';
@@ -206,11 +207,7 @@ export default function WordCard({
             </span>
           )}
           {onAutoPlayChange ? (
-            <span className="autoplay-toggle">
-              <span id={`autoplay-${word.id}`}>Autoplay</span>
-              <button type="button" role="switch" className="switch" aria-checked={!!autoPlay}
-                aria-labelledby={`autoplay-${word.id}`} onClick={() => onAutoPlayChange(!autoPlay)} />
-            </span>
+            <AutoplayToggle checked={autoPlay} onChange={onAutoPlayChange} />
           ) : (
             <span style={{
               fontSize: '0.75rem',

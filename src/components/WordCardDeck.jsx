@@ -6,6 +6,7 @@ import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
 import StageBall from './StageBall';
+import AutoplayToggle from './AutoplayToggle';
 import ProgressBars from './ProgressBars';
 import DeckLegend from './DeckLegend';
 import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
@@ -305,12 +306,16 @@ export default function WordCardDeck({
                 tabIndex={-1}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); goNext(); } }}
               >
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
-                    aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
-                  <button type="button" className="speaker-btn"
-                    onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
-                    aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
+                <div className="word-card-header" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button type="button" className="speaker-btn"
+                      onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
+                      aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
+                    <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
+                      aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
+                  </div>
+                  <AutoplayToggle checked={schedule.prefs.autoSpeak !== false}
+                    onChange={(v) => schedule.setPrefs({ autoSpeak: v })} />
                 </div>
                 <div className="deck-back-word" aria-label={`The word is ${current.word}`} style={{ marginTop: '1rem' }}>
                   {letters.map(l => {
