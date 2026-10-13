@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { TaskAltIcon, ChevronLeftIcon, ChevronRightIcon } from './ActionIcons';
 
 const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
@@ -7,7 +8,7 @@ const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
  * Letters-only on-screen keyboard (no digits or symbols), so the phone's
  * native keyboard and its spell check never come into play.
  */
-export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled, enterLabel = 'Check', onPlaySlow, onPlay }) {
+export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled, enterLabel = 'Check', onPlaySlow, onPlay, onPrev, prevDisabled, onNext, nextLabel = 'Next card' }) {
   const [shift, setShift] = useState(false);
 
   const press = (c) => {
@@ -42,10 +43,16 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
         {onPlaySlow && (
           <button type="button" className="vkb-key vkb-audio" onClick={onPlaySlow} aria-label="Hear the word syllable by syllable"><SlowPlayIcon /></button>
         )}
-        <button type="button" className="vkb-key vkb-space" onClick={() => onChar(' ')} aria-label="Space">space</button>
-        <button type="button" className="vkb-key vkb-enter" onClick={onEnter} disabled={enterDisabled}>{enterLabel}</button>
         {onPlay && (
           <button type="button" className="vkb-key vkb-audio" onClick={onPlay} aria-label="Hear the word at normal speed"><PlayIcon /></button>
+        )}
+        <button type="button" className={`vkb-key vkb-enter${enterLabel === 'Check' ? ' vkb-enter-icon' : ''}`} onClick={onEnter} disabled={enterDisabled}
+          aria-label={enterLabel}>{enterLabel === 'Check' ? <TaskAltIcon size="1.5rem" /> : enterLabel}</button>
+        {onPrev && (
+          <button type="button" className="vkb-key vkb-nav" onClick={onPrev} disabled={prevDisabled} aria-label="Back to the previous card"><ChevronLeftIcon /></button>
+        )}
+        {onNext && (
+          <button type="button" className="vkb-key vkb-nav" onClick={onNext} aria-label={nextLabel}><ChevronRightIcon /></button>
         )}
       </div>
     </div>

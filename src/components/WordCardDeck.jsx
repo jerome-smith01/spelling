@@ -6,6 +6,7 @@ import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
 import StageBall from './StageBall';
+import AutoplayToggle from './AutoplayToggle';
 import ProgressBars from './ProgressBars';
 import DeckLegend from './DeckLegend';
 import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
@@ -285,6 +286,8 @@ export default function WordCardDeck({
               onAttempts={onAttempts}
               friction={frictionByWord[current.word] || 0}
               deckMode
+              autoPlay={schedule.prefs.autoSpeak !== false}
+              onAutoPlayChange={(v) => schedule.setPrefs({ autoSpeak: v })}
               autoFocus
               keyboardRef={kbRef}
               onCanCheck={setCanCheck}
@@ -303,12 +306,16 @@ export default function WordCardDeck({
                 tabIndex={-1}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); goNext(); } }}
               >
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
-                    aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
-                  <button type="button" className="speaker-btn"
-                    onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
-                    aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
+                <div className="word-card-header" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button type="button" className="speaker-btn"
+                      onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
+                      aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
+                    <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
+                      aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
+                  </div>
+                  <AutoplayToggle checked={schedule.prefs.autoSpeak !== false}
+                    onChange={(v) => schedule.setPrefs({ autoSpeak: v })} />
                 </div>
                 <div className="deck-back-word" aria-label={`The word is ${current.word}`} style={{ marginTop: '1rem' }}>
                   {letters.map(l => {
@@ -344,9 +351,13 @@ export default function WordCardDeck({
           <VirtualKeyboard
             onChar={(c) => { if (!result) kbRef.current?.press(c); }}
             onBackspace={() => { if (!result) kbRef.current?.backspace(); }}
-            onEnter={() => (result ? goNext() : kbRef.current?.check())}
-            enterDisabled={!result && !canCheck}
-            enterLabel={result ? 'Next card' : 'Check'}
+            onEnter={() => kbRef.current?.check()}
+            enterDisabled={!!result || !canCheck}
+            enterLabel="Check"
+            onPrev={goBack}
+            prevDisabled={session.idx === 0}
+            onNext={result ? goNext : skipCard}
+            nextLabel={result ? 'Next card' : 'Skip this card for now'}
             onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
             onPlay={() => userSpeak(current.id, current.word)}
           />

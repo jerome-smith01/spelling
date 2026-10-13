@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import VirtualKeyboard from './VirtualKeyboard';
@@ -36,18 +36,27 @@ describe('VirtualKeyboard', () => {
     expect(onChar).toHaveBeenNthCalledWith(2, 'b');
   });
 
-  it('wires delete, space and check', async () => {
+  it('wires delete and check', async () => {
     const { onChar, onBackspace, onEnter } = setup();
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Space' }));
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
     expect(onBackspace).toHaveBeenCalled();
-    expect(onChar).toHaveBeenCalledWith(' ');
+    expect(screen.queryByRole('button', { name: 'Space' })).not.toBeInTheDocument();
     expect(onEnter).toHaveBeenCalled();
   });
 
   it('disables Check when told to', () => {
     setup({ enterDisabled: true });
     expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled();
+  });
+
+  it('puts the bottom row in order: slow, play, check, previous, next', () => {
+    setup({ onPlaySlow: vi.fn(), onPlay: vi.fn(), onPrev: vi.fn(), onNext: vi.fn() });
+    const names = within(screen.getByRole('group', { name: 'Keyboard' })).getAllByRole('button')
+      .slice(-5).map(b => b.getAttribute('aria-label'));
+    expect(names).toEqual([
+      'Hear the word syllable by syllable', 'Hear the word at normal speed',
+      'Check', 'Back to the previous card', 'Next card'
+    ]);
   });
 });

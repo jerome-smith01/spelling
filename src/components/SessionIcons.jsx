@@ -7,7 +7,7 @@ const Svg = ({ size, children }) => (
 );
 
 export const CheckIcon = ({ size = '1em' }) => (
-  <Svg size={size}><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z" /></Svg>
+  <Svg size={size}><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z" stroke="currentColor" strokeWidth="70" strokeLinejoin="round" /></Svg>
 );
 
 export const CloseIcon = ({ size = '1em' }) => (

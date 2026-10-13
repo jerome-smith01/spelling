@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import SyllableBlock from './SyllableBlock';
 import StruggleIndicator from './StruggleIndicator';
 import AITipModal from './AITipModal';
+import AutoplayToggle from './AutoplayToggle';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import { PlayIcon, SlowPlayIcon } from './AudioIcons';
@@ -24,7 +25,9 @@ export default function WordCard({
   onCanCheck,
   onBack,
   onSkip,
-  canBack = false
+  canBack = false,
+  autoPlay,
+  onAutoPlayChange
 }) {
   const [userInputs, setUserInputs] = useState({});
   const [validationResults, setValidationResults] = useState(null);
@@ -203,13 +206,17 @@ export default function WordCard({
               ✓ Solved!
             </span>
           )}
-          <span style={{
-            fontSize: '0.75rem',
-            color: 'var(--muted-foreground)',
-            fontWeight: 600
-          }}>
-            {word.syllables.length} {word.syllables.length === 1 ? 'syllable' : 'syllables'}
-          </span>
+          {onAutoPlayChange ? (
+            <AutoplayToggle checked={autoPlay} onChange={onAutoPlayChange} />
+          ) : (
+            <span style={{
+              fontSize: '0.75rem',
+              color: 'var(--muted-foreground)',
+              fontWeight: 600
+            }}>
+              {word.syllables.length} {word.syllables.length === 1 ? 'syllable' : 'syllables'}
+            </span>
+          )}
         </div>
       </div>
 
