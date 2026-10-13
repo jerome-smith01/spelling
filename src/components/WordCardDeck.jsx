@@ -19,6 +19,11 @@ import {
   makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly, sessionGrade
 } from '../utils/session';
 
+// Auto-play repeats whichever speed button the student used last (kept across visits)
+const SPEED_KEY = 'spelling_tutor_last_audio_v1';
+const lastSpeed = () => { try { return localStorage.getItem(SPEED_KEY) === 'slow' ? 'slow' : 'normal'; } catch { return 'normal'; } };
+const setLastSpeed = (v) => { try { localStorage.setItem(SPEED_KEY, v); } catch { /* storage unavailable */ } };
+
 const targetExists = (st) => !st.target || !!document.querySelector(`[data-tutorial="${st.target}"]`);
 
 const fmtDay = (iso, today) => {
@@ -72,6 +77,9 @@ export default function WordCardDeck({
     tutorial.restart(quiz ? TUTORIAL_KEYS.quiz : TUTORIAL_KEYS.practice, quiz ? QUIZ_STEPS : PRACTICE_STEPS, { isAvailable: targetExists });
   };
 
+  const userSpeak = (id, text) => { setLastSpeed('normal'); onSpeak(id, text); };
+  const userSpeakSyllables = (id, syl) => { setLastSpeed('slow'); onSpeakSyllables?.(id, syl); };
+
   const byText = useMemo(() => Object.fromEntries(words.map(w => [w.word, w])), [words]);
   const curWord = currentWord(session);
   const current = (curWord && byText[curWord]) || null;
@@ -115,8 +123,11 @@ export default function WordCardDeck({
   // Optional: say each word as its card appears (also on first load). Browsers may hold the
   // first utterance until the page has had a tap or key press.
   useEffect(() => {
-    if (!schedule.prefs.autoSpeak || mode !== 'practice' || !current) return undefined;
-    const t = setTimeout(() => onSpeak(current.id, current.word), 400);
+    if (schedule.prefs.autoSpeak === false || mode !== 'practice' || !current) return undefined;
+    const t = setTimeout(() => {
+      if (lastSpeed() === 'slow' && onSpeakSyllables) onSpeakSyllables(current.id, buildPronunciationSyllables(current));
+      else onSpeak(current.id, current.word);
+    }, 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schedule.prefs.autoSpeak, mode, current?.word, cardKey]);
@@ -254,8 +265,8 @@ export default function WordCardDeck({
                 word={current}
                 targets={targets}
                 groups={focusGroups}
-                onSpeak={onSpeak}
-                onSpeakSyllables={onSpeakSyllables}
+                onSpeak={userSpeak}
+                onSpeakSyllables={userSpeakSyllables}
                 activePlayback={activePlayback}
                 onAttempts={onAttempts}
                 autoFocus
@@ -268,8 +279,8 @@ export default function WordCardDeck({
               hiddenIndices={hiddenIndices}
               onHide={() => {}}
               onShow={() => {}}
-              onSpeak={onSpeak}
-              onSpeakSyllables={onSpeakSyllables}
+              onSpeak={userSpeak}
+              onSpeakSyllables={userSpeakSyllables}
               activePlayback={activePlayback}
               onAttempts={onAttempts}
               friction={frictionByWord[current.word] || 0}
@@ -293,10 +304,10 @@ export default function WordCardDeck({
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); goNext(); } }}
               >
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button type="button" className="speaker-btn" onClick={() => onSpeak(current.id, current.word)}
+                  <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
                     aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
                   <button type="button" className="speaker-btn"
-                    onClick={() => onSpeakSyllables?.(current.id, buildPronunciationSyllables(current))}
+                    onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
                     aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
                 </div>
                 <div className="deck-back-word" aria-label={`The word is ${current.word}`} style={{ marginTop: '1rem' }}>
@@ -315,7 +326,7 @@ export default function WordCardDeck({
                 {result.pct < 100 && hintsForWord(current.word, focusGroups, hints).slice(0, 1).map(h => (
                   <p key={h} className="deck-hint">💡 {h}</p>
                 ))}
-                <div className="deck-section-label">Progress history</div>
+                <div className="deck-section-label">Progress History</div>
                 <ProgressBars attempts={progress.words[current.word]?.history || []} />
                 <button type="button" className="btn-verify" onClick={goNext}>Next card</button>
               </div>
@@ -336,8 +347,8 @@ export default function WordCardDeck({
             onEnter={() => (result ? goNext() : kbRef.current?.check())}
             enterDisabled={!result && !canCheck}
             enterLabel={result ? 'Next card' : 'Check'}
-            onPlaySlow={() => onSpeakSyllables?.(current.id, buildPronunciationSyllables(current))}
-            onPlay={() => onSpeak(current.id, current.word)}
+            onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
+            onPlay={() => userSpeak(current.id, current.word)}
           />
         </div>
       )}

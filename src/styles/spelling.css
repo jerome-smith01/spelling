@@ -544,8 +544,8 @@ button.sess-dot { cursor: pointer; }
 .stage-row { display: flex; align-items: center; justify-content: center; gap: 0.6rem; color: var(--muted-foreground); }
 .stage-ball { display: inline-flex; }
 .progress-bars { display: inline-flex; align-items: flex-start; gap: 0.35rem; padding: 0 0.15rem; }
-.progress-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.25rem; }
-.progress-col i { margin-top: auto; }
+.progress-col { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.progress-slot { height: 38px; display: flex; align-items: flex-end; }
 .progress-bars i { display: block; width: 0.75rem; border-radius: 3px; }
 .progress-bars i.is-latest { box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 3px var(--foreground); }
 
@@ -564,3 +564,11 @@ button.sess-dot { cursor: pointer; }
 .session-grade-letter { font-size: 3.5rem; font-weight: 800; line-height: 1; color: var(--foreground); }
 .dash-card-link { color: inherit; text-decoration: none; }
 .dash-card-link:hover, .dash-card-link:focus-visible { text-decoration: underline; }
+
+/* Play buttons are purple; Check buttons use the stage-ball green */
+.speaker-btn, .vkb-audio { background-color: #7c3aed; border-color: #7c3aed; color: #fff; }
+.speaker-btn:hover, .speaker-btn.active { background-color: #6d28d9; border-color: #6d28d9; color: #fff; box-shadow: none; }
+.dark .speaker-btn, [data-theme='dark'] .speaker-btn, .dark .vkb-audio, [data-theme='dark'] .vkb-audio { background-color: #a78bfa; border-color: #a78bfa; color: #1e1b4b; }
+.dark .speaker-btn:hover, [data-theme='dark'] .speaker-btn:hover, .dark .speaker-btn.active, [data-theme='dark'] .speaker-btn.active { background-color: #c4b5fd; border-color: #c4b5fd; color: #1e1b4b; }
+.btn-check, .vkb-enter { background-color: var(--stage-3); border: 1px solid var(--stage-3); color: #fff; }
+.dark .btn-check, [data-theme='dark'] .btn-check, .dark .vkb-enter, [data-theme='dark'] .vkb-enter { color: #0b2a1c; }

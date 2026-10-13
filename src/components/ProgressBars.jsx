@@ -16,13 +16,13 @@ export default function ProgressBars({ attempts = [] }) {
     <div className="progress-bars" role="img" aria-label={`Last ${attempts.length} attempts, oldest to newest: ${summary}`}>
       {attempts.map((a, i) => (
         <div key={i} className="progress-col">
-          <i
+          <div className="progress-slot"><i
             className={i === attempts.length - 1 ? 'is-latest' : undefined}
             style={{
               height: `${Math.round(MIN_H + (Math.max(0, Math.min(100, a.pct)) / 100) * (MAX_H - MIN_H))}px`,
               background: `var(--stage-${Math.max(1, Math.min(5, a.level))})`
             }}
-          />
+          /></div>
           <StageBall level={a.level} size={18} />
         </div>
       ))}
