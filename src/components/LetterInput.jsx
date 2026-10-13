@@ -9,6 +9,7 @@ export default function LetterInput({
   ariaLabel,
   validationState = 'neutral',
   touchKeyboard = false,
+  active = false,
   onActivate
 }) {
   const handleKeyDown = (e) => {
@@ -46,7 +47,7 @@ export default function LetterInput({
   if (validationState === 'incorrect') stateClass = 'incorrect';
 
   return (
-    <div className={`letter-box input-mode ${stateClass}`}>
+    <div className={`letter-box input-mode ${stateClass}${active ? ' active' : ''}`}>
       <input
         ref={inputRef}
         type="text"

@@ -12,6 +12,7 @@ export default function SyllableBlock({
   word,
   activeSyllableIndex = null,
   touchKeyboard = false,
+  activeIndex = null,
   onActivate
 }) {
   return (
@@ -57,6 +58,7 @@ export default function SyllableBlock({
                     ariaLabel={`Letter ${item.index + 1} of word ${word}`}
                     validationState={valState}
                     touchKeyboard={touchKeyboard}
+                    active={activeIndex === item.index}
                     onActivate={() => onActivate?.(item.index)}
                   />
                 );

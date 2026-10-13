@@ -277,7 +277,7 @@ export default function WordCardDeck({
                   <p key={h} className="deck-hint">💡 {h}</p>
                 ))}
                 <p className="deck-message" style={{ margin: 0 }}>{nextMessage(result.res.next, today, labels)}</p>
-                <button type="button" className="btn-verify" onClick={goNext}>Next card</button>
+                {!dock && <button type="button" className="btn-verify" onClick={goNext}>Next card</button>}
               </div>
             )}
           </div>

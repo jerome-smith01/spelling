@@ -31,6 +31,8 @@ export default function WordCard({
   const coarse = useCoarsePointer();
   const touchKeyboard = deckMode && coarse && !!keyboardRef;
   const activeRef = useRef(null);
+  // The blank the student is on, kept highlighted even when focus moves (e.g. to the speaker)
+  const [activeIdx, setActiveIdx] = useState(null);
   const inputsRef = useRef({});
 
   // Active speech playback states
@@ -43,6 +45,7 @@ export default function WordCard({
     setUserInputs({});
     inputsRef.current = {};
     activeRef.current = null;
+    setActiveIdx(null);
     setValidationResults(null);
     hasScrolledRef.current = false;
   }, [hiddenIndices]);
@@ -51,7 +54,10 @@ export default function WordCard({
   useEffect(() => {
     if (!autoFocus) return;
     const first = Object.keys(inputRefs.current).map(Number).sort((a, b) => a - b)[0];
-    if (first !== undefined) inputRefs.current[first]?.focus({ preventScroll: true });
+    if (first !== undefined) {
+      setActiveIdx(first);
+      inputRefs.current[first]?.focus({ preventScroll: true });
+    }
   }, [autoFocus]);
 
   // Scroll this card to the top of the viewport the first time a letter
@@ -113,6 +119,7 @@ export default function WordCard({
   // On-screen keyboard: fill the active blank, then move to the next one
   const focusBlank = (idx) => {
     activeRef.current = idx;
+    setActiveIdx(idx);
     inputRefs.current[idx]?.focus({ preventScroll: true });
   };
   const activeBlank = () => activeRef.current ?? hiddenSequence.find(i => !inputsRef.current[i]) ?? hiddenSequence[0];
@@ -122,8 +129,9 @@ export default function WordCard({
         const idx = activeBlank();
         if (idx === undefined) return;
         handleInputChange(idx, c.toLowerCase().slice(0, 1));
+        // Past the last blank the highlight stays on the last letter
         const next = hiddenSequence[hiddenSequence.indexOf(idx) + 1];
-        if (next !== undefined) focusBlank(next);
+        focusBlank(next !== undefined ? next : idx);
       },
       backspace: () => {
         let idx = activeBlank();
@@ -220,7 +228,8 @@ export default function WordCard({
         word={word.word}
         activeSyllableIndex={activeSyllableIndex}
         touchKeyboard={touchKeyboard}
-        onActivate={(idx) => { activeRef.current = idx; }}
+        activeIndex={deckMode && !validationResults ? (activeIdx ?? hiddenSequence[0]) : null}
+        onActivate={(idx) => { activeRef.current = idx; setActiveIdx(idx); }}
       />
 
       {/* Footer Controls: Hide, Show, and Verify Button */}

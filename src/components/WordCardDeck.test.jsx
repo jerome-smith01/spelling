@@ -103,6 +103,27 @@ describe('WordCardDeck', () => {
     vi.restoreAllMocks();
   });
 
+  it('highlights the current blank, even after tapping the speaker, and stays on the last one', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    try {
+      const user = userEvent.setup();
+      render(<Harness />);
+      const kb = screen.getByRole('group', { name: 'Keyboard' });
+      const box = (n) => screen.getAllByLabelText(/Letter \d of word/)[n].parentElement;
+      await user.click(screen.getByRole('button', { name: 'Hear kitten at normal speed' }));
+      expect(box(0)).toHaveClass('active');
+      expect(box(1)).not.toHaveClass('active');
+      for (const c of ['i', 't']) await user.click(within(kb).getByRole('button', { name: c }));
+      expect(box(2)).toHaveClass('active');
+      await user.click(within(kb).getByRole('button', { name: 'n' }));
+      expect(box(2)).toHaveClass('active');
+      expect(box(0)).not.toHaveClass('active');
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it('on touch devices spelling uses the on-screen keyboard, not the device keyboard', async () => {
     const original = window.matchMedia;
     window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
@@ -120,6 +141,8 @@ describe('WordCardDeck', () => {
       await user.click(within(kb).getByRole('button', { name: 'Check' }));
       expect(await screen.findByText('100%')).toBeInTheDocument();
       // the same keyboard stays put; its Enter key now says Next card
+      // only the keyboard's Next card remains (no duplicate under the word)
+      expect(screen.getAllByRole('button', { name: 'Next card' })).toHaveLength(1);
       await user.click(within(screen.getByRole('group', { name: 'Keyboard' })).getByRole('button', { name: 'Next card' }));
       expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
     } finally {
