@@ -18,6 +18,9 @@
   /* Harvey-ball progress (traffic-light green, >= 3:1 against the card) */
   --harvey-fill: #15803d;
   --harvey-ring: #475569;
+  /* Action green: Check / Next card keys, Check buttons, on-state switches */
+  --action-green: #1f9c63;
+  --on-action-green: #ffffff;
 }
 
 /* GPF Design Tokens — Dark Theme */
@@ -36,4 +39,6 @@
   --glass-border: rgba(255, 255, 255, 0.1);
   --harvey-fill: #4ade80;
   --harvey-ring: #cbd5e1;
+  --action-green: #43b581;
+  --on-action-green: #0b2a1c;
 }
