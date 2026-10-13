@@ -522,12 +522,12 @@
 /* ---------- Session progress dots, stage balls, attempt bars ---------- */
 :root {
   --stage-1: #86d6ab; --stage-2: #4bb783; --stage-3: #1f9c63; --stage-4: #136b43; --stage-5: #0b4f31;
-  --sess-ok: #15803d; --sess-ok-fg: #ffffff;
+  --sess-ok: var(--action-green); --sess-ok-fg: #ffffff;
   --sess-grey-bg: #e2e8f0; --sess-grey-border: #64748b; --sess-grey-fg: #1e293b;
 }
 .dark, [data-theme='dark'] {
   --stage-1: #2f6b50; --stage-2: #3a8c68; --stage-3: #43b581; --stage-4: #7fe0b0; --stage-5: #a7f3d0;
-  --sess-ok: #43b581; --sess-ok-fg: #ffffff;
+  --sess-ok: var(--action-green); --sess-ok-fg: #ffffff;
   --sess-grey-bg: #3a3d44; --sess-grey-border: #a9afbb; --sess-grey-fg: #e3e6eb;
 }
 .sess-dot {
