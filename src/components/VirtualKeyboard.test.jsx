@@ -50,13 +50,13 @@ describe('VirtualKeyboard', () => {
     expect(screen.getByRole('button', { name: 'Check' })).toBeDisabled();
   });
 
-  it('puts the bottom row in order: slow, play, previous, check, next', () => {
+  it('puts the bottom row in order: slow, play, check, previous, next', () => {
     setup({ onPlaySlow: vi.fn(), onPlay: vi.fn(), onPrev: vi.fn(), onNext: vi.fn() });
     const names = within(screen.getByRole('group', { name: 'Keyboard' })).getAllByRole('button')
       .slice(-5).map(b => b.getAttribute('aria-label'));
     expect(names).toEqual([
       'Hear the word syllable by syllable', 'Hear the word at normal speed',
-      'Back to the previous card', 'Check', 'Next card'
+      'Check', 'Back to the previous card', 'Next card'
     ]);
   });
 });

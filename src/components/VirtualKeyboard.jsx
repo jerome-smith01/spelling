@@ -46,11 +46,11 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
         {onPlay && (
           <button type="button" className="vkb-key vkb-audio" onClick={onPlay} aria-label="Hear the word at normal speed"><PlayIcon /></button>
         )}
+        <button type="button" className={`vkb-key vkb-enter${enterLabel === 'Check' ? ' vkb-enter-icon' : ''}`} onClick={onEnter} disabled={enterDisabled}
+          aria-label={enterLabel}>{enterLabel === 'Check' ? <TaskAltIcon size="1.5rem" /> : enterLabel}</button>
         {onPrev && (
           <button type="button" className="vkb-key vkb-nav" onClick={onPrev} disabled={prevDisabled} aria-label="Back to the previous card"><ChevronLeftIcon /></button>
         )}
-        <button type="button" className={`vkb-key vkb-enter${enterLabel === 'Check' ? ' vkb-enter-icon' : ''}`} onClick={onEnter} disabled={enterDisabled}
-          aria-label={enterLabel}>{enterLabel === 'Check' ? <TaskAltIcon size="1.5rem" /> : enterLabel}</button>
         {onNext && (
           <button type="button" className="vkb-key vkb-nav" onClick={onNext} aria-label={nextLabel}><ChevronRightIcon /></button>
         )}
