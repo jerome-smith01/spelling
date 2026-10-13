@@ -149,7 +149,7 @@ describe('WordCardDeck', () => {
       for (const c of ['t', 'n']) await user.click(within(kb).getByRole('button', { name: c }));
       await user.click(within(kb).getByRole('button', { name: 'Check' }));
       expect(await screen.findByText('Progress History')).toBeInTheDocument();
-      // the same keyboard stays put; its Enter key now says Next card
+      // the same keyboard stays put; its right-hand key now moves to the next card
       await user.click(within(screen.getByRole('group', { name: 'Keyboard' })).getByRole('button', { name: 'Next card' }));
       expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
     } finally {

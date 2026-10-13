@@ -351,9 +351,13 @@ export default function WordCardDeck({
           <VirtualKeyboard
             onChar={(c) => { if (!result) kbRef.current?.press(c); }}
             onBackspace={() => { if (!result) kbRef.current?.backspace(); }}
-            onEnter={() => (result ? goNext() : kbRef.current?.check())}
-            enterDisabled={!result && !canCheck}
-            enterLabel={result ? 'Next card' : 'Check'}
+            onEnter={() => kbRef.current?.check()}
+            enterDisabled={!!result || !canCheck}
+            enterLabel="Check"
+            onPrev={goBack}
+            prevDisabled={session.idx === 0}
+            onNext={result ? goNext : skipCard}
+            nextLabel={result ? 'Next card' : 'Skip this card for now'}
             onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
             onPlay={() => userSpeak(current.id, current.word)}
           />
