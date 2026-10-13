@@ -30,9 +30,9 @@ I made a default for each one so work can start. Change any of them; the ones ma
 | D12 | Existing users | Their account becomes a **self learner** (`learner_id = user_id`). Nothing moves and nothing changes on screen until they add a child. | No data migration risk for current users. |
 | D13 | Pricing | **Free during beta**, no paywall code in this plan. | Teacher features are the natural paid tier later; not decided here. |
 
-Questions I could not default:
-- **Q1.** Should a teacher be able to *see* a child's data that a parent created (both linked to one child)? Default in this plan: yes, if the parent sends the teacher an invite (F5). Confirm.
-- **Q2.** Do you want a printable / PDF report for parent–teacher meetings, or is CSV export enough? Plan has CSV in F6; PDF is an optional extra.
+Answered (2026-10-13):
+- **Q1 — Yes.** A teacher invited by a parent sees that child's full history (same view as the parent), through an F5 invite.
+- **Q2 — PDF report.** A printable report per learner (F3) and per class (F6), alongside CSV export. See [PDF reports](#pdf-reports).
 
 ---
 
@@ -187,6 +187,7 @@ Create / edit / delete managed learners (D1, D6). "Who's practising?" picker, ad
 * `/family/:learnerId`: existing Progress page for that child plus pattern reports.
 * `GET /api/spelling/supervisor/overview` returns all linked learners' summary in one call (no N+1 from the client).
 * Weekly digest per adult with a section per child (D9).
+* **PDF report per learner** (Q2) — see [PDF reports](#pdf-reports).
 **Done when:** a parent can answer "how is each child doing this week?" from one screen and one email.
 
 ### F4 — Assignments
@@ -199,8 +200,27 @@ Invite codes (D3, Q1) for: a second parent joining a child; an adult linking a s
 **Done when:** two adults see the same child, and a student with their own login shows up in an adult's list after accepting.
 
 ### F6 — Teacher / classroom
-Groups of kind `class` (D5), roster bulk add (paste one name per line), class code for adding self learners, class report: a table of students × (sessions this week, assignment completion, top struggling words, active patterns) sortable and filterable, plus "class-wide patterns" (patterns active for ≥ 3 students). CSV export. Consent note (D11). Optional: PDF summary (Q2).
+Groups of kind `class` (D5), roster bulk add (paste one name per line), class code for adding self learners, class report: a table of students × (sessions this week, assignment completion, top struggling words, active patterns) sortable and filterable, plus "class-wide patterns" (patterns active for ≥ 3 students). CSV export. **Class PDF report** plus one-click "all students" PDF (Q2). Consent note (D11).
 **Done when:** a teacher with 25 students sees who has not practised, who is stuck, and which pattern to teach next, on one screen.
+
+---
+
+<a id="pdf-reports"></a>
+## PDF reports (Q2)
+For parent–teacher meetings. Built as a **print-ready page** that the browser saves as PDF (Print → Save as PDF; a "Download PDF" button calls `window.print()`). No PDF library on the Worker, no stored files, and it works offline from cached data.
+
+* **Learner report** — `/family/:learnerId/report?from=&to=` (default: last 4 weeks). One to two A4/Letter pages:
+  1. Header: learner nickname, grade, date range, generated date (no emails or account ids).
+  2. Summary tiles: sessions, minutes practised, words practised, words mastered, accuracy, trend vs previous period.
+  3. Assignments: list name, due date, completion % (D8).
+  4. Spelling patterns: active and cleared, with the cached AI pattern report summary and practice ideas.
+  5. Hardest words (top 10 by friction) and recently mastered words.
+  6. Simple weekly bar chart of sessions (inline SVG, prints in black and white).
+  7. Space for adult notes (blank lines).
+* **Class report** (F6) — `/class/:groupId/report`: page 1 is the class table and class-wide patterns; "All students" option appends one learner report per student with page breaks.
+* Data: one call, `GET /api/spelling/supervisor/report?learner=&from=&to=`, requires `canViewReports`. Same access checks as every other learner route.
+* Styling: `@media print` stylesheet (no header, nav or keyboard; fixed page size; `break-inside: avoid` on sections). Tested with a Playwright print-to-PDF snapshot.
+* Not in scope: emailing the PDF, server-side generation. Revisit only if browsers' Save as PDF proves unreliable on phones.
 
 ---
 
@@ -225,7 +245,7 @@ Groups of kind `class` (D5), roster bulk add (paste one name per line), class co
 |---|---|
 | F1 | M — mostly careful refactor + one table rebuild |
 | F2 | M |
-| F3 | S–M (data already exists) |
+| F3 | M (data already exists; PDF report adds S) |
 | F4 | M |
 | F5 | S |
-| F6 | M–L |
+| F6 | M–L (class PDF adds S) |
