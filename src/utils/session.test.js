@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { makeSession, currentWord, recordResult, recordSkip, advance, goTo, endEarly, isComplete } from './session';
+import { makeSession, currentWord, recordResult, recordSkip, advance, goTo, endEarly, isComplete, sessionGrade } from './session';
 
 const fresh = () => ({ order: ['a', 'b', 'c'], status: {}, idx: 0, ended: false });
 
@@ -54,5 +54,18 @@ describe('session flow', () => {
     expect(s.ended).toBe(false);
     expect(currentWord(s)).toBe('a');
     expect(goTo(s, 9)).toBe(s);
+  });
+});
+
+describe('sessionGrade', () => {
+  it('is null before any card is graded', () => {
+    expect(sessionGrade(fresh())).toBeNull();
+  });
+
+  it('averages first-try scores, so a later retry does not raise the grade', () => {
+    let s = recordResult(fresh(), 50);
+    s = recordResult(s, 100); // retry of the same card
+    s = recordResult({ ...s, idx: 1 }, 100);
+    expect(sessionGrade(s)).toEqual({ pct: 75, letter: 'C', cards: 2, perfect: 1 });
   });
 });

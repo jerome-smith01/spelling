@@ -43,6 +43,7 @@ function errorText(err) {
 export default function PhotoImport({ onCreateList, title }) {
   const { isLoggedIn } = useAuth();
   const inputRef = useRef(null);
+  const cameraRef = useRef(null);
   const [status, setStatus] = useState('idle'); // idle | working | review
   const [error, setError] = useState('');
   const [review, setReview] = useState(null);
@@ -135,16 +136,27 @@ export default function PhotoImport({ onCreateList, title }) {
     <div style={box}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--foreground)' }}>📷 Upload homework photo</span>
-        <button type="button" className="btn-secondary-sm" style={{ fontWeight: 700 }}
-          onClick={() => inputRef.current?.click()} disabled={status === 'working'}>
-          {status === 'working' ? 'Reading photo…' : 'Choose photo'}
-        </button>
+        <span style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <button type="button" className="btn-secondary-sm" style={{ fontWeight: 700 }}
+            onClick={() => cameraRef.current?.click()} disabled={status === 'working'}>
+            {status === 'working' ? 'Reading photo…' : 'Take photo'}
+          </button>
+          <button type="button" className="btn-secondary-sm" style={{ fontWeight: 700 }}
+            onClick={() => inputRef.current?.click()} disabled={status === 'working'}>
+            Choose photo
+          </button>
+        </span>
         <input ref={inputRef} type="file" accept={ALLOWED_TYPES.join(',')} onChange={onFile}
           aria-label="Homework photo" style={{ display: 'none' }} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onFile}
+          aria-label="Take a homework photo" style={{ display: 'none' }} />
       </div>
       <p style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', margin: 0, lineHeight: 1.4 }}>
         One photo makes one list: we read the words, title, focus letters and hints, then you check them before saving.
         The photo itself is never stored.
+      </p>
+      <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', margin: 0 }}>
+        Accepted: JPEG, PNG or WebP, up to 20 MB. iPhone HEIC files aren't supported; use Take photo instead.
       </p>
       <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', margin: 0 }}>
         💡 Bigger list? Use <strong>Advanced → Copy AI prompt</strong> with any AI tool, then paste the result below.

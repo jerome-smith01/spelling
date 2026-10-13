@@ -399,7 +399,8 @@
 .deck-back { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.9rem; align-items: center; text-align: center; }
 .deck-back-word { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem; }
 .deck-back-letter { position: relative; }
-.deck-back-typed { position: absolute; top: -1.1rem; left: 0; right: 0; font-size: 0.75rem; color: #dc2626; text-decoration: line-through; }
+.deck-back-typed { position: absolute; top: -2.9rem; left: 0; right: 0; height: 2.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; color: #dc2626; text-decoration: line-through; }
+.dark .deck-back-typed, [data-theme='dark'] .deck-back-typed { color: #fca5a5; }
 .deck-score { font-size: 2rem; font-weight: 800; color: var(--foreground); }
 .deck-message { color: var(--muted-foreground); font-weight: 600; }
 .deck-card-center { text-align: center; padding: 2.5rem 1rem; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
@@ -541,7 +542,9 @@ button.sess-dot { cursor: pointer; }
 .deck-section-label { font-size: 0.8rem; font-weight: 600; color: var(--muted-foreground); margin: 0.4rem 0 -0.4rem; }
 .stage-row { display: flex; align-items: center; justify-content: center; gap: 0.6rem; color: var(--muted-foreground); }
 .stage-ball { display: inline-flex; }
-.progress-bars { display: inline-flex; align-items: flex-end; gap: 0.35rem; height: 2.4rem; padding: 0 0.15rem; }
+.progress-bars { display: inline-flex; align-items: flex-start; gap: 0.35rem; padding: 0 0.15rem; }
+.progress-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.25rem; }
+.progress-col i { margin-top: auto; }
 .progress-bars i { display: block; width: 0.75rem; border-radius: 3px; }
 .progress-bars i.is-latest { box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 3px var(--foreground); }
 
@@ -555,12 +558,8 @@ button.sess-dot { cursor: pointer; }
 .legend-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .legend-list li { display: flex; align-items: center; gap: 0.7rem; }
 
-/* Grade (left) and Stage (right) share one row on the card back */
-.deck-summary { display: flex; align-items: flex-start; justify-content: center; gap: 2.5rem; width: 100%; }
-.deck-summary-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; min-width: 7rem; }
-.deck-summary-col .deck-section-label { margin: 0; }
-.deck-summary-col .deck-score { font-size: 2rem; line-height: 2rem; }
-.deck-summary-col .stage-row { height: 2rem; }
-.deck-summary-col .stage-ball { width: 2rem; height: 2rem; }
-.deck-summary-col .stage-ball svg { width: 2rem; height: 2rem; }
-.deck-summary-col .stage-reward { height: 2rem; }
+/* End-of-session grade */
+.session-grade { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.session-grade-letter { font-size: 3.5rem; font-weight: 800; line-height: 1; color: var(--foreground); }
+.dash-card-link { color: inherit; text-decoration: none; }
+.dash-card-link:hover, .dash-card-link:focus-visible { text-decoration: underline; }

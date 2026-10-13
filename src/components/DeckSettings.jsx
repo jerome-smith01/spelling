@@ -36,6 +36,11 @@ export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, t
         <input type="number" min={0} max={100} value={prefs.dropPct}
           onChange={(e) => setPrefs({ dropPct: num(e.target.value, 0, 100, 60) })} />
       </label>
+      <label className="settings-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+        <input type="checkbox" checked={!!prefs.autoSpeak}
+          onChange={(e) => setPrefs({ autoSpeak: e.target.checked })} />
+        Say each word when its card appears
+      </label>
       <label className="settings-field">
         View
         <select value={prefs.view} onChange={(e) => setPrefs({ view: e.target.value })}>

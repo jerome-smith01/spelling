@@ -8,7 +8,6 @@ import ChoicePicker from './ChoicePicker';
 import StageBall from './StageBall';
 import ProgressBars from './ProgressBars';
 import DeckLegend from './DeckLegend';
-import { ChevronRightIcon, TaskAltIcon } from './ActionIcons';
 import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
 import { PlayIcon, SlowPlayIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
@@ -17,7 +16,7 @@ import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialStep
 import { hiddenIndicesForLevel, addDays, daysLeft } from '../utils/schedule';
 import { findTargets, hintsForWord } from '../utils/smartHide';
 import {
-  makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly
+  makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly, sessionGrade
 } from '../utils/session';
 
 const targetExists = (st) => !st.target || !!document.querySelector(`[data-tutorial="${st.target}"]`);
@@ -113,6 +112,15 @@ export default function WordCardDeck({
 
   useEffect(() => { if (result) backRef.current?.focus(); }, [result]);
 
+  // Optional: say each word as its card appears (also on first load). Browsers may hold the
+  // first utterance until the page has had a tap or key press.
+  useEffect(() => {
+    if (!schedule.prefs.autoSpeak || mode !== 'practice' || !current) return undefined;
+    const t = setTimeout(() => onSpeak(current.id, current.word), 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule.prefs.autoSpeak, mode, current?.word, cardKey]);
+
   if (!words.length) return null;
 
   const handleResult = ({ pct, results, typed }) => {
@@ -193,6 +201,7 @@ export default function WordCardDeck({
   );
 
   if (!current) {
+    const grade = sessionGrade(session);
     const upcoming = Object.values(progress.words).filter(s => !s.mastered && s.due).map(s => s.due).sort()[0];
     return (
       <div className="deck">
@@ -201,6 +210,16 @@ export default function WordCardDeck({
         <div className="deck-card-center">
           <div style={{ fontSize: '2.5rem' }}>🎉</div>
           <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>All done for today!</p>
+          {grade && (
+            <div className="session-grade" role="status" aria-label={`Session grade ${grade.letter}, ${grade.pct}%`}>
+              <div className="deck-section-label">Session grade</div>
+              <div className="session-grade-letter">{grade.letter}</div>
+              <div className="deck-score">{grade.pct}%</div>
+              <p className="deck-message" style={{ margin: 0 }}>
+                {grade.perfect} of {grade.cards} {grade.cards === 1 ? 'card' : 'cards'} right on the first try
+              </p>
+            </div>
+          )}
           {upcoming && <p className="deck-message" style={{ margin: 0 }}>Next words come back {fmtDay(upcoming, today)}.</p>}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button type="button" className="btn-verify" onClick={() => { practiceAnyway(); restartSession(); }}>Keep practicing</button>
@@ -293,39 +312,10 @@ export default function WordCardDeck({
                     );
                   })}
                 </div>
-                <div className="deck-summary">
-                  <div className="deck-summary-col">
-                    <div className="deck-section-label">Grade</div>
-                    <div className="deck-score">{result.pct}%</div>
-                  </div>
-                  <div className="deck-summary-col">
-                    {result.res.next.kind === 'mastered' ? (
-                      <>
-                        <div className="deck-section-label">Stage {level} complete</div>
-                        <span className="stage-reward" role="img" aria-label="Word learned"><TaskAltIcon size="2rem" /></span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="deck-section-label">
-                          {result.res.next.level === level ? `Stage ${level}` : `Stage ${level} to ${result.res.next.level}`}
-                        </div>
-                        <div className="stage-row">
-                          <StageBall level={level} label={`Stage ${level}`} />
-                          {result.res.next.level !== level && (
-                            <>
-                              <ChevronRightIcon />
-                              <StageBall level={result.res.next.level} label={`Stage ${result.res.next.level}`} />
-                            </>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
                 {result.pct < 100 && hintsForWord(current.word, focusGroups, hints).slice(0, 1).map(h => (
                   <p key={h} className="deck-hint">💡 {h}</p>
                 ))}
-                <div className="deck-section-label">Progress</div>
+                <div className="deck-section-label">Progress history</div>
                 <ProgressBars attempts={progress.words[current.word]?.history || []} />
                 <button type="button" className="btn-verify" onClick={goNext}>Next card</button>
               </div>

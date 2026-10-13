@@ -39,9 +39,9 @@ describe('WordCardDeck', () => {
     // kitten at level 1 hides letters 1,3,5 -> i, t, n
     await fill(user, ['i', 't', 'n']);
     await user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
-    expect(await screen.findByText('100%')).toBeInTheDocument();
-    expect(screen.getByText('Grade')).toBeInTheDocument();
-    expect(screen.getByText('Stage 1 to 2')).toBeInTheDocument();
+    expect(await screen.findByText('Progress history')).toBeInTheDocument();
+    expect(screen.queryByText('Grade')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Stage 1 to 2/)).not.toBeInTheDocument();
     expect(screen.getByRole('img', { name: /Last 1 attempts/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next card' }));
     expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('WordCardDeck', () => {
     render(<Harness />);
     await fill(user, ['x', 'x', 'x']);
     await user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
-    expect(await screen.findByText('0%')).toBeInTheDocument();
+    expect(await screen.findByText('Progress history')).toBeInTheDocument();
     expect(dots()[0]).toHaveAccessibleName(/missed/);
     await user.click(screen.getByRole('button', { name: 'Next card' }));
     expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
@@ -148,7 +148,7 @@ describe('WordCardDeck', () => {
       await user.click(within(kb).getByRole('button', { name: 'Delete' }));
       for (const c of ['t', 'n']) await user.click(within(kb).getByRole('button', { name: c }));
       await user.click(within(kb).getByRole('button', { name: 'Check' }));
-      expect(await screen.findByText('100%')).toBeInTheDocument();
+      expect(await screen.findByText('Progress history')).toBeInTheDocument();
       // the same keyboard stays put; its Enter key now says Next card
       await user.click(within(screen.getByRole('group', { name: 'Keyboard' })).getByRole('button', { name: 'Next card' }));
       expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();

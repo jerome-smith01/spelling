@@ -80,7 +80,7 @@ export default function DashboardPage() {
           return (
             <li key={d.id} className="dash-card" aria-label={`Deck ${d.name}`}>
               <h3 className="dash-card-title">
-                {d.name}
+                <Link to={`/lists/${d.id}`} className="dash-card-link">{d.name}</Link>
                 {d.id === lastId && <span className="deck-badge" style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}>Last used</span>}
               </h3>
               <div className="dash-bar" role="progressbar" aria-label="Words learned" aria-valuemin={0} aria-valuemax={d.total} aria-valuenow={d.learned}>
