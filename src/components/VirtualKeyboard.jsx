@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { PlayIcon, SlowPlayIcon } from './AudioIcons';
 
 const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
@@ -7,7 +6,7 @@ const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
  * Letters-only on-screen keyboard (no digits or symbols), so the phone's
  * native keyboard and its spell check never come into play.
  */
-export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled, enterLabel = 'Check', onPlaySlow, onPlay }) {
+export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled, enterLabel = 'Check' }) {
   const [shift, setShift] = useState(false);
 
   const press = (c) => {
@@ -39,14 +38,8 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
         </div>
       ))}
       <div className="vkb-row">
-        {onPlaySlow && (
-          <button type="button" className="vkb-key vkb-audio" onClick={onPlaySlow} aria-label="Hear the word syllable by syllable"><SlowPlayIcon /></button>
-        )}
         <button type="button" className="vkb-key vkb-space" onClick={() => onChar(' ')} aria-label="Space">space</button>
         <button type="button" className="vkb-key vkb-enter" onClick={onEnter} disabled={enterDisabled}>{enterLabel}</button>
-        {onPlay && (
-          <button type="button" className="vkb-key vkb-audio" onClick={onPlay} aria-label="Hear the word at normal speed"><PlayIcon /></button>
-        )}
       </div>
     </div>
   );

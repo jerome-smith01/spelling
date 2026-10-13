@@ -336,8 +336,6 @@ export default function WordCardDeck({
             onEnter={() => (result ? goNext() : kbRef.current?.check())}
             enterDisabled={!result && !canCheck}
             enterLabel={result ? 'Next card' : 'Check'}
-            onPlaySlow={() => onSpeakSyllables?.(current.id, buildPronunciationSyllables(current))}
-            onPlay={() => onSpeak(current.id, current.word)}
           />
         </div>
       )}

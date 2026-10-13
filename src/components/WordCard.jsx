@@ -166,6 +166,15 @@ export default function WordCard({
         <div data-tutorial="audio" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <button
             type="button"
+            onClick={() => onSpeak(word.id, word.word)}
+            className={`speaker-btn ${isCardSpeakingNormal ? 'active' : ''}`}
+            aria-label={isCardSpeakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}
+            title={isCardSpeakingNormal ? 'Stop audio' : `Hear ${word.word} (normal speed)`}
+          >
+            {isCardSpeakingNormal ? '⏹️' : <PlayIcon />}
+          </button>
+          <button
+            type="button"
             onClick={() => {
               const syllableTexts = buildPronunciationSyllables(word);
               if (onSpeakSyllables) {
@@ -177,15 +186,6 @@ export default function WordCard({
             title={isCardSpeakingSlow ? 'Stop audio' : `Hear ${word.word} syllable by syllable`}
           >
             {isCardSpeakingSlow ? '⏹️' : <SlowPlayIcon />}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSpeak(word.id, word.word)}
-            className={`speaker-btn ${isCardSpeakingNormal ? 'active' : ''}`}
-            aria-label={isCardSpeakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}
-            title={isCardSpeakingNormal ? 'Stop audio' : `Hear ${word.word} (normal speed)`}
-          >
-            {isCardSpeakingNormal ? '⏹️' : <PlayIcon />}
           </button>
         </div>
 
