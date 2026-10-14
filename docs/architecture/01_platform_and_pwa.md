@@ -20,6 +20,13 @@ This ensures all asset requests (e.g., `<script src="/spelling/app/assets/index.
 
 ---
 
+### Publishing
+* **App:** the GitHub Actions workflow `.github/workflows/deploy.yml` builds and deploys to Cloudflare Pages (`spelling-tutor`) **on every push to `main`** (and on demand), then purges the CDN cache for `/spelling/app/`. A manual publish is `tools/03.publish_web_to_cloudflare.bat`. A branch is not deployed by the workflow.
+* **API Worker:** `spelling-tutor-api` is deployed by hand (`npm run deploy` in `apps/spelling-tutor-api` of the website repo, or `tools/05.deploy_apis.bat`). D1 migrations are **not** applied by a deploy: apply them first (`npx wrangler d1 migrations apply spelling-tutor-db --remote`), then deploy the Worker, then publish the app.
+* **Order matters when a release needs new tables:** migrations → Worker → app. The Worker will not start answering correctly without its tables, and the app calls endpoints the old Worker does not have.
+
+---
+
 ## 2. Progressive Web App (PWA)
 PWA support is enabled via `vite-plugin-pwa`:
 * **Manifest:** [`public/manifest.json`](../../public/manifest.json)

@@ -14,19 +14,20 @@ flowchart LR
     end
 
     subgraph Edge["Cloudflare Workers (spelling-tutor-api)"]
-        AUTH["Auth Middleware\n(Cookie Session Validation)"]
+        AUTH["Auth Middleware\n(session, then which learner)"]
         HONO["Hono Router & Friction Engine"]
     end
 
     subgraph Storage["Cloudflare D1 Databases"]
-        GPF["good-plus-fast-db\n(users, sessions)"]
-        SPELL["spelling-tutor-db\n(word_lists, attempts, word_scores)"]
+        GPF["good-plus-fast-db\n(users, sessions, AI quota)"]
+        SPELL["spelling-tutor-db\n(lists, learners & access, attempts, scores,\nassignments, invites, classes)"]
     end
 
     UI --> SVC
-    SVC -->|"Fetch with credentials: 'include'"| AUTH
+    SVC -->|"Fetch with credentials: 'include'\n+ X-Spelling-Learner"| AUTH
     AUTH -->|"1. Validate session cookie"| GPF
-    AUTH -->|"2. Upsert shadow user"| SPELL
+    AUTH -->|"2. Upsert shadow user + self learner"| SPELL
+    AUTH -->|"3. learner_access check (404 if none)"| SPELL
     AUTH --> HONO
     HONO --> SPELL
 ```
@@ -91,6 +92,15 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 - `learner_profiles(learner_id PK, grade, updated_at)` (`0009`): student grade 0 (K) to 8, default 3. `pattern_stats` gains `last_practiced_at`. `word_generation_log(id, learner_id, pattern, accepted_json, rejected_json, created_at)`: daily cap and a record of rejected words.
 - `pattern_candidates(pattern, source, example_words_json, count, first_seen, last_seen, handled_at)` (`0010`, `handled_at` added in `0011`): letter groups the tagger doesn't recognise (`source` = `untagged` | `photo`). Aggregates only, no learner ids. Shown on the admin portal's Spelling patterns page; `handled_at` hides a group until it is seen again.
 
+### Who a request acts for (family accounts)
+The auth middleware (`src/index.ts`, `lib/learners.ts`) runs five steps: read the session, look it up in `good_plus_fast_db`, upsert the shadow user **and the user's own `self` learner** (one batch), resolve the learner (`resolveLearner`: header `X-Spelling-Learner`, default the user), then set `userId`, `learnerId` and `access` on the context. `resolveLearner` joins `learner_access` to `learners` and returns nothing for a missing, malformed, deleted or unlinked learner: the response is **404**, identical to a learner that never existed.
+
+Two kinds of route:
+- **Learner-level** (the header applies): attempts, scores, patterns, profile, digest/latest, progress/:listId, assigned-lists, kid tips, generate words. They read and write `learner_id`. **Practice may only be recorded by the learner themselves, a child's owner, or a child's guardian** (`canActAsLearner`): a teacher, or anyone viewing another person's own account, gets 403 on attempts, grade and generate. Adult reports (`/patterns/:p/analyze`, `/digest/latest`) also need `can_view_reports`.
+- **User-level** (the header is ignored, `USER_LEVEL_PREFIXES`): `/family`, `/supervisor`, `/assignments`, `/groups`. They are about the logged-in adult, so the app can always load its learner list even when it still names a deleted child. Each of them checks access itself (`ownerCheck`, `resolveLearner`, `ownedGroup`).
+
+Lists, digest preferences, photo import, auto-syllables and the **AI budget** stay with the logged-in user whichever learner is chosen: one parent's children share one budget. A test walks the whole route table and asserts every learner-level route returns 404 for a learner the caller is not linked to, so a new route cannot skip the check.
+
 ### `learners` / `learner_access` (migration `0012`, family accounts F1)
 See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_classroom_plan.md). A *user* logs in; a *learner* practises.
 - `learners(id PK, kind 'self'|'managed', owner_user_id, display_name, avatar, created_at, deleted_at)`: every user is their own `self` learner (`id = users.id`), created by the auth middleware on each request (`INSERT OR IGNORE`). `managed` child profiles arrive in F2. `deleted_at` hides a learner at once.
@@ -101,7 +111,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 - `supervisor_settings(user_id PK, pin_hash, pin_salt, pin_failed, pin_locked_until, updated_at)` (`0013`): the adult PIN for kid mode. PBKDF2-SHA256 (100,000 iterations, per-user salt); 5 wrong tries lock it for 5 minutes. A soft lock against a child, not account security.
 - `assignments(id, list_id -> word_lists ON DELETE CASCADE, learner_id, assigned_by, due_at, created_at, archived_at, group_id)` (`0014`, `group_id` from `0016`): one row per learner (a class assignment is one row per student); unique `(list_id, learner_id)` while not archived. Progress is computed, not stored (see `lib/assignments.ts`).
 - `invites(code PK, kind 'share_child'|'link_me', created_by, learner_id, role, can_assign, can_view_reports, expires_at, used_by, used_at, created_at)` and `invite_attempts(user_id, ok, at)` (`0015`): single-use 7-day codes; the attempts table rate-limits guessing (10 wrong codes an hour).
-- `learner_groups(id, owner_user_id, name, join_code UNIQUE, consent_at, created_at, archived_at)` and `group_members(group_id, learner_id, added_at)` (`0016`): a teacher's classes. `join_code` NULL = closed; while open it is reusable (not an invite) and `lookupInvite` falls back to it.
+- `learner_groups(id, owner_user_id, name, join_code UNIQUE, consent_at, created_at, archived_at)` and `group_members(group_id, learner_id, added_at)` (`0016`): a teacher's classes. `join_code` NULL = closed; while open it is reusable (not an invite): `lookupInvite` falls back to it and treats it as a `join_class` invite (the student's own learner becomes visible to the teacher). `consent_at` records that the teacher confirmed they may enter students' names.
 - `deck_progress(learner_id, list_id -> word_lists ON DELETE CASCADE, word, level 1..5, mastered, updated_at)` (`0017`): each word's deck stage for a list assigned to the learner, reported by the app. The latest report wins, so it can go down. An assignment is complete when every word is mastered; `percent` = stages passed over all words and stages.
 - Names: a child is a first name plus an optional last initial (`nicknameProblem` in `lib/family.ts`); no full last names, emails, links or phone numbers.
 - Limits: 8 child profiles per adult (200 once they have a class); 5 classes per teacher; 40 students per class. Deleting a child or class student hides them at once and the cron purges all their data after 30 days (`purgeDeletedLearners`).
@@ -110,6 +120,26 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 `weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period (built for children too; the learner's owner pays for the AI summary). The weekly job sends **one link-only email per opted-in adult** who can view any of them (including a teacher whose class practised): a link to the dashboard (`/spelling/app/family`, plus `/classes` for a teacher) and the unsubscribe link, with no names and no numbers. The details are in the app, where reports export as PDF or HTML. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
 
 ---
+
+### Migrations to apply for family accounts
+| File | Adds |
+|---|---|
+| `0012_learners.sql` | `learners`, `learner_access`, backfills a self learner for every user, **rebuilds `word_scores`** keyed by `(learner_id, word)` |
+| `0013_family_pin.sql` | `supervisor_settings` (adult PIN) |
+| `0014_assignments.sql` | `assignments` |
+| `0015_invites.sql` | `invites`, `invite_attempts` |
+| `0016_classes.sql` | `learner_groups`, `group_members`, `assignments.group_id` |
+| `0017_deck_progress.sql` | `deck_progress` |
+
+(There is no `0011` file in the website repo at the time of writing; the family migrations do not depend on it. Migrations are applied by hand, never by a deploy, and always **before** the Worker. Back up first: `npx wrangler d1 export spelling-tutor-db --remote --output backup.sql`.)
+
+### Queries at class scale
+`learnerSummaries` and assignment progress (`lib/supervisor.ts`, `lib/assignments.ts`) are set-based: the week's totals use the final answer per letter per visit (`ROW_NUMBER() OVER (PARTITION BY learner, session, word, position …)`), so a class overview of 40 students costs a handful of queries (a test asserts under 25), well inside a Worker's subrequest limit. Single-learner paths call the same functions with one id.
+
+### Crons and deletion
+- `0 13 * * SUN`: builds the weekly digests (one per learner who practised; the learner's owner pays for the AI summary, except class students, who get the template summary), sends the link-only email, then **purges** child profiles deleted more than 30 days ago (`purgeDeletedLearners`: attempts, scores, patterns, sessions, profile, digests, generation log, assignments, deck progress, invites, class membership, access, the learner row).
+- `0 14 * * TUE`: new-pattern candidates for the admin (unchanged).
+- **Known gap: deleting a Good Plus Fast account does not reach this database.** `DELETE /api/auth/account` removes the user from `good-plus-fast-db` only; the shadow `users` row, the user's lists, attempts and any children (and the access others have to them) stay in `spelling-tutor-db`. Children's data is therefore orphaned rather than deleted. A sweep (delete everything for users no longer in `good_plus_fast_db`, and unlink them from others' learners) is not built.
 
 ## API Endpoints (`spelling-tutor-api`)
 

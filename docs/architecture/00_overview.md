@@ -11,6 +11,10 @@ This document outlines the core architectural principles, invariants, and patter
 > - **Unique URLs:** Every screen and every list has its own URL under `/spelling/app/` (see `04_auth_and_sync.md`); list ids are UUIDs and access is enforced server-side.
 > - **Session Cookie Auth:** Never store JWTs in `localStorage`. Authentication relies strictly on the `HttpOnly` session cookie issued by `goodplusfast.com`.
 > - **Uploads are never stored:** homework photos are validated, re-encoded in the browser, held in memory for one model call and discarded. All AI output (words, titles, hints) is parsed, validated, length-clamped and rendered as text.
+> - **A user is not a learner (family accounts).** A *user* logs in; a *learner* practises. Every user is also their own `self` learner (`learner_id = user_id`), and a child or class student is a `managed` learner owned by an adult, with no login. Practice data (attempts, scores, patterns, grade, digest) is keyed by `learner_id`; lists, settings and the AI budget stay with the logged-in user. A request names the learner in `X-Spelling-Learner`; the server checks `learner_access` and answers 404 for anything the user may not act for, exactly as for something that does not exist (see `03_backend_and_schema.md`, `04_auth_and_sync.md`).
+> - **Reports are for grown-ups.** A child in kid mode sees their own progress but never reports (weekly summary, pattern reports, exports). Nothing about a child is ever sent by email: the weekly email is only a link to the dashboard.
+> - **Children are a first name and a last initial.** "Ava S.", an avatar and a grade: never a full last name, email, link or phone number (`nicknameProblem`, `lib/family.ts`). Deleting a child hides them at once and removes their data after 30 days.
+> - **Kid mode and the PIN are a lock for a child, not security.** Kid mode is enforced in the app; the PIN is hashed and rate-limited on the server, but a 4-digit PIN protects nothing beyond a child on a parent's device.
 > - **AI Capacity Limits:** All Cloudflare Workers AI interactions must verify the kill switch and neuron cap in the shared `ai_admin_config` (in `good_plus_fast_db`) before executing, including fire-and-forget auto-triggers to prevent cost overruns.
 
 ---
@@ -25,6 +29,7 @@ This document outlines the core architectural principles, invariants, and patter
 | Auth, URLs & User Data Sync | [`04_auth_and_sync.md`](./04_auth_and_sync.md) | `useAuth`, `useLists`, `syncService`, `attemptQueue` |
 | Struggle & Pattern Engine, shared AI quota | [`05_ai_engine.md`](./05_ai_engine.md) *(Phase 5)* | `scoring.ts`, `patternTagger.ts`, `useStruggle` |
 | Smart hiding, auto-syllables, photo import, profile & generated words | [`05_ai_engine.md` §11](./05_ai_engine.md) · [plan](../action_plans/smart_hiding_ai_plan.md) | `smartHide.js`, `ChoicePicker`, `HarveyBall`, `PhotoImport`, `ProfilePage`, `photoImport.ts`, `generateWords.ts` |
+| Family & classroom accounts (learners, kid mode and PIN, assignments, invite codes, classes, reports) | [`04_auth_and_sync.md` §6b](./04_auth_and_sync.md) · [`03_backend_and_schema.md`](./03_backend_and_schema.md) · [plan](../action_plans/family_and_classroom_plan.md) | `useLearner`, `activeLearner.js`, `lib/learners.ts`, `family.ts`, `assignments.ts`, `invites.ts`, `classes.ts`, `supervisor.ts`, `reportHtml.js`, `classExport.js` |
 | Text-to-Speech Decision | [`06_tts_decision.md`](./06_tts_decision.md) *(Phase 7)* | Kokoro pre-gen + R2, `speechSynthesis` fallback |
 | Android & Mobile Packaging | *(deferred — see Phase 7 note in launch plan)* | Capacitor Android Bridge |
 

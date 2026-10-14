@@ -288,7 +288,7 @@ For parent–teacher meetings. Built as a **print-ready page** that the browser 
 * PIN: hashed (PBKDF2, per-user salt), 5 wrong tries → 5-minute lockout.
 * Invite codes: single use, 7-day expiry, rate-limited (10 per adult per day).
 * Delete learner: soft delete, hidden at once, hard-delete job after 30 days removes attempts, scores, patterns, digests, sessions.
-* Delete adult account: managed learners they *own* are deleted; learners they are only linked to are unlinked.
+* Delete adult account: **not built.** The planned behaviour (managed learners they *own* are deleted; learners they are only linked to are unlinked) needs a sweep: `DELETE /api/auth/account` only removes the user from `good-plus-fast-db`, so their spelling data and children stay in `spelling-tutor-db`. See `docs/architecture/03_backend_and_schema.md`, "Crons and deletion".
 * AI quotas stay per adult, so adding children does not multiply the budget.
 * Privacy page: add "Children" section for the spelling app before F2 ships (D11).
 
