@@ -6,6 +6,10 @@
  * cookie travels automatically. Set VITE_API_ORIGIN (e.g. https://www.goodplusfast.com)
  * for builds served from another origin, such as the Capacitor Android app.
  */
+import { getActiveLearnerId } from './activeLearner';
+
+export const LEARNER_HEADER = 'X-Spelling-Learner';
+
 export const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN || '').replace(/\/$/, '');
 
 export class AuthError extends Error {
@@ -32,7 +36,14 @@ export class NetworkError extends Error {
 
 const TIMEOUT_MS = 10000;
 
-export async function apiFetch(path, { method = 'GET', body, headers, keepalive } = {}) {
+/**
+ * `learner`: undefined = the active learner (default), null = the user themselves,
+ * or an explicit learner id (used when flushing a queue that was recorded for a child).
+ * Only /api/spelling calls carry it; the family routes ignore it.
+ */
+export async function apiFetch(path, { method = 'GET', body, headers, keepalive, learner } = {}) {
+  const learnerId = learner === undefined ? getActiveLearnerId() : learner;
+  const learnerHeaders = learnerId && path.startsWith('/api/spelling/') ? { [LEARNER_HEADER]: learnerId } : {};
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -41,7 +52,7 @@ export async function apiFetch(path, { method = 'GET', body, headers, keepalive 
     res = await fetch(`${API_ORIGIN}${path}`, {
       method,
       credentials: 'include',
-      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...headers },
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...learnerHeaders, ...headers },
       body: body ? JSON.stringify(body) : undefined,
       signal: controller.signal,
       keepalive

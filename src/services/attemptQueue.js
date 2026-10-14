@@ -5,8 +5,13 @@
  * the user is logged in. When authenticated the queue is flushed to
  * POST /api/spelling/attempts in chunks. Each attempt carries a client_id, so a
  * retried batch is ignored by the server and scores are never double-counted.
+ *
+ * Family accounts: each attempt is stamped with the learner who practised (`learner_id`,
+ * absent = the user themselves). A flush sends one request per learner, naming that
+ * learner in a header, so a child's practice can never land on a sibling or the parent.
  */
 import { apiFetch } from './apiService';
+import { getActiveLearnerId } from './activeLearner';
 
 export const QUEUE_KEY = 'spelling_tutor_attempt_queue_v1';
 export const MAX_QUEUE = 1000; // anonymous users: drop oldest beyond this
@@ -34,6 +39,8 @@ export function readQueue() {
   return read();
 }
 
+const learnerOf = (a) => a.learner_id || null;
+
 export function queueLength() {
   return read().length;
 }
@@ -41,7 +48,12 @@ export function queueLength() {
 /** attempts: [{ word, letter, position, correct (0|1), typed?, session_id?, list_id? }] */
 export function enqueue(attempts) {
   if (!attempts?.length) return;
-  const stamped = attempts.map(a => ({ ...a, client_id: crypto.randomUUID() }));
+  const learnerId = getActiveLearnerId();
+  const stamped = attempts.map(a => ({
+    ...a,
+    client_id: crypto.randomUUID(),
+    ...(learnerId ? { learner_id: learnerId } : {})
+  }));
   write([...read(), ...stamped].slice(-MAX_QUEUE));
   notify();
 }
@@ -72,18 +84,24 @@ export async function flush({ keepalive = false } = {}) {
     for (;;) {
       const queue = read();
       if (queue.length === 0) break;
-      const chunk = queue.slice(0, CHUNK_SIZE);
+      // One request holds one learner's attempts: take the oldest's, in order
+      const learnerId = learnerOf(queue[0]);
+      const chunk = queue.filter(a => learnerOf(a) === learnerId).slice(0, CHUNK_SIZE);
       const ids = new Set(chunk.map(a => a.client_id));
 
       try {
         await apiFetch('/api/spelling/attempts', {
           method: 'POST',
-          body: { attempts: chunk },
+          body: { attempts: chunk.map(({ learner_id, ...a }) => a) }, // eslint-disable-line no-unused-vars
+          learner: learnerId,
           keepalive
         });
       } catch (err) {
         if (err.status === 400) {
           console.error('Dropping rejected attempts', err);
+        } else if (err.status === 404 && learnerId) {
+          // The child profile was deleted (or this account was unlinked): these can never be saved
+          console.error('Dropping attempts for a learner that no longer exists', err);
         } else {
           throw err;
         }

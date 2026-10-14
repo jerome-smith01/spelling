@@ -40,6 +40,8 @@ Login links go to `/login?redirect=<current path+query+hash>`. The main site val
 | `/lists/:listId` | Practice one list — `listId` is a client-generated UUID that is also the server primary key |
 | `/progress` | Progress dashboard (`?list=<id>` filters) |
 | `/progress/words/:word` | One word: letter-by-letter results and its tip (Phase 5c) |
+| `/who` | "Who's practising?": children plus a Grown-up tile; choosing a child starts kid mode (family accounts F2) |
+| `/family` | Add / edit / delete children, start kid mode, grown-up PIN (not available in kid mode) |
 
 * URLs are addresses, not credentials. The API scopes every query by `user_id`; another user's id returns 404, identical to a non-existent list. Lists that exist only in one anonymous browser resolve only there.
 * Deep links need SPA fallback: `public/_redirects` (`/* /index.html 200`). The proxy Worker forwards any `/spelling/app*` path and strips the prefix.
@@ -79,6 +81,17 @@ Legacy storage (`spelling_tutor_words_v4/v3/v2`) migrates once into a dirty list
 ## 6. Progress page
 
 Flushes the queue, then loads scores, patterns and the latest weekly digest in parallel (patterns and the digest are extras: if either fails the word progress still shows). Shows the weekly summary and email opt-in, stat tiles, the Mastered / Struggling / Needs-practice buckets, the spelling patterns list with parent reports, and a table of all words sorted by friction score. Empty, loading, offline, expired and error states are handled. Flames on the practice page open an AI tip (see `05_ai_engine.md`).
+
+## 6b. Family accounts (F2)
+
+See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_classroom_plan.md).
+
+* **Active learner** (`services/activeLearner.js`, `hooks/useLearner.jsx`): `{ id: null }` = the user themselves (nothing changes for existing users); `{ id, kid }` = a child, in kid mode when `kid`. Stored in `spelling_tutor_active_learner_v1`. `apiFetch` adds `X-Spelling-Learner` to `/api/spelling/*` calls (not `/api/spelling/family/*`, which are user-level). The routes are wrapped in `<Routes key={activeId}>`, so switching learner remounts every screen instead of showing the previous child's data.
+* **Attempt queue**: each attempt is stamped with `learner_id` when queued; a flush sends one request per learner with that learner in the header, whoever is active at flush time. A 404 for a child (deleted or unlinked) drops that chunk; a 404 for the user themselves still throws.
+* **Per-learner browser storage**: deck progress, deck prefs and hiding state use `learnerKey(base)`: the user's own key is unchanged (existing progress stays), each child gets `base:L<id>`.
+* **Kid mode** hides Progress / Profile / Family / Lab (routes redirect to the decks), the account menu (no Log out), new decks, deck settings and word import. Switching to a sibling or the Grown-up tile needs the PIN when one is set; with no PIN it is open. The PIN is verified by the server (hashed, 5 tries then 5 minutes), but **kid mode itself is enforced in the app, so it is a lock for a child, not security**.
+* **Offline**: the family list is cached (`spelling_tutor_family_v1`) and the chosen child kept when the app launches offline, so a child can keep practising; their attempts wait in the queue. Only an explicit log out (authenticated → anonymous) clears them.
+* Adults viewing a child outside kid mode see a "Showing Maya · Back to me" banner.
 
 ## 7. Failure modes
 

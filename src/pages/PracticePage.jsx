@@ -18,6 +18,7 @@ import { saveLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { useStruggle } from '../hooks/useStruggle';
 import { useStrugglePositions } from '../hooks/useStrugglePositions';
+import { useLearner } from '../hooks/useLearner';
 import '../styles/spelling.css';
 
 // Rate (how slowly each syllable is spoken) and pause (the gap between syllables)
@@ -58,6 +59,7 @@ export default function PracticePage() {
 
 function PracticeView({ listId }) {
   const navigate = useNavigate();
+  const { kidMode } = useLearner();
   const [searchParams] = useSearchParams();
   const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
   const { createList, atListLimit } = useLists();
@@ -168,6 +170,9 @@ function PracticeView({ listId }) {
         >
           {list?.name}
         </h2>
+        {/* Kid mode: no settings or word importing. TODO(owner): decide whether a child gets a small
+            settings panel (audio speed only) — plan open item. */}
+        {kidMode ? <span aria-hidden="true" style={{ width: '5rem' }} /> : (
         <button
           type="button"
           onClick={() => setSettingsOpen(prev => !prev)}
@@ -179,9 +184,10 @@ function PracticeView({ listId }) {
         >
           {settingsOpen ? '▲ Settings' : '⚙ Settings'}
         </button>
+        )}
       </div>
 
-      {settingsOpen && (
+      {settingsOpen && !kidMode && (
       <section aria-label="Practice settings" style={{
         backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--card-border)',

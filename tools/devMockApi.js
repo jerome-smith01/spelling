@@ -62,11 +62,45 @@ const readBody = (req) => new Promise((resolve) => {
 const json = async (req) => { try { return JSON.parse((await readBody(req)).toString() || '{}'); } catch { return {}; } };
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
+// Family accounts (F2): one in-memory family, so kid mode and the PIN can be tried by hand
+const family = {
+  pin: null,
+  kids: [
+    { id: 'mock-maya', kind: 'managed', role: 'owner', display_name: 'Maya', avatar: '🐼', grade: 2, can_assign: true, can_view_reports: true },
+    { id: 'mock-leo', kind: 'managed', role: 'owner', display_name: 'Leo', avatar: '🦊', grade: 1, can_assign: true, can_view_reports: true }
+  ]
+};
+const AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐙', '🦄', '🐢', '🐧', '🐝', '🦋', '🐳', '🦖'];
+
+async function handleFamily(req, res, p, m) {
+  if (p === '/api/spelling/family' && m === 'GET') {
+    const me = { id: 'mock-user', kind: 'self', role: 'self', display_name: '', avatar: null, grade: 3, can_assign: true, can_view_reports: true };
+    return send(res, 200, { learners: [me, ...family.kids], pin_set: !!family.pin, max_children: 8, avatars: AVATARS });
+  }
+  if (p === '/api/spelling/family/learners' && m === 'POST') {
+    const b = await json(req);
+    const kid = { id: `mock-${Date.now()}`, kind: 'managed', role: 'owner', display_name: b.display_name, avatar: b.avatar || '🙂', grade: b.grade ?? 3, can_assign: true, can_view_reports: true };
+    family.kids.push(kid);
+    return send(res, 201, kid);
+  }
+  const r = p.match(/^\/api\/spelling\/family\/learners\/([^/]+)$/);
+  if (r && m === 'PUT') { const b = await json(req); const k = family.kids.find(x => x.id === r[1]); Object.assign(k || {}, b); return send(res, k ? 200 : 404, k || { error: 'Not found' }); }
+  if (r && m === 'DELETE') { family.kids = family.kids.filter(x => x.id !== r[1]); return send(res, 204); }
+  if (p === '/api/spelling/family/pin/verify') {
+    const b = await json(req);
+    return b.pin === family.pin ? send(res, 200, { ok: true }) : send(res, 403, { error: 'That PIN is not right.' });
+  }
+  if (p === '/api/spelling/family/pin' && m === 'PUT') { const b = await json(req); family.pin = b.pin; return send(res, 200, { pin_set: true }); }
+  if (p === '/api/spelling/family/pin' && m === 'DELETE') { family.pin = null; return send(res, 200, { pin_set: false }); }
+  return null;
+}
+
 async function handle(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const p = url.pathname;
   const m = req.method;
 
+  if (p.startsWith('/api/spelling/family')) { if (await handleFamily(req, res, p, m) !== null) return; }
   if (p === '/api/auth/me') return send(res, 200, { user: USER });
   if (p === '/api/auth/logout') return send(res, 204);
 

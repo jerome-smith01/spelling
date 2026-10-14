@@ -1,5 +1,9 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import WhoPage from './pages/WhoPage';
+import FamilyPage from './pages/FamilyPage';
+import LearnerBanner from './components/layout/LearnerBanner';
+import { LearnerProvider, useLearner } from './hooks/useLearner';
 import AppShell from './components/layout/AppShell';
 import AuthBanner from './components/AuthBanner';
 import PracticePage from './pages/PracticePage';
@@ -25,6 +29,31 @@ function FocusOnNavigate() {
   return null;
 }
 
+// Kid mode shows practice only: anything else goes back to the decks
+function GrownUpsOnly({ children }) {
+  const { kidMode } = useLearner();
+  return kidMode ? <Navigate to="/" replace /> : children;
+}
+
+// Everything under here is one learner's data: switching learner starts the screens afresh
+function LearnerRoutes() {
+  const { activeId } = useLearner();
+  return (
+    <Routes key={activeId ?? 'me'}>
+      <Route path="/" element={<DashboardPage />} />
+      <Route path="/lists" element={<Navigate to="/" replace />} />
+      <Route path="/lists/:listId" element={<PracticePage />} />
+      <Route path="/progress" element={<GrownUpsOnly><ProgressPage /></GrownUpsOnly>} />
+      <Route path="/progress/words/:word" element={<WordDetailPage />} />
+      <Route path="/profile" element={<GrownUpsOnly><ProfilePage /></GrownUpsOnly>} />
+      <Route path="/who" element={<WhoPage />} />
+      <Route path="/family" element={<GrownUpsOnly><FamilyPage /></GrownUpsOnly>} />
+      <Route path="/lab" element={<GrownUpsOnly><LabPage /></GrownUpsOnly>} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}
+
 /**
  * URL scheme (relative to the /spelling/app base):
  *   /                          -> deck dashboard (all decks, progress, practice/quiz entry)
@@ -34,31 +63,27 @@ function FocusOnNavigate() {
  *   /progress                  -> progress dashboard (?list=<id> filter)
  *   /progress/words/:word      -> one word: letter-by-letter results and its tip
  *   /profile                   -> grade + pattern progress table (Generate 5 words)
+ *   /who                       -> "Who's practising?" (children + grown-up; starts kid mode)
+ *   /family                    -> add and manage children, the grown-up PIN (not in kid mode)
  */
 export default function App() {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <AuthProvider>
+     <LearnerProvider>
       <ListsProvider>
        <TutorialProvider>
         <AppShell theme={theme} onToggleTheme={toggleTheme}>
           <FocusOnNavigate />
+          <LearnerBanner />
           <AuthBanner />
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/lists" element={<Navigate to="/" replace />} />
-            <Route path="/lists/:listId" element={<PracticePage />} />
-            <Route path="/progress" element={<ProgressPage />} />
-            <Route path="/progress/words/:word" element={<WordDetailPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/lab" element={<LabPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+          <LearnerRoutes />
         </AppShell>
         <TutorialOverlay />
        </TutorialProvider>
       </ListsProvider>
+     </LearnerProvider>
     </AuthProvider>
   );
 }

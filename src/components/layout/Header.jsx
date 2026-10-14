@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import UserMenu from './UserMenu';
+import LearnerChip from './LearnerChip';
 import { useAuth } from '../../hooks/useAuth';
+import { useLearner } from '../../hooks/useLearner';
 import { canAccessLab } from '../../utils/labAccess';
 
 export default function Header({ theme, onToggleTheme }) {
   const { pathname } = useLocation();
-  const { user } = useAuth();
+  const { user, status } = useAuth();
+  const { kidMode } = useLearner();
   return (
     <header style={{
       borderBottom: '1px solid var(--card-border)',
@@ -64,9 +67,13 @@ export default function Header({ theme, onToggleTheme }) {
         }} aria-label="Main Navigation">
           {[
             { to: '/', label: 'Decks', active: pathname === '/' || pathname.startsWith('/lists') },
-            { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') },
-            { to: '/profile', label: 'Profile', active: pathname === '/profile' },
-            ...(canAccessLab(user) ? [{ to: '/lab', label: 'Lab', active: pathname === '/lab' }] : [])
+            // Kid mode: practice only. Grown-up screens are hidden (and blocked by the routes).
+            ...(kidMode ? [] : [
+              { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') },
+              { to: '/profile', label: 'Profile', active: pathname === '/profile' },
+              ...(status === 'authenticated' ? [{ to: '/family', label: 'Family', active: pathname === '/family' || pathname === '/who' }] : []),
+              ...(canAccessLab(user) ? [{ to: '/lab', label: 'Lab', active: pathname === '/lab' }] : [])
+            ])
           ].map(({ to, label, active }) => (
             <Link
               key={to}
@@ -91,7 +98,8 @@ export default function Header({ theme, onToggleTheme }) {
 
         {/* Actions: Account menu & Theme Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <UserMenu />
+          {/* A child never sees Log out or Account Settings */}
+          {kidMode ? <LearnerChip /> : <UserMenu />}
           <button
             type="button"
             onClick={onToggleTheme}

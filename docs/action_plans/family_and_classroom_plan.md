@@ -1,4 +1,4 @@
-# Family & Classroom Accounts — Plan (F1 built; F2–F6 not started)
+# Family & Classroom Accounts — Plan (F1, F2 built; F3–F6 not started)
 
 ## Goal
 Let one adult (a **parent** or a **teacher**) set up and follow several children. The adult creates or links learners, assigns word lists, and sees progress and reports for each child, or for a whole class at once. Children practise exactly as they do today; their results belong to their own learner profile, not to the adult.
@@ -185,7 +185,9 @@ Backend only. Learners and access tables; self-learner upsert; `X-Spelling-Learn
 3. Check: `SELECT COUNT(*) FROM learners` equals `SELECT COUNT(*) FROM users`; `SELECT COUNT(*) FROM word_scores` unchanged.
 4. Deploy the Worker: `npm run deploy` in `apps/spelling-tutor-api`.
 
-### F2 — Parent: child profiles + kid mode
+### F2 — Parent: child profiles + kid mode — ✅ built (2026-10-14)
+> Backend (`good-plus-fast-website`): migration `0013_family_pin.sql`, `lib/family.ts`, `lib/pin.ts`, `/api/spelling/family/*`, 30-day purge in the cron; tests in `src/family.test.ts`. Front end (this repo): `activeLearner.js`, `familyApi.js`, `useLearner.jsx`, `WhoPage`, `FamilyPage`, `PinPad`, header/route guards, per-learner storage keys; tests in `familyMode.test.jsx` and `attemptQueue.learner.test.js`. Deploy: apply migration `0013` (`wrangler d1 migrations apply spelling-tutor-db --remote`) **before** the Worker, then publish the app.
+> Found while building: deck progress and hiding state live in the browser keyed by list only, so two children on one device would have shared them. They are now scoped per learner (the user's own keys are unchanged).
 Create / edit / delete managed learners (D1, D6). "Who's practising?" picker, adult PIN (D2), header wiring, per-learner attempt queue. Grade per child (existing `learner_profiles`).
 **Done when:** a parent with two children can hand the phone to each child, each child's practice lands only in their own progress, and the child cannot reach adult screens without the PIN.
 

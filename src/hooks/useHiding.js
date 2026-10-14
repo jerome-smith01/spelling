@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 
-const HIDING_STORAGE_KEY = 'spelling_tutor_hiding_state_v1';
+import { learnerKey } from '../services/activeLearner';
+
+const hidingKey = () => learnerKey('spelling_tutor_hiding_state_v1');
 
 export function useHiding(words, listId) {
   // Denominator: 2 (1 in 2), 3 (1 in 3), or 'all'
@@ -9,7 +11,7 @@ export function useHiding(words, listId) {
   // Map of wordId -> Set of hidden letter indices (stored as Array in JSON)
   const [hiddenMap, setHiddenMap] = useState(() => {
     try {
-      const saved = localStorage.getItem(HIDING_STORAGE_KEY);
+      const saved = localStorage.getItem(hidingKey());
       if (saved) {
         const parsed = JSON.parse(saved);
         const map = {};
@@ -40,7 +42,7 @@ export function useHiding(words, listId) {
       for (const [k, set] of Object.entries(hiddenMap)) {
         serializable[k] = Array.from(set);
       }
-      localStorage.setItem(HIDING_STORAGE_KEY, JSON.stringify(serializable));
+      localStorage.setItem(hidingKey(), JSON.stringify(serializable));
     } catch {
       // Ignore
     }

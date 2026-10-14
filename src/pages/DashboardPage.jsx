@@ -5,6 +5,7 @@ import { parseWordList } from '../utils/wordParser';
 import { loadDeckSummary } from '../hooks/useDeckSchedule';
 import { loadLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { useLearner } from '../hooks/useLearner';
 import NewDeckFlow from '../components/NewDeckFlow';
 import '../styles/spelling.css';
 
@@ -21,6 +22,7 @@ const SORTS = {
 export default function DashboardPage() {
   usePageTitle('My decks');
   const navigate = useNavigate();
+  const { kidMode } = useLearner();
   const { lists, defaultList, createList, atListLimit } = useLists();
   const lastId = loadLastListId();
   const [sort, setSort] = useState(() => {
@@ -52,9 +54,11 @@ export default function DashboardPage() {
     <section style={{ maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
         <h2 tabIndex={-1} style={{ margin: 0, color: 'var(--foreground)' }}>My decks</h2>
-        <button type="button" onClick={() => setCreating(true)} disabled={atListLimit || creating} className="btn-secondary-sm" style={{ fontWeight: 700 }}>
-          + New deck
-        </button>
+        {!kidMode && (
+          <button type="button" onClick={() => setCreating(true)} disabled={atListLimit || creating} className="btn-secondary-sm" style={{ fontWeight: 700 }}>
+            + New deck
+          </button>
+        )}
       </div>
       {creating && (
         <NewDeckFlow
@@ -63,7 +67,7 @@ export default function DashboardPage() {
           onCancel={() => setCreating(false)}
         />
       )}
-      {atListLimit && (
+      {atListLimit && !kidMode && (
         <p role="status" style={{ margin: 0, color: '#ef4444', fontSize: '0.85rem' }}>
           You have reached the 25 deck limit. Delete a deck to add another.
         </p>

@@ -2,9 +2,11 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState
 } from '../utils/schedule';
+import { learnerKey } from '../services/activeLearner';
 
-const PREFS_KEY = 'spelling_tutor_deck_prefs_v1';
-const progressKey = (listId) => `spelling_tutor_deck_progress_v1:${listId}`;
+// Per learner: a child's progress and settings are kept apart from the parent's and siblings'
+const prefsKey = () => learnerKey('spelling_tutor_deck_prefs_v1');
+const progressKey = (listId) => learnerKey(`spelling_tutor_deck_progress_v1:${listId}`);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function read(key, fallback) {
@@ -37,7 +39,7 @@ function currentDay() {
 
 /** Read-only snapshot of a deck's progress for the dashboard (no hook state needed). */
 export function loadDeckSummary(listId, wordTexts) {
-  const prefs = read(PREFS_KEY, { ...DEFAULT_PREFS, view: 'deck' });
+  const prefs = read(prefsKey(), { ...DEFAULT_PREFS, view: 'deck' });
   const progress = read(progressKey(listId), { testDate: null, words: {} });
   return {
     total: wordTexts.length,
@@ -59,7 +61,7 @@ export function loadDeckSummary(listId, wordTexts) {
  */
 export function useDeckSchedule(listId, wordTexts) {
   const today = useMemo(currentDay, []);
-  const [prefs, setPrefsState] = useState(() => read(PREFS_KEY, { ...DEFAULT_PREFS, view: 'deck' }));
+  const [prefs, setPrefsState] = useState(() => read(prefsKey(), { ...DEFAULT_PREFS, view: 'deck' }));
   const [progress, setProgress] = useState(() => read(progressKey(listId), { testDate: null, words: {} }));
   const wordsKey = wordTexts.join('|');
   const [queue, setQueue] = useState(() => buildQueue(wordTexts, progress, today, prefs));
@@ -67,7 +69,7 @@ export function useDeckSchedule(listId, wordTexts) {
   const progressRef = useRef(progress);
   progressRef.current = progress;
 
-  useEffect(() => write(PREFS_KEY, prefs), [prefs]);
+  useEffect(() => write(prefsKey(), prefs), [prefs]);
   useEffect(() => write(progressKey(listId), progress), [listId, progress]);
 
   // A new/edited word list starts a fresh queue
