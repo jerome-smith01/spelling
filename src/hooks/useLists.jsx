@@ -15,6 +15,8 @@ import {
   DEFAULT_LIST_ID,
   MAX_LISTS,
   loadLists,
+  loadDefaultHidden,
+  saveDefaultHidden,
   saveLists,
   newListId,
   sanitizeHints,
@@ -44,9 +46,6 @@ const DEFAULT_LIST = Object.freeze({
 });
 
 const ASSIGNED_KEY = 'spelling_tutor_assigned_v1';
-// Deleting the built-in deck hides it on this device for good (it is never stored or synced)
-const DEFAULT_HIDDEN_KEY = 'spelling_tutor_default_hidden_v1';
-const readDefaultHidden = () => { try { return localStorage.getItem(DEFAULT_HIDDEN_KEY) === '1'; } catch { return false; } };
 
 function readAssignedCache(learnerId) {
   try {
@@ -72,8 +71,8 @@ export function ListsProvider({ children }) {
   const [assigned, setAssigned] = useState(() => readAssignedCache(activeId));
 
   const [lists, setLists] = useState(loadLists);
-  const [defaultHidden, setDefaultHidden] = useState(readDefaultHidden);
   const listsRef = useRef(lists);
+  const [defaultHidden, setDefaultHidden] = useState(loadDefaultHidden);
   const [syncStatus, setSyncStatus] = useState('idle');
   const [syncMessage, setSyncMessage] = useState('');
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
@@ -122,8 +121,9 @@ export function ListsProvider({ children }) {
   }, [commit]);
 
   const deleteList = useCallback((id) => {
+    // The built-in default has no record to remove; deleting it hides it for good (progress is kept)
     if (id === DEFAULT_LIST_ID) {
-      try { localStorage.setItem(DEFAULT_HIDDEN_KEY, '1'); } catch { /* storage unavailable: hidden until reload */ }
+      saveDefaultHidden(true);
       setDefaultHidden(true);
       return;
     }

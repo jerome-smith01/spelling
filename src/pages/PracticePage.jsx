@@ -247,7 +247,6 @@ function PracticeView({ listId }) {
           setPrefs={schedule.setPrefs}
           testDate={schedule.testDate}
           setTestDate={schedule.setTestDate}
-          today={schedule.today}
           onReset={schedule.resetProgress}
         />
 
@@ -409,6 +408,7 @@ function PracticeView({ listId }) {
           struggleByWord={struggleByWord}
           initialMode={searchParams.get('mode') === 'quiz' ? 'quiz' : 'practice'}
           dueDate={assignment?.due_at || null}
+          keyboardHidden={settingsOpen}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import { LEVELS } from '../utils/schedule';
 import { useTutorial } from '../hooks/useTutorial';
 
 /** Deck-specific settings: test date, starting level, grading thresholds, view. */
-export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, today, onReset }) {
+export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, onReset }) {
   const tutorial = useTutorial();
   const num = (v, lo, hi, fallback) => {
     const n = Number(v);
@@ -16,7 +16,6 @@ export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, t
         <input
           type="date"
           value={testDate || ''}
-          min={today}
           onChange={(e) => setTestDate(e.target.value || null)}
         />
       </label>

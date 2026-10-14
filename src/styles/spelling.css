@@ -387,7 +387,7 @@
 .deck-dot.mastered { background: var(--selected-color); }
 .deck-dot.current { border-color: var(--foreground); }
 .deck-dot.unseen { background: var(--card-border); }
-.deck-badge { font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px; background: var(--muted); border: 1px solid var(--card-border); color: var(--muted-foreground); }
+.deck-badge { white-space: nowrap; display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px; background: var(--muted); border: 1px solid var(--card-border); color: var(--muted-foreground); }
 
 .deck-flip { display: grid; perspective: 1200px; }
 .deck-flip-inner { display: grid; transition: transform 0.55s ease; transform-style: preserve-3d; }
@@ -511,8 +511,12 @@
 
 /* ---------- Deck dashboard ---------- */
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.9rem; list-style: none; padding: 0; margin: 0; }
+/* Native picker icon follows the app's theme class, not the OS setting */
+.settings-field input[type="date"] { color-scheme: light; }
+.dark .settings-field input[type="date"], [data-theme='dark'] .settings-field input[type="date"] { color-scheme: dark; }
 .dash-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; color: var(--foreground); }
-.dash-card-title { margin: 0; font-size: 1.1rem; font-weight: 800; overflow-wrap: anywhere; }
+.dash-card { position: relative; }
+.dash-card-title { padding-right: 2rem; margin: 0; font-size: 1.1rem; font-weight: 800; overflow-wrap: anywhere; }
 .dash-card-meta { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--muted-foreground); }
 .dash-bar { height: 0.5rem; border-radius: 9999px; background: var(--card-border); overflow: hidden; }
 .dash-bar > span { display: block; height: 100%; background: var(--selected-color, #16a34a); }
@@ -565,6 +569,8 @@ button.sess-dot { cursor: pointer; }
 /* End-of-session grade */
 .session-grade { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
 .session-grade-letter { font-size: 3.5rem; font-weight: 800; line-height: 1; color: var(--foreground); }
+.dash-card-delete { position: absolute; top: 0.4rem; right: 0.4rem; width: 2.25rem; height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: transparent; color: var(--muted-foreground); cursor: pointer; }
+.dash-card-delete:hover, .dash-card-delete:focus-visible { color: #ef4444; background: var(--card-border); }
 .dash-card-link { color: inherit; text-decoration: none; }
 .dash-card-link:hover, .dash-card-link:focus-visible { text-decoration: underline; }
 
