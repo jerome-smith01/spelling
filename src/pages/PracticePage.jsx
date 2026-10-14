@@ -198,7 +198,6 @@ function PracticeView({ listId }) {
           setPrefs={schedule.setPrefs}
           testDate={schedule.testDate}
           setTestDate={schedule.setTestDate}
-          today={schedule.today}
           onReset={schedule.resetProgress}
         />
 

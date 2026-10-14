@@ -510,6 +510,9 @@
 
 /* ---------- Deck dashboard ---------- */
 .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.9rem; list-style: none; padding: 0; margin: 0; }
+/* Native picker icon follows the app's theme class, not the OS setting */
+.settings-field input[type="date"] { color-scheme: light; }
+.dark .settings-field input[type="date"], [data-theme='dark'] .settings-field input[type="date"] { color-scheme: dark; }
 .dash-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; color: var(--foreground); }
 .dash-card-title { margin: 0; font-size: 1.1rem; font-weight: 800; overflow-wrap: anywhere; }
 .dash-card-meta { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--muted-foreground); }

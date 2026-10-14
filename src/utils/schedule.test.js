@@ -180,3 +180,11 @@ describe('shuffleQueue', () => {
     expect(seen.size).toBeGreaterThan(1);
   });
 });
+
+describe('past test date', () => {
+  it('keeps words due today after a pass instead of scheduling in the past', () => {
+    const past = '2026-10-01';
+    const r = applyResult(empty, 'a', 100, { prefs: DEFAULT_PREFS, today: MON, testDate: past });
+    expect(r.progress.words.a.due >= MON).toBe(true);
+  });
+});
