@@ -102,7 +102,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 - `assignments(id, list_id -> word_lists ON DELETE CASCADE, learner_id, assigned_by, due_at, created_at, archived_at, group_id)` (`0014`, `group_id` from `0016`): one row per learner (a class assignment is one row per student); unique `(list_id, learner_id)` while not archived. Progress is computed, not stored (see `lib/assignments.ts`).
 - `invites(code PK, kind 'share_child'|'link_me', created_by, learner_id, role, can_assign, can_view_reports, expires_at, used_by, used_at, created_at)` and `invite_attempts(user_id, ok, at)` (`0015`): single-use 7-day codes; the attempts table rate-limits guessing (10 wrong codes an hour).
 - `learner_groups(id, owner_user_id, name, join_code UNIQUE, consent_at, created_at, archived_at)` and `group_members(group_id, learner_id, added_at)` (`0016`): a teacher's classes. `join_code` NULL = closed; while open it is reusable (not an invite) and `lookupInvite` falls back to it.
-- `deck_progress(learner_id, list_id -> word_lists ON DELETE CASCADE, word, level 1..5, mastered, updated_at)` (`0017`): each word's deck stage for a list assigned to the learner, reported by the app. Only ever moves forward (`MAX`). An assignment is complete when every word is mastered; `percent` = stages passed over all words and stages.
+- `deck_progress(learner_id, list_id -> word_lists ON DELETE CASCADE, word, level 1..5, mastered, updated_at)` (`0017`): each word's deck stage for a list assigned to the learner, reported by the app. The latest report wins, so it can go down. An assignment is complete when every word is mastered; `percent` = stages passed over all words and stages.
 - Names: a child is a first name plus an optional last initial (`nicknameProblem` in `lib/family.ts`); no full last names, emails, links or phone numbers.
 - Limits: 8 child profiles per adult (200 once they have a class); 5 classes per teacher; 40 students per class. Deleting a child or class student hides them at once and the cron purges all their data after 30 days (`purgeDeletedLearners`).
 
@@ -140,7 +140,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 | `GET` / `POST` / `PUT` / `DELETE` | `/api/spelling/groups[/:id[/students\|members\|code\|overview\|assign]]` | Yes (user-level) | A teacher's classes: roster, class code, overview, whole-class assignment (F6) |
 | `POST` / `GET` / `DELETE` | `/api/spelling/assignments[/:id]` | Yes (user-level) | Assign a list to learners, read a learner's assignments with progress, archive one (F4) |
 | `GET` | `/api/spelling/assigned-lists` | Yes (learner) | Lists assigned to the current learner, with the words (F4) |
-| `PUT` / `GET` | `/api/spelling/progress/:listId` | Yes (learner) | Report / read each word's deck stage for an assigned list; forward-only (F4) |
+| `PUT` / `GET` | `/api/spelling/progress/:listId` | Yes (learner) | Report / read each word's deck stage for an assigned list; the latest report wins (F4) |
 | `GET` | `/api/spelling/supervisor/overview` | Yes (user-level) | A summary per child the adult follows (F3) |
 | `GET` | `/api/spelling/supervisor/report?learner=&from=&to=` | Yes (user-level) | Period report for one learner; needs `can_view_reports` (F3) |
 | `GET` | `/api/spelling/digest/latest` | Yes | Newest weekly digest (Phase 5c) |

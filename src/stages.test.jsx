@@ -3,6 +3,7 @@ import React from 'react';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, waitFor, renderHook, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 
 const h = vi.hoisted(() => ({
@@ -55,23 +56,62 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); setActiveLearner({ id: null }); vi.restoreAllMocks(); });
 
+const fill = async (user, letters) => {
+  const boxes = screen.getAllByLabelText(/Letter \d of word/);
+  for (let i = 0; i < boxes.length; i++) await user.type(boxes[i], letters[i]);
+};
+
 describe('stages of an assigned list', () => {
-  it('carries on from the server and reports the stages back (a word mastered elsewhere stays mastered)', async () => {
+  it('opening the list only reads the server: nothing is sent back until something changes on this device', async () => {
     h.remote = { cat: { level: 5, mastered: true }, dog: { level: 3, mastered: false } };
     open(`/lists/${LIST}`);
     await screen.findByLabelText('Spelling Practice Controls');
     await waitFor(() => expect(h.fetches).toEqual([LIST]));
+    await new Promise(r => setTimeout(r, 1900));
+    expect(h.pushes).toEqual([]);                   // a stale device must not overwrite newer progress
+  });
+
+  it('practising reports the new stage (after a short pause), and carries the server\'s words along', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);   // cards come in list order: cat first
+    const user = userEvent.setup();
+    h.remote = { dog: { level: 5, mastered: true } };   // finished on another device: not due here
+    open(`/lists/${LIST}`);
+    await screen.findByLabelText('Spelling card for cat');
+    await waitFor(() => expect(h.fetches).toEqual([LIST]));
+    await fill(user, ['a']);
+    await user.click(screen.getByRole('button', { name: /Check your spelling for cat/ }));
     await waitFor(() => expect(h.pushes.length).toBeGreaterThan(0), { timeout: 4000 });
     const [id, words] = h.pushes.at(-1);
     expect(id).toBe(LIST);
-    expect(words.cat).toEqual({ level: 5, mastered: true });
-    expect(words.dog).toEqual({ level: 3, mastered: false });
+    expect(words.cat).toEqual({ level: 2, mastered: false });   // passed stage 1 at 100%
+    expect(words.dog).toEqual({ level: 5, mastered: true });    // started from the server
+  });
+
+  it('a miss reports the lower stage: progress can go down', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const user = userEvent.setup();
+    h.remote = { cat: { level: 3, mastered: false } };
+    localStorage.setItem(`spelling_tutor_deck_progress_v1:${LIST}:Lkid-maya`, JSON.stringify({
+      testDate: null, words: { cat: { level: 3, mastered: false, due: '2000-01-01', lastScore: 100, advancedOn: null, attempts: 2 } }
+    }));
+    open(`/lists/${LIST}`);
+    await screen.findByLabelText('Spelling card for cat');
+    // level 3 hides more letters: type a wrong letter into every box
+    const boxes = screen.getAllByLabelText(/Letter \d of word/);
+    for (const b of boxes) await user.type(b, 'z');
+    await user.click(screen.getByRole('button', { name: /Check your spelling for cat/ }));
+    await waitFor(() => expect(h.pushes.length).toBeGreaterThan(0), { timeout: 4000 });
+    expect(h.pushes.at(-1)[1].cat).toEqual({ level: 2, mastered: false });
   });
 
   it('an offline push is quietly retried on the next change, not shown as an error', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const user = userEvent.setup();
     h.pushErr = true;
     open(`/lists/${LIST}`);
-    await screen.findByLabelText('Spelling Practice Controls');
+    await screen.findByLabelText('Spelling card for cat');
+    await fill(user, ['a']);
+    await user.click(screen.getByRole('button', { name: /Check your spelling for cat/ }));
     await waitFor(() => expect(h.pushes.length).toBeGreaterThan(0), { timeout: 4000 });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -103,14 +143,21 @@ describe('strict stages', () => {
     expect(strict.result.current.stateFor('cat').level).toBe(1);
   });
 
-  it('mergeRemote raises the level and puts the word back in the queue', () => {
+  it('mergeRemote starts words this device has not practised and leaves the ones it has', () => {
     setActiveLearner({ id: null });
-    const { result } = renderHook(() => useDeckSchedule('l3', ['cat', 'dog'], { strict: true }));
-    act(() => { result.current.mergeRemote({ cat: { level: 5, mastered: true }, dog: { level: 2, mastered: false } }); });
-    expect(result.current.stateFor('cat')).toMatchObject({ level: 5, mastered: true });
+    const { result } = renderHook(() => useDeckSchedule('l3', ['cat', 'dog', 'sun'], { strict: true }));
+    act(() => { result.current.commit('dog', 100); });
     expect(result.current.stateFor('dog').level).toBe(2);
-    expect(result.current.queue).toContain('dog');
-    expect(result.current.queue).not.toContain('cat');   // mastered and not due
+    let changed;
+    act(() => { changed = result.current.mergeRemote({ cat: { level: 5, mastered: true }, dog: { level: 4, mastered: false }, sun: { level: 3, mastered: false } }); });
+    expect(changed).toBe(true);
+    expect(result.current.stateFor('cat')).toMatchObject({ level: 5, mastered: true });
+    expect(result.current.stateFor('dog').level).toBe(2);       // this device's own stage stands, even though the server is ahead
+    expect(result.current.stateFor('sun').level).toBe(3);
+    expect(result.current.queue).toContain('sun');
+    expect(result.current.queue).not.toContain('cat');           // mastered and not due
+    act(() => { changed = result.current.mergeRemote({ cat: { level: 5, mastered: true } }); });
+    expect(changed).toBe(false);                                // nothing new
   });
 });
 

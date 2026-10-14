@@ -111,28 +111,36 @@ function PracticeView({ listId }) {
 
   const schedule = useDeckSchedule(listId, words.map(w => w.word), { strict: !!assignment });
 
-  // An assigned list is done when every word has passed every stage: report the stages, and carry on
-  // from what the server holds (another device, an earlier session). Only ever moves forward.
+  // An assigned list is done when every word has passed every stage: report the stages as they change here
+  // (the latest report counts, so progress can go down), and start words this device has not seen where the
+  // server has them. Nothing is sent just for opening the page, so a stale device cannot overwrite newer progress.
   const assigned = !!assignment;
   const stagesRef = useRef(null);
   const unsentRef = useRef(false);
+  const baseline = useRef(schedule.progress);     // progress as it was on open, or right after the server's stages were carried in
+  const seeding = useRef(false);
   stagesRef.current = schedule.progress;
   useEffect(() => {
     if (!assigned) return undefined;
     let cancelled = false;
-    fetchStages(listId).then(r => { if (!cancelled && r?.words) schedule.mergeRemote(r.words); }).catch(() => {});
+    fetchStages(listId).then(r => {
+      if (cancelled || !r?.words) return;
+      if (schedule.mergeRemote(r.words)) seeding.current = true;   // this change came from the server: do not send it back
+    }).catch(() => {});
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listId, assigned]);
   useEffect(() => {
     if (!assigned) return undefined;
+    if (seeding.current) { seeding.current = false; baseline.current = schedule.progress; return undefined; }
+    if (baseline.current === schedule.progress) return undefined;   // nothing has changed on this device yet
     unsentRef.current = true;
     const t = setTimeout(async () => {
       try {
         await pushStages(listId, stagesOf(schedule.progress));
         unsentRef.current = false;
         refreshAssigned?.();
-      } catch { /* offline: the next change (or the next visit) sends it */ }
+      } catch { /* offline: the next change sends it */ }
     }, 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,6 +153,8 @@ function PracticeView({ listId }) {
   const isGrid = schedule.prefs.view === 'grid';
   const { speak, speakSyllables, activePlayback } = useSpeech();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [speedOpen, setSpeedOpen] = useState(false);
+  const limited = kidMode || !!list?.readOnly;   // no deck settings or importing: audio speed only
   const [isImportExpanded, setIsImportExpanded] = useState(false);
   const [ratePreset, setRatePreset] = useState(() => {
     try {
@@ -205,9 +215,19 @@ function PracticeView({ listId }) {
         >
           {list?.name}
         </h2>
-        {/* Kid mode: no settings or word importing. TODO(owner): decide whether a child gets a small
-            settings panel (audio speed only) — plan open item. */}
-        {kidMode || list?.readOnly ? <span aria-hidden="true" style={{ width: '5rem' }} /> : (
+        {/* A child (or a student on an assigned list) gets audio speed only: no deck settings or word importing */}
+        {limited ? (
+        <button
+          type="button"
+          onClick={() => setSpeedOpen(prev => !prev)}
+          className="btn-secondary-sm"
+          style={{ fontWeight: 700 }}
+          aria-expanded={speedOpen}
+          aria-controls="kid-speed-panel"
+        >
+          {speedOpen ? '▲ Speed' : '🐢 Speed'}
+        </button>
+        ) : (
         <button
           type="button"
           onClick={() => setSettingsOpen(prev => !prev)}
@@ -222,7 +242,32 @@ function PracticeView({ listId }) {
         )}
       </div>
 
-      {settingsOpen && !kidMode && !list?.readOnly && (
+      {limited && speedOpen && (
+        <section id="kid-speed-panel" aria-label="Audio speed" style={{
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--card-border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '0.75rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+          flexWrap: 'wrap'
+        }}>
+          <label htmlFor="kid-speed-select" style={{ fontWeight: 700, color: 'var(--foreground)' }}>Audio speed</label>
+          <select
+            id="kid-speed-select"
+            value={ratePreset}
+            onChange={(e) => handleRatePresetChange(e.target.value)}
+            className="speed-preset-select"
+          >
+            <option value="normal">Normal</option>
+            <option value="slow">Slow</option>
+            <option value="slowest">Slowest</option>
+          </select>
+        </section>
+      )}
+
+      {settingsOpen && !limited && (
       <section aria-label="Practice settings" style={{
         backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--card-border)',

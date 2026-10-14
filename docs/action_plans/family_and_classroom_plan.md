@@ -53,13 +53,13 @@ Everything below needs you (a decision, an account, or words only you can write)
 - **Lawyer check before you market to schools** (decision D11): children's privacy rules (COPPA, FERPA, state student-privacy laws) and whether schools will ask you to sign a data agreement. This is not legal advice.
 - **Terms:** a short line that a teacher is responsible for having permission to enter students' names.
 
-### 3. Please confirm
-- **D3 and D12** were not in your last reply; I built them as proposed (students with their own login can be linked by code; existing accounts become a "self" learner with nothing changing for them).
-- **Name rule:** a name is a first name plus an optional last initial; "Ava Smith", "Mary Ann Lee", emails, links and phone numbers are refused. It is one function (`nicknameProblem` in `lib/family.ts`) if you want it looser. A two-word first name needs a hyphen ("Mary-Ann L.").
-- **Assignment progress never goes backwards** (a word once mastered in an assigned list stays done even if missed later, and a second device cannot lower it). Say if you would rather it could drop.
-- **Students on their own login** can export reports about *themselves* (it is their own account). Say if students should not have that either.
-- **Kid settings:** a child currently has no settings at all (`TODO(owner)` in `PracticePage.jsx`). Do you want audio speed only?
-- **Weekly email sender:** the email is now a plain link. Confirm the existing Resend sender is fine for this (launch plan, "Before Phase 5c").
+### 3. Confirmed by you (2026-10-14)
+- **D3 and D12:** approved.
+- **Progress can go down.** The latest report wins: a missed word drops a stage and the assignment follows. Opening a list sends nothing; a device reports only what changes on it, and borrows from the server only words it has never practised.
+- **Reports and logins:** anyone with a login can export reports (about themselves, and about people they are allowed to see). Someone who is only "in" through the PIN (a child in kid mode) cannot: the report, class and join screens are closed to kid mode.
+- **Audio speed for a child:** done. A child (and a student on an assigned list) gets a "Speed" button with Normal / Slow / Slowest, and nothing else.
+- **Weekly email sender:** the existing Resend sender is fine.
+- Still as built: first name + optional last initial (one function, `nicknameProblem` in `lib/family.ts`, if you ever want it looser; a two-word first name needs a hyphen).
 
 ### 4. Watch after launch
 - **Cloudflare plan limits:** a class overview takes a handful of queries (tested at under 25 for 40 students), so it is fine on the free plan's limits, but check D1 read-row usage after a month: the overview scans each student's last week of attempts.
@@ -240,7 +240,7 @@ Create / edit / delete managed learners (D1, D6). "Who's practising?" picker, ad
 
 ### F4 — Assignments — ✅ built (2026-10-14)
 > Backend: migration `0014_assignments.sql`, `lib/assignments.ts`, `/api/spelling/assignments` (user-level: POST, GET `?learner=`, DELETE), `GET /api/spelling/assigned-lists` (learner-level), assignments in the overview and the report, purge, `src/assignments.test.ts`. Front end: "Assign" modal and per-child assignment rows on `/family`; an **Assigned** row at the top of the decks page (progress bar, due date, Done badge); assigned lists open read-only through `useLists` (so a student on their own account, F5/F6, can practise a list they do not own) and are cached for offline; `assigned.test.jsx`. Deploy: apply migration `0014` before the Worker.
-> **D8 (owner, 2026-10-14): done = every stage at 100%.** The Harvey-ball stage of each word lives in the learner's browser, so for a list assigned to them the app reports it (`PUT /api/spelling/progress/:listId`, migration `0017_deck_progress.sql`; `GET` lets a second device carry on). *percent* = stages passed over all words and stages (a word at stage 3 has passed 2 of 5; mastered = 5 of 5); *complete* = every word mastered. An assigned list is also practised **strictly**: a stage is passed only at 100%, whatever threshold is saved. Progress only moves forward. Deploy: migrations `0014` and `0017` before the Worker.
+> **D8 (owner, 2026-10-14): done = every stage at 100%.** The Harvey-ball stage of each word lives in the learner's browser, so for a list assigned to them the app reports it (`PUT /api/spelling/progress/:listId`, migration `0017_deck_progress.sql`; `GET` lets a second device carry on). *percent* = stages passed over all words and stages (a word at stage 3 has passed 2 of 5; mastered = 5 of 5); *complete* = every word mastered. An assigned list is also practised **strictly**: a stage is passed only at 100%, whatever threshold is saved. The latest report wins, so progress can go down (confirmed). Deploy: migrations `0014` and `0017` before the Worker.
 > Only lists already saved to the account can be assigned (the built-in default is virtual until edited). Assigning to a class (F6) writes one row per student.
 Assign a list to a learner or a group, optional due date (D7). Children see an **Assigned** row at the top of their lists with a progress ring; the adult sees completion per learner (D8). Assigned lists are read-only for the child.
 Endpoints: `POST/GET/DELETE /api/spelling/assignments`, `GET /api/spelling/assigned-lists` (learner view).

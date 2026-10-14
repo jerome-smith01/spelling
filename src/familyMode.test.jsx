@@ -70,12 +70,23 @@ describe('kid mode', () => {
     }
   });
 
-  it('hides deck settings and word import while a child practises', async () => {
+  it('hides deck settings and word import while a child practises, but offers audio speed', async () => {
+    const user = userEvent.setup();
     setActiveLearner({ id: 'kid-maya', kid: true });
     open('/lists/default');
     expect(await screen.findByLabelText('Spelling Practice Controls')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Settings/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Import Words/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Audio speed' })).not.toBeInTheDocument();   // closed until asked for
+
+    await user.click(screen.getByRole('button', { name: /Speed/ }));
+    const speed = await screen.findByRole('combobox', { name: 'Audio speed' });
+    expect(within(speed).getAllByRole('option').map(o => o.textContent)).toEqual(['Normal', 'Slow', 'Slowest']);
+    expect(screen.queryByLabelText(/Pause/)).not.toBeInTheDocument();             // only speed, not the other settings
+    await user.selectOptions(speed, 'slow');
+    expect(localStorage.getItem('spelling_tutor_rate_preset_v1')).toBe('slow');
+    await user.click(screen.getByRole('button', { name: /Speed/ }));
+    expect(screen.queryByRole('combobox', { name: 'Audio speed' })).not.toBeInTheDocument();
   });
 
   it('without a PIN the grown-up tile leaves kid mode straight away', async () => {

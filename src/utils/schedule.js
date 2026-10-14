@@ -197,18 +197,18 @@ export function stagesOf(progress) {
 }
 
 /**
- * Carry on from stages stored on the server (another device, or an earlier session): a word's stage only ever
- * moves forward here. Returns the same object when nothing changed.
+ * Carry on from stages stored on the server (another device): a word this device has never practised starts
+ * where the server has it. A word this device already has keeps its own stage, which may be lower than the
+ * server's (progress can go down, and the device that last practised is the one that counts).
+ * Returns the same object when nothing changed.
  */
-export function mergeRemoteStages(progress, remote, { prefs = DEFAULT_PREFS, today } = {}) {
+export function seedRemoteStages(progress, remote, { prefs = DEFAULT_PREFS, today } = {}) {
   let words = progress.words;
   for (const [word, r] of Object.entries(remote || {})) {
-    if (!r || typeof r.level !== 'number') continue;
-    const cur = getWordState({ words }, word, prefs, today);
-    let next = null;
-    if (r.mastered && !cur.mastered) next = { ...cur, level: MAX_LEVEL, mastered: true, due: null };
-    else if (!cur.mastered && r.level > cur.level) next = { ...cur, level: Math.min(r.level, MAX_LEVEL), due: today };
-    if (next) words = { ...words, [word]: next };
+    if (!r || typeof r.level !== 'number' || words[word]) continue;
+    const base = getWordState({ words }, word, prefs, today);
+    const level = Math.max(1, Math.min(MAX_LEVEL, Math.round(r.level)));
+    words = { ...words, [word]: r.mastered ? { ...base, level: MAX_LEVEL, mastered: true, due: null } : { ...base, level, due: today } };
   }
   return words === progress.words ? progress : { ...progress, words };
 }

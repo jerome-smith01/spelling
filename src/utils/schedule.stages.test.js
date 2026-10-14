@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PREFS, MAX_LEVEL, applyResult, mergeRemoteStages, stagesOf } from './schedule';
+import { DEFAULT_PREFS, MAX_LEVEL, applyResult, seedRemoteStages, stagesOf } from './schedule';
 
 const TODAY = '2026-10-14';
 const ctx = { prefs: DEFAULT_PREFS, today: TODAY };
@@ -17,34 +17,34 @@ describe('stagesOf', () => {
   it('has five stages: four with letters shown, then none', () => { expect(MAX_LEVEL).toBe(5); });
 });
 
-describe('mergeRemoteStages', () => {
-  it('moves a word forward to the server stage and makes it due', () => {
-    const next = mergeRemoteStages(withWords({ cat: st(2, false, { due: '2026-10-20' }) }), { cat: { level: 4, mastered: false } }, ctx);
-    expect(next.words.cat.level).toBe(4);
-    expect(next.words.cat.due).toBe(TODAY);
+describe('seedRemoteStages', () => {
+  it('starts a word this device has never practised where the server has it', () => {
+    const next = seedRemoteStages(empty(), { dog: { level: 3, mastered: false } }, ctx);
+    expect(next.words.dog).toMatchObject({ level: 3, mastered: false, due: TODAY });
   });
-  it('a mastered word on the server is mastered here, at the last stage, not due', () => {
-    const next = mergeRemoteStages(withWords({ cat: st(1) }), { cat: { level: 5, mastered: true } }, ctx);
+  it('a mastered word on the server starts mastered, at the last stage, not due', () => {
+    const next = seedRemoteStages(empty(), { cat: { level: 5, mastered: true } }, ctx);
     expect(next.words.cat).toMatchObject({ level: 5, mastered: true, due: null });
   });
-  it('starts a word this device has never seen', () => {
-    const next = mergeRemoteStages(empty(), { dog: { level: 3, mastered: false } }, ctx);
-    expect(next.words.dog).toMatchObject({ level: 3, mastered: false });
-  });
-  it('never moves anything backwards', () => {
-    const progress = withWords({ cat: st(4), dog: st(5, true) });
-    const next = mergeRemoteStages(progress, { cat: { level: 2, mastered: false }, dog: { level: 1, mastered: false } }, ctx);
+  it('never changes a word this device already has, even when the server is ahead (the latest practice counts)', () => {
+    const progress = withWords({ cat: st(1), dog: st(2, false) });
+    const next = seedRemoteStages(progress, { cat: { level: 5, mastered: true }, dog: { level: 4, mastered: false } }, ctx);
     expect(next).toBe(progress);                                           // nothing changed: the very same object
+  });
+  it('seeds only the words that are missing', () => {
+    const next = seedRemoteStages(withWords({ cat: st(2) }), { cat: { level: 5, mastered: true }, dog: { level: 3, mastered: false } }, ctx);
+    expect(next.words.cat.level).toBe(2);
+    expect(next.words.dog.level).toBe(3);
   });
   it('ignores junk', () => {
     const progress = withWords({ cat: st(2) });
-    expect(mergeRemoteStages(progress, { cat: null, dog: { level: 'x' } }, ctx)).toBe(progress);
-    expect(mergeRemoteStages(progress, undefined, ctx)).toBe(progress);
+    expect(seedRemoteStages(progress, { x: null, dog: { level: 'x' } }, ctx)).toBe(progress);
+    expect(seedRemoteStages(progress, undefined, ctx)).toBe(progress);
   });
-  it('round-trips: what a device pushes, another device carries on from', () => {
+  it('round-trips: what a device pushes, a fresh device starts from', () => {
     let p = empty();
     for (let i = 0; i < 3; i++) p = applyResult(p, 'cat', 100, { ...ctx, today: `2026-10-${14 + i}` }).progress;   // a pass a day
-    const other = mergeRemoteStages(empty(), stagesOf(p), ctx);
+    const other = seedRemoteStages(empty(), stagesOf(p), ctx);
     expect(other.words.cat.level).toBe(p.words.cat.level);
   });
 });

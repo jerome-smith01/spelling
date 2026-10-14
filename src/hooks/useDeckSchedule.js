@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState, mergeRemoteStages
+  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState, seedRemoteStages
 } from '../utils/schedule';
 import { learnerKey } from '../services/activeLearner';
 
@@ -107,13 +107,14 @@ export function useDeckSchedule(listId, wordTexts, { strict = false } = {}) {
     });
   }, []);
 
-  /** Carry on from the stages the server holds for an assigned list (never moves a word backwards). */
+  /** Start words this device has not practised where the server has them (another device); never changes a word already here. */
   const mergeRemote = useCallback((remote) => {
-    const next = mergeRemoteStages(progressRef.current, remote, { prefs, today });
-    if (next === progressRef.current) return;
+    const next = seedRemoteStages(progressRef.current, remote, { prefs, today });
+    if (next === progressRef.current) return false;
     progressRef.current = next;
     setProgress(next);
     setQueue(buildQueue(wordTexts, next, today, prefs));
+    return true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordsKey, today, prefs]);
 
