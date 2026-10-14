@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { makeSession, currentWord, recordResult, recordSkip, advance, goTo, endEarly, isComplete, sessionGrade } from './session';
+import { makeSession, currentWord, recordResult, recordSkip, advance, goTo, endEarly, isComplete, sessionGrade, focusFor } from './session';
 
 const fresh = () => ({ order: ['a', 'b', 'c'], status: {}, idx: 0, ended: false });
 
@@ -67,5 +67,51 @@ describe('sessionGrade', () => {
     s = recordResult(s, 100); // retry of the same card
     s = recordResult({ ...s, idx: 1 }, 100);
     expect(sessionGrade(s)).toEqual({ pct: 75, letter: 'C', cards: 2, perfect: 1 });
+  });
+});
+
+describe('focus retries', () => {
+  it('a letter missed twice starts a focus retry on just that letter', () => {
+    let s = recordResult(fresh(), 67, [1]);
+    expect(focusFor(s, 'a')).toBeNull();
+    s = recordResult(s, 67, [1, 3]);
+    expect(focusFor(s, 'a')).toEqual({ phase: 'focus', positions: [1] });
+    expect(s.status.a).toBe('miss');
+  });
+
+  it('two different letters missed once each do not start one', () => {
+    const s = recordResult(recordResult(fresh(), 67, [1]), 67, [2]);
+    expect(focusFor(s, 'a')).toBeNull();
+  });
+
+  it('focus -> confirm -> ok, marked assisted', () => {
+    let s = recordResult(recordResult(fresh(), 67, [1]), 67, [1]);
+    s = recordResult(s, 100, []); // focus try right
+    expect(focusFor(s, 'a').phase).toBe('confirm');
+    expect(s.status.a).toBe('miss'); // not done until the normal-level try
+    s = recordResult(s, 100, []); // confirm try right
+    expect(s.status.a).toBe('ok');
+    expect(s.assisted.a).toBe(true);
+    expect(focusFor(s, 'a')).toBeNull();
+  });
+
+  it('a miss on the focus try stays in focus', () => {
+    let s = recordResult(recordResult(fresh(), 67, [1]), 67, [1]);
+    s = recordResult(s, 0, [1]);
+    expect(focusFor(s, 'a')).toEqual({ phase: 'focus', positions: [1] });
+  });
+
+  it('a repeated miss on the confirm try goes back to focus', () => {
+    let s = recordResult(recordResult(fresh(), 67, [1]), 67, [1]);
+    s = recordResult(s, 100, []);
+    s = recordResult(s, 67, [1]);
+    expect(focusFor(s, 'a')).toEqual({ phase: 'focus', positions: [1] });
+    expect(s.assisted.a).toBeUndefined();
+  });
+
+  it('the session grade still counts only the first try', () => {
+    let s = recordResult(recordResult(fresh(), 50, [1]), 67, [1]);
+    s = recordResult(recordResult(s, 100, []), 100, []);
+    expect(sessionGrade(s).pct).toBe(50);
   });
 });

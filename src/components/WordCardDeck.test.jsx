@@ -170,4 +170,39 @@ describe('WordCardDeck', () => {
       window.matchMedia = original;
     }
   });
+
+  it('a letter missed twice gets a focus retry, then one normal try, then a grey check dot', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99); // [kitten, puppy]
+    const user = userEvent.setup();
+    render(<Harness />);
+    const check = () => user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
+    const next = () => user.click(screen.getByRole('button', { name: 'Next card' }));
+    const skipPuppy = () => user.click(screen.getByRole('button', { name: 'Skip this card for now' }));
+
+    // kitten hides i, t, n; the 'i' is missed on two tries
+    await fill(user, ['x', 'x', 'x']);
+    await check();
+    await next(); await skipPuppy();
+    await fill(user, ['x', 't', 'n']);
+    await check();
+    expect(await screen.findByText('Next time, just the tricky letter.')).toBeInTheDocument();
+    await next(); await skipPuppy();
+
+    // focus try: only the 'i' is hidden
+    expect(screen.getByRole('status')).toHaveTextContent('Focus on the tricky letter');
+    expect(screen.getAllByLabelText(/Letter \d of word/)).toHaveLength(1);
+    await fill(user, ['i']);
+    await check();
+    expect(await screen.findByText('Nice! Now try the whole word again.')).toBeInTheDocument();
+    expect(dots()[0]).toHaveAccessibleName(/missed/);
+    await next(); await skipPuppy();
+
+    // confirm try: back to the normal level's hiding (level unchanged by the focus try)
+    expect(screen.getAllByLabelText(/Letter \d of word/)).toHaveLength(3);
+    await fill(user, ['i', 't', 'n']);
+    await check();
+    expect(dots()[0]).toHaveAccessibleName(/finished with a focus retry/);
+    expect(dots()[0]).toHaveClass('assisted');
+    vi.restoreAllMocks();
+  });
 });

@@ -24,18 +24,18 @@ One daily neuron budget and one kill switch cover every app that calls Workers A
 - The daily reset cron (`0 3 * * *`), the daily report email and `/api/fc/admin/ai-*` still run in the Flashy Cards worker, now against the shared tables. Moving them to an app-neutral worker is deferred (see Open Items).
 - **Admin gate.** `isAdminRequest` allows the admin email, or any request when the Worker itself is served from localhost (`wrangler dev`). It must never trust the `Origin` or `Referer` headers, which any client can forge; an earlier version did, which let any logged-in user switch AI off or change the limit. A test guards this.
 
-## 2. Sessions and "final answer only"
+## 2. Sessions and session answers
 
 - One visit to a list is one **practice session**. The React app creates `session_id` (UUID) when `PracticeView` mounts and sends it, with `list_id` and the `typed` letter, on every attempt.
-- Every Check press is still stored in `attempts` (raw history). Scoring collapses them: within a session only the **last** answer per (word, position) counts, so a corrected miss scores as correct.
+- Every Check press is still stored in `attempts` (raw history). A session cannot end until every word is 100%, so the last answer is always right and says nothing. Scoring therefore collapses attempts to one **session answer** per (session, word, position): `misses` = how many times that letter was wrong during the visit, `correct` = never missed, `typed` = the first wrong letter (`toSessionAnswers`; replaced "final answer only" in Oct 2026, which scored every word 0).
 - Attempts without a `session_id` (older clients) count as one-answer sessions.
 - `attempts.learner_id` is who practised (a user's own id, or a child's learner id); `attempts.user_id` is always the logged-in account that recorded it. Scores, patterns, sessions, profile and digests all key on `learner_id` (family accounts, migration `0012`).
 
 ## 3. Friction and mastery (`src/lib/scoring.ts`)
 
-- **Friction** (per word, letter-level Leech Hunter): per letter position, walking most recent first, each consecutive miss adds `10 × streak` (10, 20, 30, ...), each correct answer subtracts 5; positions are summed, floor 0.
+- **Friction** (per word): each session answer with `m` misses adds `10 × m²` (1 miss = 10, the same letter missed twice = 40, three times = 90); a session answer with no misses subtracts 5. Summed over the word, floor 0. Repeats of the same letter weigh more than the same number of misses spread over different letters (3 letters missed once = 30).
 - **Flame** at friction >= 40 (`FLAME_THRESHOLD`). The AI kid tip threshold is 70 (`AI_TIP_THRESHOLD`, used in 5b).
-- **Mastery:** 3 perfect sessions in a row (`MASTERY_STREAK`). A session is perfect when every recorded letter ended correct and it covered at least `min(3, word length)` letters. On mastery friction resets to 0, `ai_suggestion` clears, and `word_scores.mastered_at` is set; only attempts **after** `mastered_at` count toward friction from then on.
+- **Mastery:** 3 perfect sessions in a row (`MASTERY_STREAK`). A session is perfect when no recorded letter was missed during it and it covered at least `min(3, word length)` letters. On mastery friction resets to 0, `ai_suggestion` clears, and `word_scores.mastered_at` is set; only attempts **after** `mastered_at` count toward friction from then on.
 - **Bounded reads:** each recompute reads at most the last 400 attempts for the word. `attempt_count` / `error_count` remain raw counts.
 - Recompute is idempotent, so a retried batch never double-counts.
 - Anonymous users get the same flame from `src/utils/friction.js`, computed from their localStorage queue (kept in sync with `scoring.ts`).
@@ -54,13 +54,13 @@ Notes on the newer categories:
 
 ## 5. Pattern statistics (`pattern_stats`, per learner)
 
-Recomputed after every attempts batch from the learner's last 30 days of final answers (at most 3000 raw rows).
+Recomputed after every attempts batch from the learner's last 30 days of session answers (at most 3000 raw rows).
 
 **Blank answers are ignored.** A Check with nothing typed (`typed = ''`) still counts as a miss for the word's friction (so the flame works), but is dropped before pattern statistics are built, because a blank says nothing about which pattern a child struggles with. Dropping happens before the per-session collapse, so an earlier real wrong answer in the same session is kept. Legacy rows with `typed` NULL are not treated as blank.
 
 | State | Rule |
 |---|---|
-| `active` | misses on >= 3 distinct words across >= 2 sessions (`PATTERN_MIN_WORDS`, `PATTERN_MIN_SESSIONS`) |
+| `active` | misses on >= 3 distinct words in >= 1 session (`PATTERN_MIN_WORDS`, `PATTERN_MIN_SESSIONS`; was 2 sessions before Oct 2026) |
 | `cleared` | was active, and >= 90% correct over its last 10 tagged answers (`PATTERN_CLEAR_ACCURACY`, `PATTERN_CLEAR_WINDOW`) |
 | `watching` | anything else |
 
@@ -86,7 +86,7 @@ Client: `Modal` (focus trap, Esc, backdrop, returns focus), `AITipModal` (opened
 ## 7. Progress, word detail and the weekly digest (Phase 5c)
 
 - **Progress page** (`/progress`): weekly summary card, opt-in email switch, stat tiles, the Mastered / Struggling / Needs-practice buckets (`utils/progress.js`), the spelling patterns list with "Read report", and the all-words table. Patterns and the digest are extras: if either request fails the word progress still shows. A child in kid mode sees only the stat tiles, the buckets and the word table: no weekly summary, email switch or pattern reports (those requests are not even made).
-- **Word detail** (`/progress/words/:word`, `GET /api/spelling/scores/:word`): per-letter attempts and misses from final answers, the patterns each letter belongs to, and the cached tip. Miss counts are written out, not shown by color alone.
+- **Word detail** (`/progress/words/:word`, `GET /api/spelling/scores/:word`): per-letter attempts and misses from session answers (a session counts once per letter), the patterns each letter belongs to, and the cached tip. Miss counts are written out, not shown by color alone.
 - **Digest** (`src/lib/digest.ts`): the weekly cron (`0 13 * * SUN`) builds one digest per learner (the user, a child or a class student) who practiced in the last 7 days and stores it in `weekly_digests`; the in-app card shows it. The summary sentence comes from the AI when the budget allows, paid by the learner's owner; otherwise a template is used. **Class students always get the template** (a class of 40 would spend 40 summaries a week). One failing learner never stops the run.
 - **Email** is opt-in and off by default (`digest_prefs`), goes only to the account's own address, and is **only a link to the dashboard** (`/spelling/app/family`, plus `/classes` for a teacher): one email per adult, sent when anyone they can view practised, with no names and no numbers in it. Every email carries a token-based unsubscribe link (`GET /api/spelling/digest/unsubscribe`, no login, identical response for any token). Delivery uses Resend (`src/lib/email.ts`, same provider and FROM address as the main site's contact form) — MailChannels was dropped because it now needs an API key of its own. Requires the `RESEND_API_KEY` secret (`wrangler secret put RESEND_API_KEY` in `apps/spelling-tutor-api`); without it, `sendEmail()` logs and returns `false` rather than throwing, so a digest run never crashes over a missing key.
 - **Admin on-demand triggers** (`/admin/ai-credits` on the main site): "Send me a test digest" always emails only the signed-in admin, (`sendAdminTestDigest` in `digest.ts`) sends the same link-only email with a `[TEST]` subject (the result's `sample` flag says whether the admin had practice this week) — never touches `weekly_digests` or `digest_prefs`. "Run the weekly digest now" calls `runWeeklyDigests` directly, exactly like the Sunday cron. Both require an `ADMIN_EMAILS` match (checked in `spelling-tutor-api`, not just the main site) and are rate-limited (5/hour test, 2/hour run) via the `digest_admin_actions` table, which also logs every call (who, when, result) — this table doubles as the rate-limit store so the limit holds across Worker isolates without in-memory state.
@@ -124,6 +124,7 @@ The two API suites use Node's built-in test runner (Node 22.6+, type stripping) 
 
 ## 11. Smart hiding & AI import (see `../action_plans/smart_hiding_ai_plan.md`)
 - **Smart hiding:** a list's `focusGroups` (stored as `word_lists.focus_groups`, migration 0006) switch hiding to `src/utils/smartHide.js` via `hiddenIndicesForLevel(…, { word, groups, struggle })`. L1 multiple choice (`ChoicePicker`), L2 typed, L3 targets + alternating letters or the learner's active-pattern letters (`POST /api/spelling/patterns/positions`), L4 all. Words without a target fall back to 1-in-N. Harvey balls (`HarveyBall`, tokens `--harvey-fill` / `--harvey-ring`) show levels passed. The tagger gains `diphthongs`.
+- **Focus retries** (`src/utils/session.js`, `WordCardDeck`): the session counts misses per letter per word. When the same position is missed a second time (`FOCUS_AFTER_MISSES`), the next try hides only the repeatedly missed letters (e.g. `min_s`), typed (never multiple choice), with a "Focus on the tricky letter" status line. A focus try is logged as attempts but never calls `commit`, so the word's level doesn't move. Getting it right brings the word back once more at its normal hiding (`confirm`); passing that finishes the card and marks it `assisted`: a check mark on the grey miss background in the dot strip and the Legend ("finished with a focus retry"). The session grade still counts first tries only.
 - **Auto-syllables (logged in):** `syllableData.js` dictionary → `POST /api/spelling/syllables` (cached per word in `syllable_cache`, migration 0007; only hyphen-only splits of the same letters are kept). Split text is shown for checking before save.
 - **Photo import (logged in):** `PhotoImport` re-encodes to JPEG in the browser, then `POST /api/spelling/import/photo` (raw bytes) validates size (capped read), magic bytes, header dimensions and JPEG completeness, applies 5/day per user and 10/hour per hashed IP (`photo_import_log`, migration 0008) plus the shared quota, and calls `VISION_MODEL` (Llama 3.2 Vision: accept its licence once per Cloudflare account by sending "agree"). The photo is never stored; output is strict-JSON, blocklisted and clamped. Hints are stored on the list (`word_lists.hints`) and shown after a miss.
 - **Profile (`/profile`):** grade (`learner_profiles`, migration 0009), the sortable pattern table (`accuracy`, `last_practiced` on `GET /patterns`), and `POST /patterns/:pattern/generate` (5 words, 20 successful requests/day (40 attempts) via `word_generation_log`; tagger, grade heuristic, blocklist and de-duplication decide; one retry).

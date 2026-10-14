@@ -72,8 +72,8 @@ function PracticeView({ listId }) {
     saveLastListId(listId);
   }, [listId]);
 
-  // One visit to a list = one practice session. Scoring uses the LAST answer per
-  // letter within a session, so a corrected miss counts as correct.
+  // One visit to a list = one practice session. Scoring counts every miss per letter
+  // within a session, so a letter missed again and again scores as a struggle.
   const sessionId = useRef(crypto.randomUUID());
   const frictionByWord = useStruggle();
   const struggleByWord = useStrugglePositions(list?.focusGroups?.length ? words.map(w => w.word) : []);

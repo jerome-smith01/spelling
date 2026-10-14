@@ -17,7 +17,7 @@ import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialStep
 import { hiddenIndicesForLevel, addDays, daysLeft } from '../utils/schedule';
 import { findTargets, hintsForWord } from '../utils/smartHide';
 import {
-  makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly, sessionGrade
+  makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly, sessionGrade, focusFor
 } from '../utils/session';
 
 // Auto-play repeats whichever speed button the student used last (kept across visits)
@@ -102,13 +102,18 @@ export default function WordCardDeck({
   const level = useMemo(() => (current ? stateFor(current.word).level : 1), [current?.word, cardKey]);
   // Smart hiding: a list with focus letters hides the lesson's letters (see smartHide.js)
   const struggle = current ? struggleByWord[current.word] : undefined;
+  // Focus retry (same letter missed twice this session): hide only those letters.
+  // Frozen with the card like `level`, so grading doesn't change what's on screen.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const focus = useMemo(() => (current ? focusFor(session, current.word) : null), [current?.word, cardKey]);
+  const focusTry = focus?.phase === 'focus';
   const hiddenIndices = useMemo(
-    () => (current
-      ? hiddenIndicesForLevel(current.letterCount, level,
-        focusGroups.length ? { word: current.word, groups: focusGroups, struggle } : null)
-      : new Set()),
+    () => (!current ? new Set()
+      : focusTry ? new Set(focus.positions)
+        : hiddenIndicesForLevel(current.letterCount, level,
+          focusGroups.length ? { word: current.word, groups: focusGroups, struggle } : null)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [current, level, focusGroups.join(','), (struggle || []).join(',')]
+    [current, level, focusTry, (focus?.positions || []).join(','), focusGroups.join(','), (struggle || []).join(',')]
   );
   const targets = useMemo(
     () => (current && focusGroups.length ? findTargets(current.word, focusGroups) : []),
@@ -117,7 +122,7 @@ export default function WordCardDeck({
   );
   const smartWord = targets.length > 0;
   // Level 1 is multiple choice when the lesson offers at least two groups to choose from
-  const useChoice = smartWord && level === 1 && focusGroups.length >= 2;
+  const useChoice = smartWord && level === 1 && focusGroups.length >= 2 && !focusTry;
 
   useEffect(() => { if (result) backRef.current?.focus(); }, [result]);
 
@@ -136,9 +141,11 @@ export default function WordCardDeck({
   if (!words.length) return null;
 
   const handleResult = ({ pct, results, typed }) => {
-    const res = commit(current.word, pct);
-    setSession(sess => recordResult(sess, pct));
-    setResult({ pct, results, typed, res });
+    const missed = Object.keys(results).filter(i => results[i] !== 'correct').map(Number);
+    // A focus try only checks the tricky letters, so it never moves the word's level
+    const res = focusTry ? null : commit(current.word, pct);
+    setSession(sess => recordResult(sess, pct, missed));
+    setResult({ pct, results, typed, res, focusTry });
   };
 
   const move = (fn) => {
@@ -191,13 +198,13 @@ export default function WordCardDeck({
     );
   }
 
-  const statusLabel = { ok: 'scored 100%', miss: 'missed', skip: 'skipped' };
-  const dotIcon = { ok: <CheckIcon />, miss: <CloseIcon />, skip: <QuestionIcon /> };
+  const statusLabel = { ok: 'scored 100%', assisted: 'finished with a focus retry', miss: 'missed', skip: 'skipped' };
+  const dotIcon = { ok: <CheckIcon />, assisted: <CheckIcon />, miss: <CloseIcon />, skip: <QuestionIcon /> };
   const strip = (
     <div data-tutorial="strip">
       <div className="deck-strip session" role="list" aria-label="Session cards">
         {session.order.map((word, i) => {
-          const st = session.status[word];
+          const st = session.status[word] === 'ok' && session.assisted?.[word] ? 'assisted' : session.status[word];
           const isCurrent = !session.ended && i === session.idx;
           return (
             <button
@@ -254,6 +261,7 @@ export default function WordCardDeck({
       {tabs}
       <TutorialPrompt onAccept={() => tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, { isAvailable: targetExists })} />
       {strip}
+      <p className="deck-focus-note" role="status">{focusTry && !result ? '🎯 Focus on the tricky letter' : ''}</p>
       <div className={`deck-flip ${result ? 'flipped' : ''}`}>
         <div className="deck-flip-inner">
           <div
@@ -335,6 +343,11 @@ export default function WordCardDeck({
                     );
                   })}
                 </div>
+                {result.focusTry ? (
+                  <p className="deck-message">{result.pct >= 100 ? 'Nice! Now try the whole word again.' : 'Almost! Try the tricky letter again.'}</p>
+                ) : result.pct < 100 && focusFor(session, current.word)?.phase === 'focus' && (
+                  <p className="deck-message">Next time, just the tricky letter.</p>
+                )}
                 {result.pct < 100 && hintsForWord(current.word, focusGroups, hints).slice(0, 1).map(h => (
                   <p key={h} className="deck-hint">💡 {h}</p>
                 ))}

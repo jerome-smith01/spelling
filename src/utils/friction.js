@@ -3,44 +3,36 @@
  * localStorage queue). Mirrors the server scoring in
  * apps/spelling-tutor-api/src/lib/scoring.ts. Keep the two in sync.
  *
- * Final answer only: within a session (one visit to a list) only the last answer
- * for each letter position counts. Three perfect sessions in a row master a word
- * and wipe its earlier history.
+ * Session answers: a session (one visit to a list) can't end until every word is
+ * right, so the last answer says nothing. Instead each (session, word, position)
+ * counts how many times that letter was missed during the visit. Three sessions in
+ * a row with no misses master a word and wipe its earlier history.
  */
 export const FLAME_THRESHOLD = 40;
 export const MASTERY_STREAK = 3;
 
-// TODO(scoring): revisit the friction algorithm below. Flagged as needing a
-// fix but not yet scoped — placeholder until the new scoring approach is
-// decided. Keep in sync with apps/spelling-tutor-api/src/lib/scoring.ts
-// whenever this changes.
-
-/** Collapse chronological attempts to one final answer per (session, word, position). */
-export function toFinalAnswers(attempts) {
-  const last = new Map();
+/**
+ * Collapse chronological attempts to one answer per (session, word, position):
+ * `misses` = wrong answers for that letter in the session, `correct` = never missed.
+ */
+export function toSessionAnswers(attempts) {
+  const byKey = new Map();
   attempts.forEach((a, order) => {
     const sessionKey = a.session_id ?? `solo:${a.client_id ?? order}`;
-    last.set(`${sessionKey}|${a.word}|${a.position}`, {
-      order, sessionKey, word: a.word, position: a.position, correct: a.correct === 1
-    });
+    const key = `${sessionKey}|${a.word}|${a.position}`;
+    if (!byKey.has(key)) byKey.set(key, { order, sessionKey, word: a.word, position: a.position, misses: 0 });
+    if (a.correct !== 1) byKey.get(key).misses++;
   });
-  return [...last.values()].sort((x, y) => x.order - y.order);
+  return [...byKey.values()].map(x => ({ ...x, correct: x.misses === 0 }));
 }
 
-function frictionOf(finals) {
-  const byPosition = new Map();
-  for (const f of finals) {
-    if (!byPosition.has(f.position)) byPosition.set(f.position, []);
-    byPosition.get(f.position).push(f.correct);
-  }
+/**
+ * Per letter: a session with m misses adds 10 × m² (so the same letter missed twice
+ * is a flame), a session with none subtracts 5. Letters are summed, floor 0.
+ */
+function frictionOf(answers) {
   let total = 0;
-  for (const results of byPosition.values()) {
-    let consecutive = 0;
-    for (let i = results.length - 1; i >= 0; i--) {
-      if (!results[i]) { consecutive++; total += 10 * consecutive; }
-      else { consecutive = 0; total -= 5; }
-    }
-  }
+  for (const a of answers) total += a.misses > 0 ? 10 * a.misses * a.misses : -5;
   return Math.max(0, total);
 }
 
@@ -48,7 +40,7 @@ function frictionOf(finals) {
 export function wordFriction(attempts, word) {
   const needed = Math.min(3, word.length);
   const sessions = new Map(); // insertion order = chronological
-  for (const f of toFinalAnswers(attempts)) {
+  for (const f of toSessionAnswers(attempts)) {
     if (!sessions.has(f.sessionKey)) sessions.set(f.sessionKey, []);
     sessions.get(f.sessionKey).push(f);
   }

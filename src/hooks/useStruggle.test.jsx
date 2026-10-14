@@ -38,9 +38,9 @@ describe('useStruggle (anonymous)', () => {
   beforeEach(() => { h.auth = { isLoggedIn: false }; });
 
   it('computes friction locally from the queued attempts and never calls the API', () => {
-    h.queue = [miss('loving', 3, 's1', 'a'), miss('loving', 3, 's2', 'b'), miss('loving', 3, 's3', 'c')];
+    h.queue = [miss('loving', 3, 's1', 'a'), miss('loving', 3, 's1', 'b'), miss('loving', 3, 's2', 'c')];
     const { result } = renderHook(() => useStruggle());
-    expect(result.current).toEqual({ loving: 60 });
+    expect(result.current).toEqual({ loving: 50 });
     expect(h.scoreCalls).toBe(0);
   });
 

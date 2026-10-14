@@ -134,7 +134,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 (There is no `0011` file in the website repo at the time of writing; the family migrations do not depend on it. Migrations are applied by hand, never by a deploy, and always **before** the Worker. Back up first: `npx wrangler d1 export spelling-tutor-db --remote --output backup.sql`.)
 
 ### Queries at class scale
-`learnerSummaries` and assignment progress (`lib/supervisor.ts`, `lib/assignments.ts`) are set-based: the week's totals use the final answer per letter per visit (`ROW_NUMBER() OVER (PARTITION BY learner, session, word, position …)`), so a class overview of 40 students costs a handful of queries (a test asserts under 25), well inside a Worker's subrequest limit. Single-learner paths call the same functions with one id.
+`learnerSummaries` and assignment progress (`lib/supervisor.ts`, `lib/assignments.ts`) are set-based: the week's totals count a letter as correct only if it was never missed in the visit (`GROUP BY learner, session, word, position` with `MIN(correct)`), so a class overview of 40 students costs a handful of queries (a test asserts under 25), well inside a Worker's subrequest limit. Single-learner paths call the same functions with one id.
 
 ### Crons and deletion
 - `0 13 * * SUN`: builds the weekly digests (one per learner who practised; the learner's owner pays for the AI summary, except class students, who get the template summary), sends the link-only email, then **purges** child profiles deleted more than 30 days ago (`purgeDeletedLearners`: attempts, scores, patterns, sessions, profile, digests, generation log, assignments, deck progress, invites, class membership, access, the learner row).
