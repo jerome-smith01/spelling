@@ -19,7 +19,7 @@ const shuffle = (arr) => {
  * Quiz mode: the word is spoken, nothing is shown, the student types it.
  * 100% tests the word out (mastered). A miss changes nothing.
  */
-export default function QuizView({ words, isMastered = () => false, onSpeak, onAttempts, commitQuiz, onExit }) {
+export default function QuizView({ words, isMastered = () => false, onSpeak, onAttempts, commitQuiz, onExit, keyboardHidden = false }) {
   const [order, setOrder] = useState(() => shuffle(words.filter(w => !isMastered(w.word)))); // fixed for each round
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState('');
@@ -186,7 +186,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
           </div>
         )}
       </div>
-      {mobile ? (
+      {mobile && keyboardHidden ? null : mobile ? (
         <VirtualKeyboard
           onChar={(c) => { if (!result) setText(t => t + c); }}
           onBackspace={() => { if (!result) setText(t => t.slice(0, -1)); }}

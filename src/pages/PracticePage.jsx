@@ -358,6 +358,7 @@ function PracticeView({ listId }) {
           hints={list?.hints ?? []}
           struggleByWord={struggleByWord}
           initialMode={searchParams.get('mode') === 'quiz' ? 'quiz' : 'practice'}
+          keyboardHidden={settingsOpen}
         />
       )}
     </div>

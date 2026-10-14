@@ -15,9 +15,9 @@ import { parseWordList } from '../utils/wordParser';
 const words = parseWordList('kit-ten\npup-py');
 const noop = () => {};
 
-function Harness() {
+function Harness({ keyboardHidden = false }) {
   const schedule = useDeckSchedule('t', words.map(w => w.word));
-  return <WordCardDeck words={words} schedule={schedule} onSpeak={noop} onSpeakSyllables={noop} onAttempts={noop} />;
+  return <WordCardDeck words={words} schedule={schedule} onSpeak={noop} onSpeakSyllables={noop} onAttempts={noop} keyboardHidden={keyboardHidden} />;
 }
 
 const fill = async (user, letters) => {
@@ -154,6 +154,19 @@ describe('WordCardDeck', () => {
       expect(screen.getByLabelText('Spelling card for puppy')).toBeInTheDocument();
     } finally {
       vi.restoreAllMocks();
+      window.matchMedia = original;
+    }
+  });
+
+  it('hides the on-screen keyboard while keyboardHidden is set (settings open)', () => {
+    const original = window.matchMedia;
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+    try {
+      const { rerender } = render(<Harness />);
+      expect(screen.getByRole('group', { name: 'Keyboard' })).toBeInTheDocument();
+      rerender(<Harness keyboardHidden />);
+      expect(screen.queryByRole('group', { name: 'Keyboard' })).toBeNull();
+    } finally {
       window.matchMedia = original;
     }
   });

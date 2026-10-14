@@ -38,7 +38,7 @@ const fmtDay = (iso, today) => {
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
   words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
-  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice'
+  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice', keyboardHidden = false
 }) {
   const { queue, today, testDate, progress, stateFor, commit, practiceAnyway, commitQuiz, refreshQueue } = schedule;
   const [mode, setMode] = useState(initialMode);
@@ -181,6 +181,7 @@ export default function WordCardDeck({
           onAttempts={onAttempts}
           commitQuiz={commitQuiz}
           onExit={() => { refreshQueue(); restartSession(); setMode('practice'); }}
+          keyboardHidden={keyboardHidden}
         />
       </div>
     );
@@ -243,7 +244,7 @@ export default function WordCardDeck({
   }
 
   const letters = current.syllables.flat();
-  const dock = coarse && !useChoice;
+  const dock = coarse && !useChoice && !keyboardHidden;
   return (
     <div className={`deck${dock ? ' deck-has-dock' : ''}`}>
       {tabs}
