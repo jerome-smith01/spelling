@@ -44,6 +44,9 @@ const DEFAULT_LIST = Object.freeze({
 });
 
 const ASSIGNED_KEY = 'spelling_tutor_assigned_v1';
+// Deleting the built-in deck hides it on this device for good (it is never stored or synced)
+const DEFAULT_HIDDEN_KEY = 'spelling_tutor_default_hidden_v1';
+const readDefaultHidden = () => { try { return localStorage.getItem(DEFAULT_HIDDEN_KEY) === '1'; } catch { return false; } };
 
 function readAssignedCache(learnerId) {
   try {
@@ -69,6 +72,7 @@ export function ListsProvider({ children }) {
   const [assigned, setAssigned] = useState(() => readAssignedCache(activeId));
 
   const [lists, setLists] = useState(loadLists);
+  const [defaultHidden, setDefaultHidden] = useState(readDefaultHidden);
   const listsRef = useRef(lists);
   const [syncStatus, setSyncStatus] = useState('idle');
   const [syncMessage, setSyncMessage] = useState('');
@@ -118,6 +122,11 @@ export function ListsProvider({ children }) {
   }, [commit]);
 
   const deleteList = useCallback((id) => {
+    if (id === DEFAULT_LIST_ID) {
+      try { localStorage.setItem(DEFAULT_HIDDEN_KEY, '1'); } catch { /* storage unavailable: hidden until reload */ }
+      setDefaultHidden(true);
+      return;
+    }
     commit(
       listsRef.current.flatMap(l => {
         if (l.id !== id) return [l];
@@ -229,10 +238,10 @@ export function ListsProvider({ children }) {
   const getList = useCallback(
     (id) => {
       if (kidMode) return assignedLists.find(l => l.id === id) ?? null;
-      if (id === DEFAULT_LIST_ID) return DEFAULT_LIST;
+      if (id === DEFAULT_LIST_ID) return defaultHidden ? null : DEFAULT_LIST;
       return visible.find(l => l.id === id) ?? assignedLists.find(l => l.id === id) ?? null;
     },
-    [kidMode, visible, assignedLists]
+    [kidMode, defaultHidden, visible, assignedLists]
   );
 
   // Deep links can only be resolved once we know whether the server has the list
@@ -245,6 +254,7 @@ export function ListsProvider({ children }) {
       assignmentFor,
       refreshAssigned,
       defaultList: DEFAULT_LIST,   // the built-in deck: hidden from a child by the pages that show it
+      defaultHidden,               // the grown-up deleted it on this device
       getList,
       createList,
       saveWords,
@@ -257,7 +267,7 @@ export function ListsProvider({ children }) {
       ready,
       atListLimit: visible.length >= MAX_LISTS
     }),
-    [visible, assigned, assignmentFor, refreshAssigned, getList, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
+    [visible, assigned, assignmentFor, refreshAssigned, getList, defaultHidden, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
   );
 
   return <ListsContext.Provider value={value}>{children}</ListsContext.Provider>;

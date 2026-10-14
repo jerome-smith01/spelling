@@ -303,12 +303,12 @@ function PinSettings({ pinSet, onChanged }) {
         {pinSet && (
           <label className="settings-field">
             Current PIN
-            <input type="password" inputMode="numeric" autoComplete="off" value={current} onChange={digits(setCurrent)} style={{ width: '6rem' }} />
+            <input type="text" inputMode="numeric" autoComplete="off" autoCorrect="off" spellCheck={false} data-lpignore="true" data-1p-ignore="true" className="pin-input" value={current} onChange={digits(setCurrent)} style={{ width: '6rem' }} />
           </label>
         )}
         <label className="settings-field">
           {pinSet ? 'New PIN' : 'PIN'}
-          <input type="password" inputMode="numeric" autoComplete="off" value={next} onChange={digits(setNext)} style={{ width: '6rem' }} />
+          <input type="text" inputMode="numeric" autoComplete="off" autoCorrect="off" spellCheck={false} data-lpignore="true" data-1p-ignore="true" className="pin-input" value={next} onChange={digits(setNext)} style={{ width: '6rem' }} />
         </label>
         <button
           type="button"

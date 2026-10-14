@@ -35,7 +35,7 @@ function Stat({ label, value }) {
 export default function ProgressPage() {
   usePageTitle('Progress');
   const { status } = useAuth();
-  const { lists, defaultList, syncNow } = useLists();
+  const { lists, defaultList, defaultHidden, syncNow } = useLists();
   // A child sees their own progress, but not the reports written for grown-ups (weekly summary, email, pattern reports)
   const { kidMode } = useLearner();
   const [params, setParams] = useSearchParams();
@@ -81,7 +81,7 @@ export default function ProgressPage() {
     if (status === 'authenticated') load();
   }, [status, load]);
 
-  const filterOptions = useMemo(() => [defaultList, ...lists], [defaultList, lists]);
+  const filterOptions = useMemo(() => [...(defaultHidden ? [] : [defaultList]), ...lists], [defaultList, defaultHidden, lists]);
 
   const rows = useMemo(() => {
     if (!scores) return [];

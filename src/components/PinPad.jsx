@@ -32,9 +32,14 @@ export default function PinPad({ title = 'Grown-up PIN', hint = 'Enter your 4-di
         <label className="settings-field">
           PIN
           <input
-            type="password"
+            type="text"
             inputMode="numeric"
             autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            data-lpignore="true"
+            data-1p-ignore="true"
+            className="pin-input"
             pattern="\d{4}"
             maxLength={4}
             value={pin}

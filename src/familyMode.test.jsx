@@ -82,24 +82,36 @@ describe('kid mode', () => {
     }
   });
 
-  it('hides deck settings and word import while a child practises, but offers audio speed', async () => {
-    const user = userEvent.setup();
+  it('hides deck settings, word import and the speed panel while a child practises', async () => {
     setActiveLearner({ id: 'kid-maya', kid: true });
     fam.assigned = [ASSIGNED];
     open(`/lists/${ASSIGNED.list_id}`);
     expect(await screen.findByLabelText('Spelling Practice Controls')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Settings/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Speed/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Import Words/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'Audio speed' })).not.toBeInTheDocument();   // closed until asked for
+    expect(screen.getByRole('button', { name: /guided tour/ })).toBeInTheDocument();   // Tour sits on the Practice/Quiz row
+  });
 
-    await user.click(screen.getByRole('button', { name: /Speed/ }));
-    const speed = await screen.findByRole('combobox', { name: 'Audio speed' });
-    expect(within(speed).getAllByRole('option').map(o => o.textContent)).toEqual(['Normal', 'Slow', 'Slowest']);
-    expect(screen.queryByLabelText(/Pause/)).not.toBeInTheDocument();             // only speed, not the other settings
-    await user.selectOptions(speed, 'slow');
-    expect(localStorage.getItem('spelling_tutor_rate_preset_v1')).toBe('slow');
-    await user.click(screen.getByRole('button', { name: /Speed/ }));
-    expect(screen.queryByRole('combobox', { name: 'Audio speed' })).not.toBeInTheDocument();
+  it('shows the assignment due date on the practice screen instead of "No test date set"', async () => {
+    setActiveLearner({ id: 'kid-maya', kid: true });
+    const due = new Date(Date.now() + 3 * 86400000);
+    const iso = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
+    fam.assigned = [{ ...ASSIGNED, due_at: iso }];
+    open(`/lists/${ASSIGNED.list_id}`);
+    expect(await screen.findByText(/Due in 3 days/)).toBeInTheDocument();
+    expect(screen.queryByText(/No test date set/)).not.toBeInTheDocument();
+  });
+
+  it('lets the grown-up delete the built-in default deck, and it stays gone', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    open('/lists/default');
+    await user.click(await screen.findByRole('button', { name: /Settings/ }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(await screen.findByRole('heading', { name: 'My decks' })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/3rd-Grade Default/)).not.toBeInTheDocument();
+    expect(localStorage.getItem('spelling_tutor_default_hidden_v1')).toBe('1');
   });
 
   it('shows a child only the lists assigned to them, never the grown-up\'s own decks', async () => {

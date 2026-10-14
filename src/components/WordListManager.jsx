@@ -18,7 +18,7 @@ const STATUS_LABEL = {
 export default function WordListManager({ listId }) {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
-  const { lists, defaultList, getList, createList, renameList, deleteList, syncStatus, syncMessage, atListLimit } = useLists();
+  const { lists, defaultList, defaultHidden, getList, createList, renameList, deleteList, syncStatus, syncMessage, atListLimit } = useLists();
   const [message, setMessage] = useState('');
 
   const current = getList(listId);
@@ -43,7 +43,6 @@ export default function WordListManager({ listId }) {
   };
 
   const onDelete = () => {
-    if (isDefault) return;
     if (!window.confirm(`Delete "${current?.name}"? This cannot be undone.`)) return;
     deleteList(listId);
     navigate('/', { replace: true });
@@ -63,7 +62,7 @@ export default function WordListManager({ listId }) {
         className="speed-preset-select"
         aria-label="Choose a word list"
       >
-        <option value={defaultList.id}>{defaultList.name}</option>
+        {!defaultHidden && <option value={defaultList.id}>{defaultList.name}</option>}
         {lists.map(l => (
           <option key={l.id} value={l.id}>{l.name}</option>
         ))}
@@ -71,12 +70,8 @@ export default function WordListManager({ listId }) {
       <button type="button" onClick={onSaveAs} className="btn-secondary-sm" style={{ fontWeight: 700 }}>
         Save as…
       </button>
-      {!isDefault && (
-        <>
-          <button type="button" onClick={onRename} className="btn-secondary-sm">Rename</button>
-          <button type="button" onClick={onDelete} className="btn-secondary-sm" style={{ color: '#ef4444' }}>Delete</button>
-        </>
-      )}
+      {!isDefault && <button type="button" onClick={onRename} className="btn-secondary-sm">Rename</button>}
+      <button type="button" onClick={onDelete} className="btn-secondary-sm" style={{ color: '#ef4444' }}>Delete</button>
       <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none' }}>All decks</Link>
       {(statusText || syncMessage) && (
         <span role="status" style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>

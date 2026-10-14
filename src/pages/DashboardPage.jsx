@@ -24,7 +24,7 @@ export default function DashboardPage() {
   usePageTitle('My decks');
   const navigate = useNavigate();
   const { kidMode, activeLearner } = useLearner();
-  const { lists, defaultList, createList, atListLimit, assigned = [] } = useLists();
+  const { lists, defaultList, defaultHidden, createList, atListLimit, assigned = [] } = useLists();
   const lastId = loadLastListId();
   const [sort, setSort] = useState(() => {
     try { const v = localStorage.getItem(SORT_KEY); return SORTS[v] ? v : 'recent'; } catch { return 'recent'; }
@@ -35,10 +35,10 @@ export default function DashboardPage() {
   };
 
   // A child sees only the lists assigned to them (below), never the grown-up's own decks
-  const decks = useMemo(() => (kidMode ? [] : [defaultList, ...lists]).map(l => {
+  const decks = useMemo(() => (kidMode ? [] : [...(defaultHidden ? [] : [defaultList]), ...lists]).map(l => {
     const words = parseWordList(l.wordsRaw).map(w => w.word);
     return { id: l.id, name: l.name, added: l.updatedAt || '', ...loadDeckSummary(l.id, words) };
-  }), [kidMode, defaultList, lists]);
+  }), [kidMode, defaultList, defaultHidden, lists]);
   // Array.sort is stable, so ties keep their original order
   const sorted = useMemo(() => [...decks].sort(SORTS[sort].cmp), [decks, sort]);
 

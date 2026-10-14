@@ -38,7 +38,7 @@ const fmtDay = (iso, today) => {
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
   words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
-  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice'
+  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice', dueDate = null
 }) {
   const { queue, today, testDate, progress, stateFor, commit, practiceAnyway, commitQuiz, refreshQueue } = schedule;
   const [mode, setMode] = useState(initialMode);
@@ -152,22 +152,26 @@ export default function WordCardDeck({
   const goToCard = (i) => move(sess => goTo(sess, i));
   const endSession = () => move(endEarly);
 
-  const left = daysLeft(today, testDate);
-  const testLine = testDate
-    ? (left > 0 ? `Test in ${left} ${left === 1 ? 'day' : 'days'} (${fmtDay(testDate, today)})` : 'Test day!')
+  // An assigned list's due date stands in for the deck's own test date
+  const dayShown = dueDate || testDate;
+  const left = daysLeft(today, dayShown);
+  const word = dueDate ? 'Due' : 'Test';
+  const testLine = dayShown
+    ? (left > 0 ? `${word} in ${left} ${left === 1 ? 'day' : 'days'} (${fmtDay(dayShown, today)})`
+      : dayShown < today ? (dueDate ? 'Overdue' : 'Test day!') : `${word} day!`)
     : 'No test date set (see Settings)';
 
   const tabs = (
+    <>
     <div className="deck-bar">
       <div className="deck-tabs" role="group" aria-label="Mode" data-tutorial="modes">
         <button type="button" className="deck-tab" aria-pressed={mode === 'practice'} onClick={() => setMode('practice')}>Practice</button>
         <button type="button" className="deck-tab" aria-pressed={mode === 'quiz'} onClick={() => setMode('quiz')}>Quiz</button>
       </div>
-      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        {testLine}
-        <button type="button" className="btn-secondary-sm" onClick={startTour} aria-label="Restart the guided tour">❓ Tour</button>
-      </span>
+      <button type="button" className="btn-secondary-sm" style={{ marginLeft: 'auto' }} onClick={startTour} aria-label="Restart the guided tour">❓ Tour</button>
     </div>
+    <div className="deck-test-line">{testLine}</div>
+    </>
   );
 
   if (mode === 'quiz') {

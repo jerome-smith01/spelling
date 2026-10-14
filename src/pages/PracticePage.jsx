@@ -153,8 +153,7 @@ function PracticeView({ listId }) {
   const isGrid = schedule.prefs.view === 'grid';
   const { speak, speakSyllables, activePlayback } = useSpeech();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [speedOpen, setSpeedOpen] = useState(false);
-  const limited = kidMode || !!list?.readOnly;   // no deck settings or importing: audio speed only
+  const limited = kidMode || !!list?.readOnly;   // no deck settings or importing
   const [isImportExpanded, setIsImportExpanded] = useState(false);
   const [ratePreset, setRatePreset] = useState(() => {
     try {
@@ -215,19 +214,8 @@ function PracticeView({ listId }) {
         >
           {list?.name}
         </h2>
-        {/* A child (or a student on an assigned list) gets audio speed only: no deck settings or word importing */}
-        {limited ? (
-        <button
-          type="button"
-          onClick={() => setSpeedOpen(prev => !prev)}
-          className="btn-secondary-sm"
-          style={{ fontWeight: 700 }}
-          aria-expanded={speedOpen}
-          aria-controls="kid-speed-panel"
-        >
-          {speedOpen ? '▲ Speed' : '🐢 Speed'}
-        </button>
-        ) : (
+        {/* A child (or a student on an assigned list) gets no deck settings or word importing */}
+        {!limited && (
         <button
           type="button"
           onClick={() => setSettingsOpen(prev => !prev)}
@@ -241,31 +229,6 @@ function PracticeView({ listId }) {
         </button>
         )}
       </div>
-
-      {limited && speedOpen && (
-        <section id="kid-speed-panel" aria-label="Audio speed" style={{
-          backgroundColor: 'var(--card-bg)',
-          border: '1px solid var(--card-border)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '0.75rem 1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.6rem',
-          flexWrap: 'wrap'
-        }}>
-          <label htmlFor="kid-speed-select" style={{ fontWeight: 700, color: 'var(--foreground)' }}>Audio speed</label>
-          <select
-            id="kid-speed-select"
-            value={ratePreset}
-            onChange={(e) => handleRatePresetChange(e.target.value)}
-            className="speed-preset-select"
-          >
-            <option value="normal">Normal</option>
-            <option value="slow">Slow</option>
-            <option value="slowest">Slowest</option>
-          </select>
-        </section>
-      )}
 
       {settingsOpen && !limited && (
       <section aria-label="Practice settings" style={{
@@ -445,6 +408,7 @@ function PracticeView({ listId }) {
           hints={list?.hints ?? []}
           struggleByWord={struggleByWord}
           initialMode={searchParams.get('mode') === 'quiz' ? 'quiz' : 'practice'}
+          dueDate={assignment?.due_at || null}
         />
       )}
     </div>
