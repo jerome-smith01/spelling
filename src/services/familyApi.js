@@ -43,3 +43,12 @@ export const getReport = (learnerId, { from, to } = {}) => {
   if (to) q.set('to', to);
   return apiFetch(`/api/spelling/supervisor/report?${q}`);
 };
+
+/** Assign one of your lists: { list_id, learner_ids, due_at? } -> { assigned } (404 if the list is not saved to your account yet) */
+export const assignList = ({ list_id, learner_ids, due_at }) =>
+  apiFetch('/api/spelling/assignments', { method: 'POST', body: { list_id, learner_ids, ...(due_at ? { due_at } : {}) } });
+
+export const removeAssignment = (id) => apiFetch(`/api/spelling/assignments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+/** Lists assigned to the active learner, with progress and the words: [{ assignment_id, list_id, list_name, due_at, percent, complete, words_raw, focus_groups, hints }] */
+export const getAssignedLists = () => apiFetch('/api/spelling/assigned-lists');

@@ -172,7 +172,7 @@ function PracticeView({ listId }) {
         </h2>
         {/* Kid mode: no settings or word importing. TODO(owner): decide whether a child gets a small
             settings panel (audio speed only) — plan open item. */}
-        {kidMode ? <span aria-hidden="true" style={{ width: '5rem' }} /> : (
+        {kidMode || list?.readOnly ? <span aria-hidden="true" style={{ width: '5rem' }} /> : (
         <button
           type="button"
           onClick={() => setSettingsOpen(prev => !prev)}
@@ -187,7 +187,7 @@ function PracticeView({ listId }) {
         )}
       </div>
 
-      {settingsOpen && !kidMode && (
+      {settingsOpen && !kidMode && !list?.readOnly && (
       <section aria-label="Practice settings" style={{
         backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--card-border)',

@@ -8,6 +8,9 @@ import React, {
   useState
 } from 'react';
 import { useAuth } from './useAuth';
+import { useLearner } from './useLearner';
+import { getAssignedLists } from '../services/familyApi';
+import { learnerKey } from '../services/activeLearner';
 import {
   DEFAULT_LIST_ID,
   MAX_LISTS,
@@ -40,10 +43,30 @@ const DEFAULT_LIST = Object.freeze({
   hints: []
 });
 
+const ASSIGNED_KEY = 'spelling_tutor_assigned_v1';
+
+function readAssignedCache(learnerId) {
+  try {
+    const v = JSON.parse(localStorage.getItem(learnerKey(ASSIGNED_KEY, learnerId)) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+// An assigned list as a read-only list: the owner edits it, the learner only practises it
+const toList = (a) => ({
+  id: a.list_id, name: a.list_name, wordsRaw: a.words_raw, isDefault: 0, updatedAt: a.created_at,
+  dirty: false, deleted: false, focusGroups: a.focus_groups || [], hints: a.hints || [],
+  assigned: true, readOnly: true
+});
+
 export function ListsProvider({ children }) {
   const auth = useAuth();
   const authRef = useRef(auth);
   authRef.current = auth;
+  const { activeId } = useLearner();
+  const [assigned, setAssigned] = useState(() => readAssignedCache(activeId));
 
   const [lists, setLists] = useState(loadLists);
   const listsRef = useRef(lists);
@@ -104,6 +127,24 @@ export function ListsProvider({ children }) {
     );
   }, [commit]);
 
+  // Lists assigned to whoever is practising (the user, or the chosen child). Cached for offline use.
+  const refreshAssigned = useCallback(async () => {
+    if (authRef.current.status !== 'authenticated') return;
+    try {
+      const rows = await getAssignedLists();
+      const next = Array.isArray(rows) ? rows : [];
+      setAssigned(next);
+      try { localStorage.setItem(learnerKey(ASSIGNED_KEY, activeId), JSON.stringify(next)); } catch { /* storage unavailable */ }
+    } catch {
+      // Offline or signed out: keep what was cached
+    }
+  }, [activeId]);
+
+  useEffect(() => {
+    setAssigned(readAssignedCache(activeId));
+    if (auth.status === 'authenticated') refreshAssigned();
+  }, [activeId, auth.status, refreshAssigned]);
+
   // ── Sync ─────────────────────────────────────────────────────────────────────
   const syncNow = useCallback(async () => {
     if (syncingRef.current || !authRef.current.isLoggedIn) return;
@@ -114,6 +155,7 @@ export function ListsProvider({ children }) {
       const result = await syncLists(snapshot);
       commit(reconcile(listsRef.current, snapshot, result.merged, result.pushed, result.deleted));
       await flushAttempts();
+      refreshAssigned(); // practice just reached the server: progress toward assignments may have moved
       setSyncMessage(result.errors.length ? `${result.errors.length} list(s) could not be saved to your account.` : '');
       setSyncStatus(result.errors.length ? 'partial' : 'idle');
       setLastSyncedAt(new Date());
@@ -132,7 +174,7 @@ export function ListsProvider({ children }) {
       syncingRef.current = false;
       setFirstSyncDone(true);
     }
-  }, [commit]);
+  }, [commit, refreshAssigned]);
 
   // Sync when the user becomes authenticated (login, or returning with a session)
   useEffect(() => {
@@ -179,9 +221,13 @@ export function ListsProvider({ children }) {
 
   const visible = useMemo(() => visibleLists(lists), [lists]);
 
+  const assignedLists = useMemo(() => assigned.map(toList), [assigned]);
+
   const getList = useCallback(
-    (id) => (id === DEFAULT_LIST_ID ? DEFAULT_LIST : visible.find(l => l.id === id) ?? null),
-    [visible]
+    (id) => (id === DEFAULT_LIST_ID
+      ? DEFAULT_LIST
+      : visible.find(l => l.id === id) ?? assignedLists.find(l => l.id === id) ?? null),
+    [visible, assignedLists]
   );
 
   // Deep links can only be resolved once we know whether the server has the list
@@ -190,6 +236,8 @@ export function ListsProvider({ children }) {
   const value = useMemo(
     () => ({
       lists: visible,
+      assigned,
+      refreshAssigned,
       defaultList: DEFAULT_LIST,
       getList,
       createList,
@@ -203,7 +251,7 @@ export function ListsProvider({ children }) {
       ready,
       atListLimit: visible.length >= MAX_LISTS
     }),
-    [visible, getList, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
+    [visible, assigned, refreshAssigned, getList, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
   );
 
   return <ListsContext.Provider value={value}>{children}</ListsContext.Provider>;

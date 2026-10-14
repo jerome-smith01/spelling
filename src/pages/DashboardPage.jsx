@@ -5,6 +5,7 @@ import { parseWordList } from '../utils/wordParser';
 import { loadDeckSummary } from '../hooks/useDeckSchedule';
 import { loadLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { dueText } from '../utils/dueText';
 import { useLearner } from '../hooks/useLearner';
 import NewDeckFlow from '../components/NewDeckFlow';
 import '../styles/spelling.css';
@@ -22,8 +23,8 @@ const SORTS = {
 export default function DashboardPage() {
   usePageTitle('My decks');
   const navigate = useNavigate();
-  const { kidMode } = useLearner();
-  const { lists, defaultList, createList, atListLimit } = useLists();
+  const { kidMode, activeLearner } = useLearner();
+  const { lists, defaultList, createList, atListLimit, assigned = [] } = useLists();
   const lastId = loadLastListId();
   const [sort, setSort] = useState(() => {
     try { const v = localStorage.getItem(SORT_KEY); return SORTS[v] ? v : 'recent'; } catch { return 'recent'; }
@@ -71,6 +72,35 @@ export default function DashboardPage() {
         <p role="status" style={{ margin: 0, color: '#ef4444', fontSize: '0.85rem' }}>
           You have reached the 25 deck limit. Delete a deck to add another.
         </p>
+      )}
+      {assigned.length > 0 && (
+        <section aria-labelledby="assigned-heading" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <h3 id="assigned-heading" style={{ margin: 0, color: 'var(--foreground)' }}>Assigned to {activeLearner ? activeLearner.display_name : 'you'}</h3>
+          <ul className="dash-grid">
+            {assigned.map(a => {
+              const due = dueText(a.due_at);
+              return (
+                <li key={a.assignment_id} className="dash-card" aria-label={`Assigned ${a.list_name}`}>
+                  <h3 className="dash-card-title">
+                    <Link to={`/lists/${a.list_id}`} className="dash-card-link">{a.list_name}</Link>
+                    {a.complete && <span className="deck-badge" style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}>Done ✓</span>}
+                  </h3>
+                  <div className="dash-bar" role="progressbar" aria-label="Assignment progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={a.percent}>
+                    <span style={{ width: `${a.percent}%` }} />
+                  </div>
+                  <div className="dash-card-meta">
+                    <span>{a.percent}% done</span>
+                    <span className={due.late ? 'dash-due' : undefined}>{due.text}</span>
+                  </div>
+                  <div className="dash-actions">
+                    <Link to={`/lists/${a.list_id}`} className="btn-verify" aria-label={`Practice assigned ${a.list_name}`}>Practice</Link>
+                    <Link to={`/lists/${a.list_id}?mode=quiz`} className="btn-secondary-sm" aria-label={`Quiz assigned ${a.list_name}`}>Quiz</Link>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
       <label className="settings-field" style={{ maxWidth: '16rem' }}>
         Sort by

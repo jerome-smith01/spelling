@@ -1,4 +1,4 @@
-# Family & Classroom Accounts — Plan (F1–F3 built; F4–F6 not started)
+# Family & Classroom Accounts — Plan (F1–F4 built; F5–F6 not started)
 
 ## Goal
 Let one adult (a **parent** or a **teacher**) set up and follow several children. The adult creates or links learners, assigns word lists, and sees progress and reports for each child, or for a whole class at once. Children practise exactly as they do today; their results belong to their own learner profile, not to the adult.
@@ -202,7 +202,10 @@ Create / edit / delete managed learners (D1, D6). "Who's practising?" picker, ad
 * **PDF report per learner** (Q2) — see [PDF reports](#pdf-reports).
 **Done when:** a parent can answer "how is each child doing this week?" from one screen and one email.
 
-### F4 — Assignments
+### F4 — Assignments — ✅ built (2026-10-14)
+> Backend: migration `0014_assignments.sql`, `lib/assignments.ts`, `/api/spelling/assignments` (user-level: POST, GET `?learner=`, DELETE), `GET /api/spelling/assigned-lists` (learner-level), assignments in the overview and the report, purge, `src/assignments.test.ts`. Front end: "Assign" modal and per-child assignment rows on `/family`; an **Assigned** row at the top of the decks page (progress bar, due date, Done badge); assigned lists open read-only through `useLists` (so a student on their own account, F5/F6, can practise a list they do not own) and are cached for offline; `assigned.test.jsx`. Deploy: apply migration `0014` before the Worker.
+> **Changed from decision D8:** the Harvey-ball levels live only in the browser, so completion is computed on the server from the practice record: a word is *done* when, since the list was assigned, it was practised and mastered or its latest visit had every letter right; *percent* = done / words; *complete* = every word tried and percent ≥ 80. Revisit if you want the server to know the deck levels (would need the levels synced).
+> Only lists already saved to the account can be assigned (the built-in default is virtual until edited). Assigning to a class (F6) writes one row per student.
 Assign a list to a learner or a group, optional due date (D7). Children see an **Assigned** row at the top of their lists with a progress ring; the adult sees completion per learner (D8). Assigned lists are read-only for the child.
 Endpoints: `POST/GET/DELETE /api/spelling/assignments`, `GET /api/spelling/assigned-lists` (learner view).
 **Done when:** a parent assigns "Week 6" to two children and sees each one's completion update after practice.

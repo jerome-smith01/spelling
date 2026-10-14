@@ -4,7 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useLearner, childrenOf } from '../hooks/useLearner';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { buildLoginUrl } from '../services/apiService';
-import { addChild, updateChild, deleteChild, setPin, removePin, getOverview, familyErrorMessage } from '../services/familyApi';
+import { addChild, updateChild, deleteChild, setPin, removePin, getOverview, assignList, removeAssignment, familyErrorMessage } from '../services/familyApi';
+import { useLists } from '../hooks/useLists';
+import { dueText } from '../utils/dueText';
 import { GRADES } from './ProfilePage';
 import Modal from '../components/Modal';
 
@@ -31,7 +33,7 @@ export function lastPracticedText(ts, now = new Date()) {
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** This week at a glance for one child (from /supervisor/overview). */
-function ChildSummary({ summary }) {
+function ChildSummary({ summary, canAssign, onRemoveAssignment }) {
   if (!summary) return null;
   return (
     <ul className="child-summary" aria-label="This week">
@@ -48,7 +50,82 @@ function ChildSummary({ summary }) {
       {summary.active_patterns.length > 0 && (
         <li>To work on: {summary.active_patterns.map(p => p.label).join(', ')}</li>
       )}
+      {(summary.assignments || []).map(a => {
+        const due = dueText(a.due_at);
+        return (
+          <li key={a.assignment_id} aria-label={`Assignment ${a.list_name}`}>
+            <strong>{a.list_name}</strong>: {a.complete ? 'done ✓' : `${a.percent}% done`} · {due.text}
+            {canAssign && (
+              <button type="button" className="link-button" onClick={() => onRemoveAssignment(a)} aria-label={`Remove assignment ${a.list_name}`}>Remove</button>
+            )}
+          </li>
+        );
+      })}
     </ul>
+  );
+}
+
+/** Pick one of your saved lists, the children to give it to, and an optional due date. */
+function AssignModal({ kids, startId, lists, onClose, onAssigned }) {
+  const [listId, setListId] = useState(lists[0]?.id ?? '');
+  const [picked, setPicked] = useState(new Set([startId]));
+  const [due, setDue] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const toggle = (id) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!listId || picked.size === 0 || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await assignList({ list_id: listId, learner_ids: [...picked], due_at: due || undefined });
+      await onAssigned();
+    } catch (err) {
+      setError(err?.status === 404
+        ? 'That list is not saved to your account yet. Wait a moment for it to sync, then try again.'
+        : familyErrorMessage(err));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal title="Assign a list" onClose={onClose}>
+      {lists.length === 0 ? (
+        <>
+          <p style={{ marginTop: 0 }}>You have no saved lists to assign yet. Make a deck first (the built-in list cannot be assigned until you edit it).</p>
+          <button type="button" className="btn-secondary-sm" onClick={onClose}>Close</button>
+        </>
+      ) : (
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <label className="settings-field">
+            List
+            <select value={listId} onChange={(e) => setListId(e.target.value)}>
+              {lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+          </label>
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend className="settings-field" style={{ marginBottom: '0.25rem' }}>Give it to</legend>
+            {kids.map(k => (
+              <label key={k.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.15rem 0' }}>
+                <input type="checkbox" checked={picked.has(k.id)} onChange={() => toggle(k.id)} />
+                <span aria-hidden="true">{k.avatar}</span> {k.display_name}
+              </label>
+            ))}
+          </fieldset>
+          <label className="settings-field" style={{ maxWidth: '12rem' }}>
+            Due date (optional)
+            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+          </label>
+          {error && <p role="alert" style={{ margin: 0, color: '#ef4444', fontSize: '0.85rem' }}>{error}</p>}
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn-secondary-sm" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn-verify" disabled={busy || picked.size === 0}>Assign</button>
+          </div>
+        </form>
+      )}
+    </Modal>
   );
 }
 
@@ -181,6 +258,10 @@ export default function FamilyPage() {
   const kids = childrenOf(learners);
   const picks = avatars.length ? avatars : FALLBACK_AVATARS;
   const [summaries, setSummaries] = useState({});
+  const [assigning, setAssigning] = useState(null); // the child it was opened from
+  const [reload, setReload] = useState(0);
+  const { lists } = useLists();
+  const assignable = lists.filter(l => !l.dirty && !l.deleted); // saved to the account (the built-in default is virtual)
   const kidIds = kids.map(k => k.id).join(',');
 
   // This week's numbers for each child, in one call. The cards still work without them.
@@ -191,7 +272,7 @@ export default function FamilyPage() {
       .then(o => { if (!cancelled) setSummaries(Object.fromEntries((o.learners || []).map(l => [l.id, l.summary]))); })
       .catch(() => { /* offline or not allowed: show the cards without numbers */ });
     return () => { cancelled = true; };
-  }, [status, kidIds]);
+  }, [status, kidIds, reload]);
 
   if (status !== 'authenticated') {
     return (
@@ -285,9 +366,20 @@ export default function FamilyPage() {
                   <span>{GRADES.find(g => g.value === k.grade)?.label ?? `Grade ${k.grade}`}</span>
                   {k.role !== 'owner' && <span>Shared with you</span>}
                 </div>
-                {k.can_view_reports && <ChildSummary summary={summaries[k.id]} />}
+                {k.can_view_reports && (
+                  <ChildSummary
+                    summary={summaries[k.id]}
+                    canAssign={k.can_assign}
+                    onRemoveAssignment={async (a) => {
+                      try { await removeAssignment(a.assignment_id); setReload(r => r + 1); } catch (err) { setError(familyErrorMessage(err)); }
+                    }}
+                  />
+                )}
                 <div className="dash-actions">
                   <button type="button" className="btn-verify" onClick={() => practiceAs(k.id)} aria-label={`Practise as ${k.display_name}`}>Practise as</button>
+                  {k.can_assign && (
+                    <button type="button" className="btn-secondary-sm" onClick={() => setAssigning(k)} aria-label={`Assign a list to ${k.display_name}`}>Assign</button>
+                  )}
                   {k.can_view_reports && (
                     <>
                       <button type="button" className="btn-secondary-sm" onClick={() => viewProgress(k.id)} aria-label={`See ${k.display_name}'s progress`}>Progress</button>
@@ -309,6 +401,16 @@ export default function FamilyPage() {
 
       <PinSettings pinSet={pinSet} onChanged={refresh} />
       <p style={{ margin: 0, fontSize: '0.85rem' }}><Link to="/who">Who&apos;s practising?</Link></p>
+
+      {assigning && (
+        <AssignModal
+          kids={kids.filter(k => k.can_assign)}
+          startId={assigning.id}
+          lists={assignable}
+          onClose={() => setAssigning(null)}
+          onAssigned={async () => { setAssigning(null); setReload(r => r + 1); }}
+        />
+      )}
 
       {removing && (
         <Modal title={`Delete ${removing.display_name}?`} onClose={() => setRemoving(null)}>
