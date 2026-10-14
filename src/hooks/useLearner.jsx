@@ -120,5 +120,12 @@ export function useLearner() {
   return useContext(LearnerContext) || NO_FAMILY;
 }
 
-/** Children (managed learners) only. */
-export const childrenOf = (learners) => learners.filter(l => l.kind === 'managed');
+/** Children a grown-up can practise as: child profiles they own, or are a guardian of. */
+export const childrenOf = (learners) =>
+  learners.filter(l => l.kind === 'managed' && (l.role === 'owner' || l.role === 'guardian'));
+
+/** Everyone this account follows besides themselves: their children, shared children and linked students. */
+export const followedOf = (learners) => learners.filter(l => l.role !== 'self');
+
+/** Child profiles this account added (counted against the limit). */
+export const ownedChildrenOf = (learners) => learners.filter(l => l.kind === 'managed' && l.role === 'owner');

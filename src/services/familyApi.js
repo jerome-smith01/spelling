@@ -52,3 +52,22 @@ export const removeAssignment = (id) => apiFetch(`/api/spelling/assignments/${en
 
 /** Lists assigned to the active learner, with progress and the words: [{ assignment_id, list_id, list_name, due_at, percent, complete, words_raw, focus_groups, hints }] */
 export const getAssignedLists = () => apiFetch('/api/spelling/assigned-lists');
+
+// ── Invite codes and who can see a learner (F5) ──
+
+/** { kind: 'share_child', learner_id, role } or { kind: 'link_me', role }; role is 'guardian' | 'teacher'. -> { code, expires_at } */
+export const createInvite = (body) => apiFetch('/api/spelling/family/invites', { method: 'POST', body });
+export const listInvites = () => apiFetch('/api/spelling/family/invites');
+export const revokeInvite = (code) => apiFetch(`/api/spelling/family/invites/${encodeURIComponent(code)}`, { method: 'DELETE' });
+
+/** What accepting a code would do: { kind, role, inviter, child_name, can_assign, can_view_reports, expires_at } */
+export const previewInvite = (code) => apiFetch(`/api/spelling/family/invites/${encodeURIComponent(code)}/preview`);
+export const acceptInvite = (code, displayName) =>
+  apiFetch(`/api/spelling/family/invites/${encodeURIComponent(code)}/accept`, {
+    method: 'POST', body: displayName ? { display_name: displayName } : {}
+  });
+
+/** Everyone else who can see a child you added (or your own practice): [{ user_id, label, role, can_assign, can_view_reports }] */
+export const getAccess = (learnerId) => apiFetch(`/api/spelling/family/learners/${encodeURIComponent(learnerId)}/access`);
+export const removeAccess = (learnerId, userId) =>
+  apiFetch(`/api/spelling/family/learners/${encodeURIComponent(learnerId)}/access/${encodeURIComponent(userId)}`, { method: 'DELETE' });

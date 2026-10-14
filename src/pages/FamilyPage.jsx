@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useLearner, childrenOf } from '../hooks/useLearner';
+import { useLearner, childrenOf, followedOf, ownedChildrenOf } from '../hooks/useLearner';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { buildLoginUrl } from '../services/apiService';
-import { addChild, updateChild, deleteChild, setPin, removePin, getOverview, assignList, removeAssignment, familyErrorMessage } from '../services/familyApi';
+import {
+  addChild, updateChild, deleteChild, setPin, removePin, getOverview, assignList, removeAssignment, familyErrorMessage,
+  createInvite, listInvites, revokeInvite, getAccess, removeAccess
+} from '../services/familyApi';
 import { useLists } from '../hooks/useLists';
 import { dueText } from '../utils/dueText';
 import { GRADES } from './ProfilePage';
@@ -62,6 +65,91 @@ function ChildSummary({ summary, canAssign, onRemoveAssignment }) {
         );
       })}
     </ul>
+  );
+}
+
+const ROLE_LABEL = { guardian: 'Parent or guardian', teacher: 'Teacher', owner: 'Owner', self: 'You' };
+
+/**
+ * Share a child you added with another adult, or make a code for a student to link their own account.
+ * Shows who can already see the learner (with Remove) and any codes still waiting.
+ */
+function SharingModal({ learner, mode, onClose, onChanged }) {
+  // mode 'child': share `learner` with another adult. mode 'link': a code for a student (learner is the user's own profile).
+  const [access, setAccess] = useState(null);
+  const [role, setRole] = useState(mode === 'child' ? 'guardian' : 'teacher');
+  const [made, setMade] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const reload = async () => {
+    try { setAccess(await getAccess(learner.id)); } catch { setAccess([]); }
+  };
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [learner.id]);
+
+  const make = async () => {
+    setBusy(true);
+    setError('');
+    setCopied(false);
+    try {
+      setMade(await createInvite(mode === 'child' ? { kind: 'share_child', learner_id: learner.id, role } : { kind: 'link_me', role }));
+    } catch (err) {
+      setError(familyErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(made.code); setCopied(true); } catch { /* the code is on screen to read out */ }
+  };
+  const remove = async (a) => {
+    try { await removeAccess(learner.id, a.user_id); await reload(); await onChanged(); } catch (err) { setError(familyErrorMessage(err)); }
+  };
+
+  const title = mode === 'child' ? `Share ${learner.display_name}` : 'Follow a student';
+  return (
+    <Modal title={title} onClose={onClose}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        <p style={{ margin: 0, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+          {mode === 'child'
+            ? `Make a code and give it to another adult. When they enter it they can see ${learner.display_name}'s progress and assign lists. You can remove them any time.`
+            : 'Make a code and give it to a student who has their own login. Nothing is shared until they enter it and accept.'}
+        </p>
+        <label className="settings-field" style={{ maxWidth: '16rem' }}>
+          They are a
+          <select value={role} onChange={(e) => { setRole(e.target.value); setMade(null); }}>
+            <option value="guardian">Parent or guardian</option>
+            <option value="teacher">Teacher</option>
+          </select>
+        </label>
+        <div>
+          <button type="button" className="btn-verify" onClick={make} disabled={busy}>Make a code</button>
+        </div>
+        {made && (
+          <div aria-label="Your code" style={{ border: '2px dashed var(--card-border)', borderRadius: 'var(--radius-lg)', padding: '0.75rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '0.3rem', color: 'var(--foreground)' }}>{made.code}</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>Works once, for 7 days. They enter it at Family → Join with a code.</div>
+            <button type="button" className="btn-secondary-sm" style={{ marginTop: '0.5rem' }} onClick={copy}>{copied ? 'Copied' : 'Copy code'}</button>
+          </div>
+        )}
+        {error && <p role="alert" style={{ margin: 0, color: '#ef4444', fontSize: '0.85rem' }}>{error}</p>}
+        <div>
+          <h4 style={{ margin: '0 0 0.4rem', color: 'var(--foreground)' }}>Who can see {mode === 'child' ? `${learner.display_name}'s practice` : 'your practice'}</h4>
+          {access === null && <p role="status" style={{ margin: 0, color: 'var(--muted-foreground)' }}>Loading…</p>}
+          {access?.length === 0 && <p style={{ margin: 0, color: 'var(--muted-foreground)' }}>Just you.</p>}
+          <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+            {(access || []).map(a => (
+              <li key={a.user_id} aria-label={`Can see: ${a.label}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.9rem' }}>
+                <span>{a.label} · {ROLE_LABEL[a.role] ?? a.role}</span>
+                <button type="button" className="link-button" onClick={() => remove(a)} aria-label={`Remove ${a.label}`}>Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div style={{ textAlign: 'right' }}><button type="button" className="btn-secondary-sm" onClick={onClose}>Done</button></div>
+      </div>
+    </Modal>
   );
 }
 
@@ -251,15 +339,22 @@ export default function FamilyPage() {
   usePageTitle('Family');
   const { status } = useAuth();
   const { learners, pinSet, maxChildren, avatars, refresh, switchTo } = useLearner();
+  const myself = learners.find(l => l.role === 'self');
   const navigate = useNavigate();
   const [mode, setMode] = useState(null); // 'add' | { editing: child }
   const [removing, setRemoving] = useState(null);
   const [error, setError] = useState('');
-  const kids = childrenOf(learners);
+  const kids = followedOf(learners);                 // children, shared children and linked students
+  const practiceIds = new Set(childrenOf(learners).map(l => l.id));
+  const ownedCount = ownedChildrenOf(learners).length;
   const picks = avatars.length ? avatars : FALLBACK_AVATARS;
+  const [sharing, setSharing] = useState(null);      // { learner, mode } for the sharing dialog
+  const [invites, setInvites] = useState([]);
+  const [watchers, setWatchers] = useState([]);       // grown-ups who can see this user's own practice
   const [summaries, setSummaries] = useState({});
   const [assigning, setAssigning] = useState(null); // the child it was opened from
   const [reload, setReload] = useState(0);
+  const [sharingTick, setSharingTick] = useState(0);
   const { lists } = useLists();
   const assignable = lists.filter(l => !l.dirty && !l.deleted); // saved to the account (the built-in default is virtual)
   const kidIds = kids.map(k => k.id).join(',');
@@ -273,6 +368,15 @@ export default function FamilyPage() {
       .catch(() => { /* offline or not allowed: show the cards without numbers */ });
     return () => { cancelled = true; };
   }, [status, kidIds, reload]);
+
+  // Codes still waiting, and who can see the user's own practice
+  useEffect(() => {
+    if (status !== 'authenticated') return undefined;
+    let cancelled = false;
+    listInvites().then(r => { if (!cancelled) setInvites(Array.isArray(r) ? r : []); }).catch(() => {});
+    if (myself) getAccess(myself.id).then(r => { if (!cancelled) setWatchers(Array.isArray(r) ? r : []); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [status, myself?.id, sharingTick, sharing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (status !== 'authenticated') {
     return (
@@ -314,7 +418,7 @@ export default function FamilyPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
         <h2 tabIndex={-1} style={{ margin: 0, color: 'var(--foreground)' }}>Family</h2>
         <button type="button" className="btn-secondary-sm" style={{ fontWeight: 700 }}
-          disabled={mode !== null || kids.length >= maxChildren} onClick={() => setMode('add')}>
+          disabled={mode !== null || ownedCount >= maxChildren} onClick={() => setMode('add')}>
           + Add a child
         </button>
       </div>
@@ -324,7 +428,7 @@ export default function FamilyPage() {
         {/* TODO(owner): link the Spelling Tutor privacy page "Children" section here once it is written (plan decision D11). */}
       </p>
       {error && <p role="alert" style={{ margin: 0, color: '#ef4444' }}>{error}</p>}
-      {kids.length >= maxChildren && <p role="status" style={{ margin: 0, color: 'var(--muted-foreground)' }}>You have added the most children allowed ({maxChildren}).</p>}
+      {ownedCount >= maxChildren && <p role="status" style={{ margin: 0, color: 'var(--muted-foreground)' }}>You have added the most children allowed ({maxChildren}).</p>}
 
       {mode === 'add' && (
         <div style={card}>
@@ -364,7 +468,7 @@ export default function FamilyPage() {
                 </h3>
                 <div className="dash-card-meta">
                   <span>{GRADES.find(g => g.value === k.grade)?.label ?? `Grade ${k.grade}`}</span>
-                  {k.role !== 'owner' && <span>Shared with you</span>}
+                  {k.role !== 'owner' && <span>{k.kind === 'self' ? 'Student' : 'Shared with you'}</span>}
                 </div>
                 {k.can_view_reports && (
                   <ChildSummary
@@ -376,7 +480,9 @@ export default function FamilyPage() {
                   />
                 )}
                 <div className="dash-actions">
-                  <button type="button" className="btn-verify" onClick={() => practiceAs(k.id)} aria-label={`Practise as ${k.display_name}`}>Practise as</button>
+                  {practiceIds.has(k.id) && (
+                    <button type="button" className="btn-verify" onClick={() => practiceAs(k.id)} aria-label={`Practise as ${k.display_name}`}>Practise as</button>
+                  )}
                   {k.can_assign && (
                     <button type="button" className="btn-secondary-sm" onClick={() => setAssigning(k)} aria-label={`Assign a list to ${k.display_name}`}>Assign</button>
                   )}
@@ -388,6 +494,7 @@ export default function FamilyPage() {
                   )}
                   {k.role === 'owner' && (
                     <>
+                      <button type="button" className="btn-secondary-sm" onClick={() => setSharing({ learner: k, mode: 'child' })} aria-label={`Share ${k.display_name}`}>Share</button>
                       <button type="button" className="btn-secondary-sm" onClick={() => setMode({ editing: k })} aria-label={`Edit ${k.display_name}`}>Edit</button>
                       <button type="button" className="btn-secondary-sm" onClick={() => setRemoving(k)} aria-label={`Delete ${k.display_name}`}>Delete</button>
                     </>
@@ -399,8 +506,54 @@ export default function FamilyPage() {
         ))}
       </ul>
 
+      <section style={card} aria-labelledby="link-heading">
+        <h3 id="link-heading" style={{ marginTop: 0, color: 'var(--foreground)' }}>Codes</h3>
+        <p style={{ margin: '0 0 0.75rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+          Got a code from a parent, teacher or student? Join with it. Teaching students who have their own login? Make a code for them.
+        </p>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <Link to="/join" className="btn-verify" style={{ textDecoration: 'none' }}>Join with a code</Link>
+          {myself && (
+            <button type="button" className="btn-secondary-sm" style={{ fontWeight: 700 }} onClick={() => setSharing({ learner: myself, mode: 'link' })}>
+              Make a code for a student
+            </button>
+          )}
+        </div>
+        {invites.length > 0 && (
+          <ul aria-label="Codes waiting to be used" style={{ margin: '0.75rem 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.85rem' }}>
+            {invites.map(i => (
+              <li key={i.code} aria-label={`Waiting code ${i.code}`}>
+                <strong style={{ letterSpacing: '0.1rem' }}>{i.code}</strong>
+                {' · '}{i.kind === 'share_child' ? `shares ${i.child_name ?? 'a child'}` : 'links a student'} · {ROLE_LABEL[i.role]}
+                <button type="button" className="link-button" aria-label={`Cancel code ${i.code}`}
+                  onClick={async () => { try { await revokeInvite(i.code); setSharingTick(t => t + 1); } catch (err) { setError(familyErrorMessage(err)); } }}>Cancel</button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {watchers.length > 0 && (
+        <section style={card} aria-labelledby="watchers-heading">
+          <h3 id="watchers-heading" style={{ marginTop: 0, color: 'var(--foreground)' }}>Grown-ups who can see your practice</h3>
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+            {watchers.map(w => (
+              <li key={w.user_id} aria-label={`Can see your practice: ${w.label}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <span>{w.label} · {ROLE_LABEL[w.role] ?? w.role}</span>
+                <button type="button" className="link-button" aria-label={`Stop ${w.label} seeing my practice`}
+                  onClick={async () => { try { await removeAccess(myself.id, w.user_id); setSharingTick(t => t + 1); } catch (err) { setError(familyErrorMessage(err)); } }}>Remove</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <PinSettings pinSet={pinSet} onChanged={refresh} />
       <p style={{ margin: 0, fontSize: '0.85rem' }}><Link to="/who">Who&apos;s practising?</Link></p>
+
+      {sharing && (
+        <SharingModal learner={sharing.learner} mode={sharing.mode} onClose={() => setSharing(null)} onChanged={async () => { setSharingTick(t => t + 1); await refresh(); }} />
+      )}
 
       {assigning && (
         <AssignModal

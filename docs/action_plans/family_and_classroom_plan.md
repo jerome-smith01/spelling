@@ -1,4 +1,4 @@
-# Family & Classroom Accounts — Plan (F1–F4 built; F5–F6 not started)
+# Family & Classroom Accounts — Plan (F1–F5 built; F6 not started)
 
 ## Goal
 Let one adult (a **parent** or a **teacher**) set up and follow several children. The adult creates or links learners, assigns word lists, and sees progress and reports for each child, or for a whole class at once. Children practise exactly as they do today; their results belong to their own learner profile, not to the adult.
@@ -210,7 +210,10 @@ Assign a list to a learner or a group, optional due date (D7). Children see an *
 Endpoints: `POST/GET/DELETE /api/spelling/assignments`, `GET /api/spelling/assigned-lists` (learner view).
 **Done when:** a parent assigns "Week 6" to two children and sees each one's completion update after practice.
 
-### F5 — Linking existing accounts (invites)
+### F5 — Linking existing accounts (invites) — ✅ built (2026-10-14)
+> Backend: migration `0015_invites.sql`, `lib/invites.ts`, `/api/spelling/family/invites[/:code/preview|accept]`, `/family/learners/:id/access[/:userId]`, `src/invites.test.ts`. Front end: `/join` and `/join/:code` (`JoinPage`), a Share dialog per child, "Make a code for a student", waiting codes with Cancel, "Grown-ups who can see your practice" with Remove; `invites.test.jsx`. Deploy: apply migration `0015` before the Worker.
+> **Two kinds of code** (single use, 7 days, 8 characters from a look-alike-free alphabet): *share_child* (the parent gives another adult a child: a second parent or a teacher) and *link_me* (an adult follows a student who accepts with their own login; the student can remove them any time). Creating is limited to 10 a day; looking up 10 wrong codes in an hour blocks that user's lookups; a preview shows only the inviter's first name (or a masked email) and a child's nickname.
+> **Rule added:** a teacher, or anyone looking at another person's own account, can see and assign but **cannot record practice or change the grade** (`canActAsLearner`): the learner themselves, a child's owner and a child's guardian can. Unlinking removes access only; practice data is never deleted (D4).
 Invite codes (D3, Q1) for: a second parent joining a child; an adult linking a student who has their own account; a parent granting a teacher view access. Accept at `/join/:code`. Either side can unlink; unlinking never deletes data (D4).
 **Done when:** two adults see the same child, and a student with their own login shows up in an adult's list after accepting.
 
