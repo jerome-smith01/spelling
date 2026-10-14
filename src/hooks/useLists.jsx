@@ -12,6 +12,8 @@ import {
   DEFAULT_LIST_ID,
   MAX_LISTS,
   loadLists,
+  loadDefaultHidden,
+  saveDefaultHidden,
   saveLists,
   newListId,
   sanitizeHints,
@@ -47,6 +49,7 @@ export function ListsProvider({ children }) {
 
   const [lists, setLists] = useState(loadLists);
   const listsRef = useRef(lists);
+  const [defaultHidden, setDefaultHidden] = useState(loadDefaultHidden);
   const [syncStatus, setSyncStatus] = useState('idle');
   const [syncMessage, setSyncMessage] = useState('');
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
@@ -95,6 +98,12 @@ export function ListsProvider({ children }) {
   }, [commit]);
 
   const deleteList = useCallback((id) => {
+    // The built-in default has no record to remove; deleting it hides it for good (progress is kept)
+    if (id === DEFAULT_LIST_ID) {
+      saveDefaultHidden(true);
+      setDefaultHidden(true);
+      return;
+    }
     commit(
       listsRef.current.flatMap(l => {
         if (l.id !== id) return [l];
@@ -180,8 +189,8 @@ export function ListsProvider({ children }) {
   const visible = useMemo(() => visibleLists(lists), [lists]);
 
   const getList = useCallback(
-    (id) => (id === DEFAULT_LIST_ID ? DEFAULT_LIST : visible.find(l => l.id === id) ?? null),
-    [visible]
+    (id) => (id === DEFAULT_LIST_ID ? (defaultHidden ? null : DEFAULT_LIST) : visible.find(l => l.id === id) ?? null),
+    [visible, defaultHidden]
   );
 
   // Deep links can only be resolved once we know whether the server has the list
@@ -191,6 +200,7 @@ export function ListsProvider({ children }) {
     () => ({
       lists: visible,
       defaultList: DEFAULT_LIST,
+      defaultHidden,
       getList,
       createList,
       saveWords,
@@ -203,7 +213,7 @@ export function ListsProvider({ children }) {
       ready,
       atListLimit: visible.length >= MAX_LISTS
     }),
-    [visible, getList, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
+    [visible, defaultHidden, getList, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
   );
 
   return <ListsContext.Provider value={value}>{children}</ListsContext.Provider>;

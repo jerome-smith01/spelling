@@ -6,6 +6,7 @@ import { loadDeckSummary } from '../hooks/useDeckSchedule';
 import { loadLastListId } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
 import NewDeckFlow from '../components/NewDeckFlow';
+import Modal from '../components/Modal';
 import '../styles/spelling.css';
 
 /** Route: / — every deck with its progress; the way into practice and quiz (each its own screen). */
@@ -21,7 +22,7 @@ const SORTS = {
 export default function DashboardPage() {
   usePageTitle('My decks');
   const navigate = useNavigate();
-  const { lists, defaultList, createList, atListLimit } = useLists();
+  const { lists, defaultList, defaultHidden, createList, deleteList, atListLimit } = useLists();
   const lastId = loadLastListId();
   const [sort, setSort] = useState(() => {
     try { const v = localStorage.getItem(SORT_KEY); return SORTS[v] ? v : 'recent'; } catch { return 'recent'; }
@@ -31,14 +32,16 @@ export default function DashboardPage() {
     try { localStorage.setItem(SORT_KEY, v); } catch { /* storage unavailable */ }
   };
 
-  const decks = useMemo(() => [defaultList, ...lists].map(l => {
+  const decks = useMemo(() => (defaultHidden ? lists : [defaultList, ...lists]).map(l => {
     const words = parseWordList(l.wordsRaw).map(w => w.word);
     return { id: l.id, name: l.name, added: l.updatedAt || '', ...loadDeckSummary(l.id, words) };
-  }), [defaultList, lists]);
+  }), [defaultList, defaultHidden, lists]);
   // Array.sort is stable, so ties keep their original order
   const sorted = useMemo(() => [...decks].sort(SORTS[sort].cmp), [decks, sort]);
 
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(null); // deck awaiting confirmation
+  const confirmDelete = () => { deleteList(deleting.id); setDeleting(null); };
   const onCreate = ({ name, wordsRaw, focusGroups, hints }) => {
     if (atListLimit) return { success: false, error: 'You have reached the 25 deck limit. Delete a deck first.' };
     if (parseWordList(wordsRaw).length === 0) return { success: false, error: 'Add at least one word.' };
@@ -79,6 +82,13 @@ export default function DashboardPage() {
           const pct = d.total ? Math.round((d.learned / d.total) * 100) : 0;
           return (
             <li key={d.id} className="dash-card" aria-label={`Deck ${d.name}`}>
+              {(
+                <button type="button" className="dash-card-delete" onClick={() => setDeleting(d)} aria-label={`Delete ${d.name}`}>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+              )}
               <h3 className="dash-card-title">
                 <Link to={`/lists/${d.id}`} className="dash-card-link">{d.name}</Link>
                 {d.id === lastId && <span className="deck-badge" style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}>Last used</span>}
@@ -98,6 +108,15 @@ export default function DashboardPage() {
           );
         })}
       </ul>
+      {deleting && (
+        <Modal title="Delete deck?" onClose={() => setDeleting(null)}>
+          <p>Delete “{deleting.name}”? This cannot be undone.</p>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <button type="button" className="btn-secondary-sm" onClick={() => setDeleting(null)}>Cancel</button>
+            <button type="button" className="btn-secondary-sm" style={{ color: '#ef4444', fontWeight: 700 }} onClick={confirmDelete}>Delete</button>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }

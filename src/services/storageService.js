@@ -130,6 +130,17 @@ export function saveLists(lists) {
   safeSet(LISTS_KEY, JSON.stringify(lists));
 }
 
+const DEFAULT_HIDDEN_KEY = 'spelling_tutor_default_hidden_v1';
+
+/** Whether the user deleted the built-in default deck (it is virtual, so this is a local flag). */
+export function loadDefaultHidden() {
+  return safeGet(DEFAULT_HIDDEN_KEY) === '1';
+}
+
+export function saveDefaultHidden(hidden) {
+  safeSet(DEFAULT_HIDDEN_KEY, hidden ? '1' : '0');
+}
+
 export function loadLastListId() {
   return safeGet(LAST_LIST_KEY);
 }

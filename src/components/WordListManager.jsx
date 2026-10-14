@@ -18,7 +18,7 @@ const STATUS_LABEL = {
 export default function WordListManager({ listId }) {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
-  const { lists, defaultList, getList, createList, renameList, deleteList, syncStatus, syncMessage, atListLimit } = useLists();
+  const { lists, defaultList, defaultHidden, getList, createList, renameList, deleteList, syncStatus, syncMessage, atListLimit } = useLists();
   const [message, setMessage] = useState('');
 
   const current = getList(listId);
@@ -63,7 +63,7 @@ export default function WordListManager({ listId }) {
         className="speed-preset-select"
         aria-label="Choose a word list"
       >
-        <option value={defaultList.id}>{defaultList.name}</option>
+        {!defaultHidden && <option value={defaultList.id}>{defaultList.name}</option>}
         {lists.map(l => (
           <option key={l.id} value={l.id}>{l.name}</option>
         ))}
