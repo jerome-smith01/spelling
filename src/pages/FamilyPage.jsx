@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLearner, childrenOf } from '../hooks/useLearner';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { buildLoginUrl } from '../services/apiService';
-import { addChild, updateChild, deleteChild, setPin, removePin, familyErrorMessage } from '../services/familyApi';
+import { addChild, updateChild, deleteChild, setPin, removePin, getOverview, familyErrorMessage } from '../services/familyApi';
 import { GRADES } from './ProfilePage';
 import Modal from '../components/Modal';
 
@@ -15,6 +15,42 @@ const card = {
   padding: '1.25rem'
 };
 const FALLBACK_AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐙', '🦄', '🐢', '🐧', '🐝', '🦋', '🐳', '🦖'];
+
+/** "today", "yesterday", "3 days ago", or "not yet" for a 'YYYY-MM-DD HH:MM:SS' UTC time. */
+export function lastPracticedText(ts, now = new Date()) {
+  if (!ts) return 'Has not practised yet';
+  const then = new Date(`${String(ts).replace(' ', 'T')}Z`);
+  if (Number.isNaN(then.getTime())) return 'Has not practised yet';
+  const days = Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+    Date.UTC(then.getUTCFullYear(), then.getUTCMonth(), then.getUTCDate())) / 86_400_000);
+  if (days <= 0) return 'Last practised today';
+  if (days === 1) return 'Last practised yesterday';
+  return `Last practised ${days} days ago`;
+}
+
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** This week at a glance for one child (from /supervisor/overview). */
+function ChildSummary({ summary }) {
+  if (!summary) return null;
+  return (
+    <ul className="child-summary" aria-label="This week">
+      <li>{lastPracticedText(summary.last_practiced)}</li>
+      <li>
+        {plural(summary.sessions_7d, 'session')} on {plural(summary.days_active_7d, 'day')} this week
+        {summary.accuracy_7d !== null && ` · ${summary.accuracy_7d}% of letters correct`}
+      </li>
+      <li>
+        {plural(summary.mastered_total, 'word')} mastered
+        {summary.mastered_7d > 0 && ` (${summary.mastered_7d} this week)`}
+        {summary.struggling_count > 0 && ` · ${plural(summary.struggling_count, 'tricky word')}`}
+      </li>
+      {summary.active_patterns.length > 0 && (
+        <li>To work on: {summary.active_patterns.map(p => p.label).join(', ')}</li>
+      )}
+    </ul>
+  );
+}
 
 function ChildForm({ initial, avatars, submitLabel, onSubmit, onCancel }) {
   const [name, setName] = useState(initial?.display_name ?? '');
@@ -144,6 +180,18 @@ export default function FamilyPage() {
   const [error, setError] = useState('');
   const kids = childrenOf(learners);
   const picks = avatars.length ? avatars : FALLBACK_AVATARS;
+  const [summaries, setSummaries] = useState({});
+  const kidIds = kids.map(k => k.id).join(',');
+
+  // This week's numbers for each child, in one call. The cards still work without them.
+  useEffect(() => {
+    if (status !== 'authenticated' || !kidIds) return undefined;
+    let cancelled = false;
+    getOverview()
+      .then(o => { if (!cancelled) setSummaries(Object.fromEntries((o.learners || []).map(l => [l.id, l.summary]))); })
+      .catch(() => { /* offline or not allowed: show the cards without numbers */ });
+    return () => { cancelled = true; };
+  }, [status, kidIds]);
 
   if (status !== 'authenticated') {
     return (
@@ -160,6 +208,12 @@ export default function FamilyPage() {
   const practiceAs = async (id) => {
     await switchTo(id, { kid: true });
     navigate('/');
+  };
+
+  // Look at a child's progress as a grown-up: no kid-mode lock, and a banner to get back
+  const viewProgress = async (id) => {
+    await switchTo(id, { kid: false });
+    navigate('/progress');
   };
 
   const confirmDelete = async () => {
@@ -231,8 +285,15 @@ export default function FamilyPage() {
                   <span>{GRADES.find(g => g.value === k.grade)?.label ?? `Grade ${k.grade}`}</span>
                   {k.role !== 'owner' && <span>Shared with you</span>}
                 </div>
+                {k.can_view_reports && <ChildSummary summary={summaries[k.id]} />}
                 <div className="dash-actions">
                   <button type="button" className="btn-verify" onClick={() => practiceAs(k.id)} aria-label={`Practise as ${k.display_name}`}>Practise as</button>
+                  {k.can_view_reports && (
+                    <>
+                      <button type="button" className="btn-secondary-sm" onClick={() => viewProgress(k.id)} aria-label={`See ${k.display_name}'s progress`}>Progress</button>
+                      <Link to={`/family/${k.id}/report`} className="btn-secondary-sm" style={{ textDecoration: 'none' }} aria-label={`Report for ${k.display_name}`}>Report</Link>
+                    </>
+                  )}
                   {k.role === 'owner' && (
                     <>
                       <button type="button" className="btn-secondary-sm" onClick={() => setMode({ editing: k })} aria-label={`Edit ${k.display_name}`}>Edit</button>

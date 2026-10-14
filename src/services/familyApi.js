@@ -32,3 +32,14 @@ export function familyErrorMessage(err) {
   if (typeof err?.message === 'string' && err.name === 'ApiError') return err.message;
   return 'Something went wrong. Please try again.';
 }
+
+/** One summary per child this adult follows: { learners: [{ ...child, summary }], as_of } */
+export const getOverview = () => apiFetch('/api/spelling/supervisor/overview');
+
+/** The data behind a printable report. from/to are inclusive 'YYYY-MM-DD'; omit both for the last 28 days. */
+export const getReport = (learnerId, { from, to } = {}) => {
+  const q = new URLSearchParams({ learner: learnerId });
+  if (from) q.set('from', from);
+  if (to) q.set('to', to);
+  return apiFetch(`/api/spelling/supervisor/report?${q}`);
+};

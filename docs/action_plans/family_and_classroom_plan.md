@@ -1,4 +1,4 @@
-# Family & Classroom Accounts — Plan (F1, F2 built; F3–F6 not started)
+# Family & Classroom Accounts — Plan (F1–F3 built; F4–F6 not started)
 
 ## Goal
 Let one adult (a **parent** or a **teacher**) set up and follow several children. The adult creates or links learners, assigns word lists, and sees progress and reports for each child, or for a whole class at once. Children practise exactly as they do today; their results belong to their own learner profile, not to the adult.
@@ -191,7 +191,10 @@ Backend only. Learners and access tables; self-learner upsert; `X-Spelling-Learn
 Create / edit / delete managed learners (D1, D6). "Who's practising?" picker, adult PIN (D2), header wiring, per-learner attempt queue. Grade per child (existing `learner_profiles`).
 **Done when:** a parent with two children can hand the phone to each child, each child's practice lands only in their own progress, and the child cannot reach adult screens without the PIN.
 
-### F3 — Monitoring & reports for the adult
+### F3 — Monitoring & reports for the adult — ✅ built (2026-10-14)
+> Backend: `lib/supervisor.ts` (summary + period report), `/api/spelling/supervisor/overview` and `/report` (user-level), the weekly job rewritten to send **one email per opted-in adult** (their own practice first, a section per child, children who did not practise named; a guardian or teacher with report access gets their own copy), `src/supervisor.test.ts`. Front end: overview cards on `/family`, "Progress" (opens that child's Progress page with a "Back to me" banner), `/family/:learnerId/report`, `utils/reportHtml.js`, tests `reportHtml.test.js`, `reportPage.test.jsx`. No deploy step beyond the Worker and the app (no new migration).
+> **Exports:** the report is one self-contained HTML document (inline CSS and SVG, no scripts, everything escaped). *Download PDF* prints that document (choose "Save as PDF"); *Download HTML* saves the identical string as `spelling-report-<name>-<from>-to-<to>.html`. Shown in a script-less sandboxed frame.
+> **Not built:** "minutes practised" (attempts are stamped when the server stores them, so offline practice counts on the day it syncs; real minutes need a client timestamp on each attempt — see open items). Class reports and "All students" export are F6.
 * `/family` overview: one card per learner — last practised, minutes / sessions this week, words mastered, struggling count, active patterns (all from existing tables).
 * `/family/:learnerId`: existing Progress page for that child plus pattern reports.
 * `GET /api/spelling/supervisor/overview` returns all linked learners' summary in one call (no N+1 from the client).

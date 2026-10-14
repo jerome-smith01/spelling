@@ -86,6 +86,24 @@ async function handleFamily(req, res, p, m) {
   const r = p.match(/^\/api\/spelling\/family\/learners\/([^/]+)$/);
   if (r && m === 'PUT') { const b = await json(req); const k = family.kids.find(x => x.id === r[1]); Object.assign(k || {}, b); return send(res, k ? 200 : 404, k || { error: 'Not found' }); }
   if (r && m === 'DELETE') { family.kids = family.kids.filter(x => x.id !== r[1]); return send(res, 204); }
+  if (p === '/api/spelling/supervisor/overview') {
+    const summary = { last_practiced: '2026-10-12 16:20:00', sessions_7d: 3, days_active_7d: 3, words_7d: 9, accuracy_7d: 84, mastered_total: 12, mastered_7d: 2, struggling_count: 2, active_patterns: [{ pattern: 'silent_letters', label: 'Silent letters' }] };
+    return send(res, 200, { learners: family.kids.map(k => ({ ...k, summary })), as_of: new Date().toISOString() });
+  }
+  if (p === '/api/spelling/supervisor/report') {
+    const q = url.searchParams; const kid = family.kids.find(k => k.id === q.get('learner'));
+    if (!kid) return send(res, 404, { error: 'Not found' });
+    return send(res, 200, {
+      learner: { id: kid.id, name: kid.display_name, avatar: kid.avatar, grade: kid.grade, self: false },
+      generated: new Date().toISOString().slice(0, 10), period: { from: q.get('from'), to: q.get('to'), days: 28 }, previous: { from: '2026-08-20', to: '2026-09-16' },
+      tiles: { sessions: 9, words: 24, accuracy: 84, days_active: 8, mastered: 4, previous: { sessions: 6, words: 18, accuracy: 80, days_active: 5, mastered: 2 } },
+      weekly: [{ week_start: '2026-09-17', sessions: 2, accuracy: 80 }, { week_start: '2026-09-24', sessions: 3, accuracy: 82 }, { week_start: '2026-10-01', sessions: 1, accuracy: 85 }, { week_start: '2026-10-08', sessions: 3, accuracy: 88 }],
+      hardest: [{ word: 'island', friction: 70, attempts: 18, errors: 7 }, { word: 'knight', friction: 55, attempts: 14, errors: 5 }],
+      mastered_words: [{ word: 'cat', mastered_at: '2026-10-02 10:00:00' }, { word: 'because', mastered_at: '2026-10-09 10:00:00' }],
+      patterns: [{ pattern: 'silent_letters', label: 'Silent letters', status: 'active', misses: 6, summary: 'Often leaves out a letter that makes no sound.', practice_ideas: ['Say the word with the silent letter out loud.', 'Circle the silent letter.'] }],
+      assignments: []
+    });
+  }
   if (p === '/api/spelling/family/pin/verify') {
     const b = await json(req);
     return b.pin === family.pin ? send(res, 200, { ok: true }) : send(res, 403, { error: 'That PIN is not right.' });

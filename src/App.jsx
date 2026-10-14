@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import WhoPage from './pages/WhoPage';
 import FamilyPage from './pages/FamilyPage';
+import ReportPage from './pages/ReportPage';
 import LearnerBanner from './components/layout/LearnerBanner';
 import { LearnerProvider, useLearner } from './hooks/useLearner';
 import AppShell from './components/layout/AppShell';
@@ -48,6 +49,7 @@ function LearnerRoutes() {
       <Route path="/profile" element={<GrownUpsOnly><ProfilePage /></GrownUpsOnly>} />
       <Route path="/who" element={<WhoPage />} />
       <Route path="/family" element={<GrownUpsOnly><FamilyPage /></GrownUpsOnly>} />
+      <Route path="/family/:learnerId/report" element={<GrownUpsOnly><ReportPage /></GrownUpsOnly>} />
       <Route path="/lab" element={<GrownUpsOnly><LabPage /></GrownUpsOnly>} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
@@ -64,7 +66,8 @@ function LearnerRoutes() {
  *   /progress/words/:word      -> one word: letter-by-letter results and its tip
  *   /profile                   -> grade + pattern progress table (Generate 5 words)
  *   /who                       -> "Who's practising?" (children + grown-up; starts kid mode)
- *   /family                    -> add and manage children, the grown-up PIN (not in kid mode)
+ *   /family                    -> add and manage children, this week's summary, the grown-up PIN (not in kid mode)
+ *   /family/:learnerId/report  -> printable report (Download PDF / Download HTML) for a child (not in kid mode)
  */
 export default function App() {
   const { theme, toggleTheme } = useTheme();

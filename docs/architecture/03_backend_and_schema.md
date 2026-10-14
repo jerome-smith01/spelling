@@ -98,7 +98,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 - Requests pick a learner with the **`X-Spelling-Learner`** header (none = the user's self learner). The auth middleware resolves it (`lib/learners.ts` → `resolveLearner`); no access, a deleted learner or a malformed id returns **404** on every route, the same as a learner that does not exist. Practice data routes (attempts, scores, patterns, profile, digest/latest) use the learner; lists, digest prefs, syllables, photo import and AI quotas stay with the logged-in user. `can_view_reports = 0` → 403 on `/patterns/:p/analyze` and `/digest/latest`.
 
 ### `weekly_digests` / `digest_prefs` (migration `0004`)
-`weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
+`weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period (built for children too; the learner's owner pays for the AI summary). The weekly job emails **one message per opted-in adult** with access to any of them: their own practice, a section per child, and a line naming children who did not practise. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
 
 ---
 
@@ -125,6 +125,9 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 | `POST` | `/api/spelling/scores/:word/analyze` | Yes | Kid tip for a tricky word (Phase 5b) |
 | `POST` | `/api/spelling/patterns/:pattern/analyze` | Yes | Parent report for an active pattern (Phase 5b) |
 | `GET` | `/api/spelling/scores/:word` | Yes | One word: score, per-letter results, tip (Phase 5c) |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/spelling/family`, `/family/learners[/:id]`, `/family/pin[/verify]` | Yes (user-level) | Learner list, child profiles (max 8, owner-only edit/delete, 30-day purge), the grown-up PIN (family accounts F2) |
+| `GET` | `/api/spelling/supervisor/overview` | Yes (user-level) | A summary per child the adult follows (F3) |
+| `GET` | `/api/spelling/supervisor/report?learner=&from=&to=` | Yes (user-level) | Period report for one learner; needs `can_view_reports` (F3) |
 | `GET` | `/api/spelling/digest/latest` | Yes | Newest weekly digest (Phase 5c) |
 | `GET` / `PUT` | `/api/spelling/digest/prefs` | Yes | Weekly email opt-in (Phase 5c) |
 | `GET` | `/api/spelling/digest/unsubscribe` | No (token) | Unsubscribe link from the email (Phase 5c) |
