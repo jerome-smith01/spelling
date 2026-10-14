@@ -515,7 +515,7 @@
 .dash-card-meta { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.8rem; font-weight: 600; color: var(--muted-foreground); }
 .dash-bar { height: 0.5rem; border-radius: 9999px; background: var(--card-border); overflow: hidden; }
 .dash-bar > span { display: block; height: 100%; background: var(--selected-color, #16a34a); }
-.dash-actions { display: flex; gap: 0.5rem; margin-top: 0.2rem; }
+.dash-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.2rem; }
 .dash-actions a { flex: 1; text-align: center; text-decoration: none; font-weight: 700; }
 .dash-due { color: var(--color-primary); }
 
