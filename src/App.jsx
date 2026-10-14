@@ -4,6 +4,8 @@ import WhoPage from './pages/WhoPage';
 import FamilyPage from './pages/FamilyPage';
 import ReportPage from './pages/ReportPage';
 import JoinPage from './pages/JoinPage';
+import ClassesPage from './pages/ClassesPage';
+import ClassPage from './pages/ClassPage';
 import LearnerBanner from './components/layout/LearnerBanner';
 import { LearnerProvider, useLearner } from './hooks/useLearner';
 import AppShell from './components/layout/AppShell';
@@ -45,12 +47,14 @@ function LearnerRoutes() {
       <Route path="/" element={<DashboardPage />} />
       <Route path="/lists" element={<Navigate to="/" replace />} />
       <Route path="/lists/:listId" element={<PracticePage />} />
-      <Route path="/progress" element={<GrownUpsOnly><ProgressPage /></GrownUpsOnly>} />
+      <Route path="/progress" element={<ProgressPage />} />
       <Route path="/progress/words/:word" element={<WordDetailPage />} />
       <Route path="/profile" element={<GrownUpsOnly><ProfilePage /></GrownUpsOnly>} />
       <Route path="/who" element={<WhoPage />} />
       <Route path="/family" element={<GrownUpsOnly><FamilyPage /></GrownUpsOnly>} />
  
+      <Route path="/classes" element={<GrownUpsOnly><ClassesPage /></GrownUpsOnly>} />
+      <Route path="/classes/:groupId" element={<GrownUpsOnly><ClassPage /></GrownUpsOnly>} />
       <Route path="/join" element={<GrownUpsOnly><JoinPage /></GrownUpsOnly>} />
       <Route path="/join/:code" element={<GrownUpsOnly><JoinPage /></GrownUpsOnly>} />
       <Route path="/family/:learnerId/report" element={<GrownUpsOnly><ReportPage /></GrownUpsOnly>} />
@@ -71,6 +75,7 @@ function LearnerRoutes() {
  *   /profile                   -> grade + pattern progress table (Generate 5 words)
  *   /who                       -> "Who's practising?" (children + grown-up; starts kid mode)
  *   /family                    -> add and manage children, this week's summary, the grown-up PIN (not in kid mode)
+ *   /classes, /classes/:groupId -> a teacher's classes: roster, who needs a look, class code, assignments, exports (not in kid mode)
  *   /join, /join/:code         -> enter an invite code, see what it does, accept (not in kid mode)
  *   /family/:learnerId/report  -> printable report (Download PDF / Download HTML) for a child (not in kid mode)
  */

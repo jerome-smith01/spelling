@@ -594,3 +594,8 @@ button.sess-dot { cursor: pointer; }
 .learner-banner { display: flex; align-items: center; justify-content: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.4rem 1rem; background: var(--muted); border-bottom: 1px solid var(--card-border); font-size: 0.85rem; font-weight: 600; color: var(--foreground); }
 .child-summary { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.82rem; color: var(--muted-foreground); }
 .link-button { background: none; border: none; padding: 0 0 0 0.5rem; color: var(--color-primary); font: inherit; font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
+.class-table-ui { width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--foreground); }
+.class-table-ui th, .class-table-ui td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--card-border); vertical-align: top; }
+.class-table-ui thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); }
+.class-table-ui tbody th { font-weight: 700; white-space: nowrap; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

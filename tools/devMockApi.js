@@ -72,7 +72,23 @@ const family = {
 };
 const AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐙', '🦄', '🐢', '🐧', '🐝', '🦋', '🐳', '🦖'];
 
+// One in-memory class (F6)
+const classRoster = ['Ava', 'Ben', 'Cleo', 'Dev', 'Eli', 'Fay', 'Gus', 'Hana'].map((name, i) => ({
+  id: `mock-st-${i}`, kind: 'managed', role: 'owner', display_name: name, avatar: AVATARS[i % AVATARS.length], grade: 3, can_assign: true,
+  summary: {
+    last_practiced: i === 3 ? null : `2026-10-${String(14 - (i % 5)).padStart(2, '0')} 15:00:00`, sessions_7d: i === 3 ? 0 : (i * 2) % 6, days_active_7d: i === 3 ? 0 : 1 + (i % 4),
+    words_7d: 8 + i, accuracy_7d: i === 3 ? null : 55 + i * 5, mastered_total: 3 + i, mastered_7d: i % 3, struggling_count: i % 4 === 0 ? 2 : 0,
+    struggling_words: i % 4 === 0 ? ['island', 'knight'] : [], active_patterns: i % 2 ? [{ pattern: 'silent_letters', label: 'Silent letters' }] : [],
+    assignments: [{ assignment_id: `a${i}`, list_name: 'Week 6', percent: i * 12, complete: false }]
+  }
+}));
+
 async function handleFamily(req, res, p, m) {
+  if (p === '/api/spelling/groups' && m === 'GET') return send(res, 200, { groups: [{ id: 'mock-class', name: 'Room 12', member_count: classRoster.length, join_code: null, created_at: '2026-10-01 00:00:00' }], max_classes: 5, max_students: 40 });
+  if (p === '/api/spelling/groups/mock-class/overview') {
+    return send(res, 200, { group: { id: 'mock-class', name: 'Room 12', created_at: '2026-10-01 00:00:00', join_code: 'K7M2QXPA' }, students: classRoster,
+      class_patterns: [{ pattern: 'silent_letters', label: 'Silent letters', students: 4 }], as_of: new Date().toISOString() });
+  }
   if (p === '/api/spelling/family' && m === 'GET') {
     const me = { id: 'mock-user', kind: 'self', role: 'self', display_name: '', avatar: null, grade: 3, can_assign: true, can_view_reports: true };
     return send(res, 200, { learners: [me, ...family.kids], pin_set: !!family.pin, max_children: 8, avatars: AVATARS });
@@ -118,7 +134,7 @@ async function handle(req, res) {
   const p = url.pathname;
   const m = req.method;
 
-  if (p.startsWith('/api/spelling/family')) { if (await handleFamily(req, res, p, m) !== null) return; }
+  if (p.startsWith('/api/spelling/family') || p.startsWith('/api/spelling/groups')) { if (await handleFamily(req, res, p, m) !== null) return; }
   if (p === '/api/auth/me') return send(res, 200, { user: USER });
   if (p === '/api/auth/logout') return send(res, 204);
 

@@ -21,7 +21,7 @@
 | 8 | [Apps Hub + Docs](#phase-8) | 🔲 Not Started | Gemini 3.8 Flash | Antigravity | Phase 6 |
 | 9 | [Admin: Uncaptured-Pattern Report](#phase-9) | 🔲 Not Started | Claude Sonnet (Medium) | Antigravity | Phase 5a |
 | 10 | [Automatic Syllable Pronunciation (Prototype)](#phase-10) | 🔲 Not Started — plan only, no code yet | Claude Sonnet (High) | Antigravity | Phase 2 |
-| 11 | [Family & Classroom Accounts](action_plans/family_and_classroom_plan.md) | 🟡 F1 built, not deployed; F2–F6 not started | — | Claude Code | Phase 5c |
+| 11 | [Family & Classroom Accounts](action_plans/family_and_classroom_plan.md) | 🟡 F1–F6 built and tested, **not deployed**; owner to-do list in the plan | — | Claude Code | Phase 5c |
 
 ---
 

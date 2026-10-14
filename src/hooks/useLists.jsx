@@ -222,6 +222,8 @@ export function ListsProvider({ children }) {
   const visible = useMemo(() => visibleLists(lists), [lists]);
 
   const assignedLists = useMemo(() => assigned.map(toList), [assigned]);
+  /** The open assignment of this list to whoever is practising, or undefined. */
+  const assignmentFor = useCallback((id) => assigned.find(a => a.list_id === id), [assigned]);
 
   const getList = useCallback(
     (id) => (id === DEFAULT_LIST_ID
@@ -237,6 +239,7 @@ export function ListsProvider({ children }) {
     () => ({
       lists: visible,
       assigned,
+      assignmentFor,
       refreshAssigned,
       defaultList: DEFAULT_LIST,
       getList,
@@ -251,7 +254,7 @@ export function ListsProvider({ children }) {
       ready,
       atListLimit: visible.length >= MAX_LISTS
     }),
-    [visible, assigned, refreshAssigned, getList, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
+    [visible, assigned, assignmentFor, refreshAssigned, getList, createList, saveWords, renameList, deleteList, syncNow, syncStatus, syncMessage, lastSyncedAt, ready]
   );
 
   return <ListsContext.Provider value={value}>{children}</ListsContext.Provider>;

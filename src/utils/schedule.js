@@ -184,6 +184,35 @@ export function applyQuizResult(progress, word, pct, { prefs = DEFAULT_PREFS, to
   return { progress: { ...progress, words: { ...progress.words, [word]: st } }, testedOut: true };
 }
 
+/**
+ * Each word's stage as the server stores it for an assigned list: { word: { level, mastered } }.
+ * Only words that have been practised have a stage.
+ */
+export function stagesOf(progress) {
+  const out = {};
+  for (const [word, st] of Object.entries(progress.words || {})) {
+    out[word] = { level: Math.max(1, Math.min(MAX_LEVEL, st.level || 1)), mastered: !!st.mastered };
+  }
+  return out;
+}
+
+/**
+ * Carry on from stages stored on the server (another device, or an earlier session): a word's stage only ever
+ * moves forward here. Returns the same object when nothing changed.
+ */
+export function mergeRemoteStages(progress, remote, { prefs = DEFAULT_PREFS, today } = {}) {
+  let words = progress.words;
+  for (const [word, r] of Object.entries(remote || {})) {
+    if (!r || typeof r.level !== 'number') continue;
+    const cur = getWordState({ words }, word, prefs, today);
+    let next = null;
+    if (r.mastered && !cur.mastered) next = { ...cur, level: MAX_LEVEL, mastered: true, due: null };
+    else if (!cur.mastered && r.level > cur.level) next = { ...cur, level: Math.min(r.level, MAX_LEVEL), due: today };
+    if (next) words = { ...words, [word]: next };
+  }
+  return words === progress.words ? progress : { ...progress, words };
+}
+
 /** Is the word due for practice today? Mastered words only return for their final check. */
 export function isDue(state, today) {
   if (!state) return true; // never seen

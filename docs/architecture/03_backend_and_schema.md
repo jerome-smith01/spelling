@@ -97,8 +97,17 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 - `learner_access(learner_id, user_id, role 'self'|'owner'|'guardian'|'teacher', can_assign, can_view_reports, created_at)`, primary key `(learner_id, user_id)`: which users may act for which learner.
 - Requests pick a learner with the **`X-Spelling-Learner`** header (none = the user's self learner). The auth middleware resolves it (`lib/learners.ts` → `resolveLearner`); no access, a deleted learner or a malformed id returns **404** on every route, the same as a learner that does not exist. Practice data routes (attempts, scores, patterns, profile, digest/latest) use the learner; lists, digest prefs, syllables, photo import and AI quotas stay with the logged-in user. `can_view_reports = 0` → 403 on `/patterns/:p/analyze` and `/digest/latest`.
 
+### Family accounts tables (migrations `0013`-`0016`)
+- `supervisor_settings(user_id PK, pin_hash, pin_salt, pin_failed, pin_locked_until, updated_at)` (`0013`): the adult PIN for kid mode. PBKDF2-SHA256 (100,000 iterations, per-user salt); 5 wrong tries lock it for 5 minutes. A soft lock against a child, not account security.
+- `assignments(id, list_id -> word_lists ON DELETE CASCADE, learner_id, assigned_by, due_at, created_at, archived_at, group_id)` (`0014`, `group_id` from `0016`): one row per learner (a class assignment is one row per student); unique `(list_id, learner_id)` while not archived. Progress is computed, not stored (see `lib/assignments.ts`).
+- `invites(code PK, kind 'share_child'|'link_me', created_by, learner_id, role, can_assign, can_view_reports, expires_at, used_by, used_at, created_at)` and `invite_attempts(user_id, ok, at)` (`0015`): single-use 7-day codes; the attempts table rate-limits guessing (10 wrong codes an hour).
+- `learner_groups(id, owner_user_id, name, join_code UNIQUE, consent_at, created_at, archived_at)` and `group_members(group_id, learner_id, added_at)` (`0016`): a teacher's classes. `join_code` NULL = closed; while open it is reusable (not an invite) and `lookupInvite` falls back to it.
+- `deck_progress(learner_id, list_id -> word_lists ON DELETE CASCADE, word, level 1..5, mastered, updated_at)` (`0017`): each word's deck stage for a list assigned to the learner, reported by the app. Only ever moves forward (`MAX`). An assignment is complete when every word is mastered; `percent` = stages passed over all words and stages.
+- Names: a child is a first name plus an optional last initial (`nicknameProblem` in `lib/family.ts`); no full last names, emails, links or phone numbers.
+- Limits: 8 child profiles per adult (200 once they have a class); 5 classes per teacher; 40 students per class. Deleting a child or class student hides them at once and the cron purges all their data after 30 days (`purgeDeletedLearners`).
+
 ### `weekly_digests` / `digest_prefs` (migration `0004`)
-`weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period (built for children too; the learner's owner pays for the AI summary). The weekly job emails **one message per opted-in adult** with access to any of them: their own practice, a section per child, and a line naming children who did not practise. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
+`weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period (built for children too; the learner's owner pays for the AI summary). The weekly job sends **one link-only email per opted-in adult** who can view any of them (including a teacher whose class practised): a link to the dashboard (`/spelling/app/family`, plus `/classes` for a teacher) and the unsubscribe link, with no names and no numbers. The details are in the app, where reports export as PDF or HTML. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
 
 ---
 
@@ -126,6 +135,12 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 | `POST` | `/api/spelling/patterns/:pattern/analyze` | Yes | Parent report for an active pattern (Phase 5b) |
 | `GET` | `/api/spelling/scores/:word` | Yes | One word: score, per-letter results, tip (Phase 5c) |
 | `GET` / `POST` / `PUT` / `DELETE` | `/api/spelling/family`, `/family/learners[/:id]`, `/family/pin[/verify]` | Yes (user-level) | Learner list, child profiles (max 8, owner-only edit/delete, 30-day purge), the grown-up PIN (family accounts F2) |
+| `POST` / `GET` / `DELETE` | `/api/spelling/family/invites[/:code]`, `GET /family/invites/:code/preview`, `POST /family/invites/:code/accept` | Yes (user-level) | Invite codes: `share_child` and `link_me`; a class code also works at preview/accept (F5, F6) |
+| `GET` / `DELETE` | `/api/spelling/family/learners/:id/access[/:userId]` | Yes (user-level) | Who can see a learner you own; remove someone, or leave (never deletes data) (F5) |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/spelling/groups[/:id[/students\|members\|code\|overview\|assign]]` | Yes (user-level) | A teacher's classes: roster, class code, overview, whole-class assignment (F6) |
+| `POST` / `GET` / `DELETE` | `/api/spelling/assignments[/:id]` | Yes (user-level) | Assign a list to learners, read a learner's assignments with progress, archive one (F4) |
+| `GET` | `/api/spelling/assigned-lists` | Yes (learner) | Lists assigned to the current learner, with the words (F4) |
+| `PUT` / `GET` | `/api/spelling/progress/:listId` | Yes (learner) | Report / read each word's deck stage for an assigned list; forward-only (F4) |
 | `GET` | `/api/spelling/supervisor/overview` | Yes (user-level) | A summary per child the adult follows (F3) |
 | `GET` | `/api/spelling/supervisor/report?learner=&from=&to=` | Yes (user-level) | Period report for one learner; needs `can_view_reports` (F3) |
 | `GET` | `/api/spelling/digest/latest` | Yes | Newest weekly digest (Phase 5c) |

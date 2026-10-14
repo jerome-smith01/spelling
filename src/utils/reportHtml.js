@@ -3,7 +3,7 @@
  * network). It is the single source for both exports: the page shows it in a frame and prints it
  * to PDF, and "Download HTML" saves the very same string. Everything from the server is escaped.
  */
-const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const GRADE_LABELS = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'];
 export const gradeLabel = (g) => GRADE_LABELS[g] ?? `Grade ${g}`;
@@ -45,7 +45,7 @@ function weeklyChart(weekly) {
     `<figcaption>Practice sessions per week (${total} in total). Labels show the first day of each week.</figcaption></figure>`;
 }
 
-const CSS = `
+export const REPORT_CSS = `
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0f172a;background:#fff;margin:0;padding:24px;line-height:1.45}
 .page{max-width:780px;margin:0 auto}
@@ -71,8 +71,8 @@ footer{margin-top:24px;font-size:11px;color:#64748b;border-top:1px solid #cbd5e1
 @media print{body{padding:0}h2,.tile,.pattern,table,.chart{break-inside:avoid}}
 `;
 
-/** The full HTML document for one learner's report (shape: GET /api/spelling/supervisor/report). */
-export function renderReportHtml(report) {
+/** The inside of one learner's report (everything under <body>), so a class report can stack several. */
+export function renderReportBody(report) {
   const { learner, period, previous, tiles, weekly, hardest, mastered_words: mastered, patterns, assignments } = report;
   const who = learner.self ? 'Your own practice' : learner.name;
   const prevWord = `the previous ${period.days} days`;
@@ -99,11 +99,7 @@ export function renderReportHtml(report) {
     ? `<p style="font-size:13px;margin:0">${mastered.map(m => esc(m.word)).join(', ')}</p>`
     : '<p class="empty">No words mastered in this period.</p>';
 
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(who)} &ndash; Spelling Tutor report</title>
-<style>${CSS}</style></head>
-<body><div class="page">
+  return `<div class="page">
 <h1>${esc(who)}</h1>
 <p class="sub">Spelling Tutor progress report${learner.self ? '' : ` &middot; ${esc(gradeLabel(learner.grade))}`}</p>
 <p class="sub">${prettyDate(period.from)} to ${prettyDate(period.to)} (${esc(period.days)} days) &middot; created ${prettyDate(report.generated)}</p>
@@ -136,7 +132,17 @@ ${masteredHtml}
 
 <footer>Compared with ${prettyDate(previous.from)} to ${prettyDate(previous.to)}. &ldquo;Letters correct&rdquo; counts the final answer for each letter in each practice visit.
 Practice done offline is counted on the day it was synced. Made with Spelling Tutor by Good Plus Fast.</footer>
-</div></body></html>`;
+</div>`;
+}
+
+/** The full HTML document for one learner's report (shape: GET /api/spelling/supervisor/report). */
+export function renderReportHtml(report) {
+  const who = report.learner.self ? 'Your own practice' : report.learner.name;
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(who)} &ndash; Spelling Tutor report</title>
+<style>${REPORT_CSS}</style></head>
+<body>${renderReportBody(report)}</body></html>`;
 }
 
 /** A safe file name such as spelling-report-maya-2026-09-17-to-2026-10-14.html */

@@ -41,7 +41,10 @@ Login links go to `/login?redirect=<current path+query+hash>`. The main site val
 | `/progress` | Progress dashboard (`?list=<id>` filters) |
 | `/progress/words/:word` | One word: letter-by-letter results and its tip (Phase 5c) |
 | `/who` | "Who's practising?": children plus a Grown-up tile; choosing a child starts kid mode (family accounts F2) |
-| `/family` | Add / edit / delete children, start kid mode, grown-up PIN (not available in kid mode) |
+| `/family` | Add / edit / delete children, this week's summary, assign lists, share a child, codes, grown-up PIN (not in kid mode) |
+| `/family/:learnerId/report` | Printable report: Download PDF / Download HTML (not in kid mode) |
+| `/join`, `/join/:code` | Enter an invite or class code, see what it does, accept (not in kid mode) |
+| `/classes`, `/classes/:groupId` | A teacher's classes: roster table, who needs a look, class code, assign to class, exports (not in kid mode) |
 
 * URLs are addresses, not credentials. The API scopes every query by `user_id`; another user's id returns 404, identical to a non-existent list. Lists that exist only in one anonymous browser resolve only there.
 * Deep links need SPA fallback: `public/_redirects` (`/* /index.html 200`). The proxy Worker forwards any `/spelling/app*` path and strips the prefix.
@@ -89,9 +92,13 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 * **Active learner** (`services/activeLearner.js`, `hooks/useLearner.jsx`): `{ id: null }` = the user themselves (nothing changes for existing users); `{ id, kid }` = a child, in kid mode when `kid`. Stored in `spelling_tutor_active_learner_v1`. `apiFetch` adds `X-Spelling-Learner` to `/api/spelling/*` calls (not `/api/spelling/family/*`, which are user-level). The routes are wrapped in `<Routes key={activeId}>`, so switching learner remounts every screen instead of showing the previous child's data.
 * **Attempt queue**: each attempt is stamped with `learner_id` when queued; a flush sends one request per learner with that learner in the header, whoever is active at flush time. A 404 for a child (deleted or unlinked) drops that chunk; a 404 for the user themselves still throws.
 * **Per-learner browser storage**: deck progress, deck prefs and hiding state use `learnerKey(base)`: the user's own key is unchanged (existing progress stays), each child gets `base:L<id>`.
-* **Kid mode** hides Progress / Profile / Family / Lab (routes redirect to the decks), the account menu (no Log out), new decks, deck settings and word import. Switching to a sibling or the Grown-up tile needs the PIN when one is set; with no PIN it is open. The PIN is verified by the server (hashed, 5 tries then 5 minutes), but **kid mode itself is enforced in the app, so it is a lock for a child, not security**.
+* **Kid mode** shows the decks and the child's own **Progress** page (words, accuracy, tricky words and kid tips, but no weekly summary, email setting or pattern reports, which are not even fetched); it hides Profile / Family / Classes / Join / Lab (routes redirect to the decks), the account menu (no Log out), new decks, deck settings and word import. Switching to a sibling or the Grown-up tile needs the PIN when one is set; with no PIN it is open. The PIN is verified by the server (hashed, 5 tries then 5 minutes), but **kid mode itself is enforced in the app, so it is a lock for a child, not security**.
 * **Offline**: the family list is cached (`spelling_tutor_family_v1`) and the chosen child kept when the app launches offline, so a child can keep practising; their attempts wait in the queue. Only an explicit log out (authenticated → anonymous) clears them.
 * Adults viewing a child outside kid mode see a "Showing Maya · Back to me" banner.
+* **Assigned lists** (F4): a list assigned to whoever is practising is practised strictly (a stage is passed only at 100%), and its stages are reported to the server after each change (`services/progressSync.js`, debounced 1.5 s, also when leaving the page; the server only moves a word forward) and fetched on open so a second device carries on. Completion = every word has passed every stage.
+* **Assigned lists** (F4, how they are served): `ListsProvider` fetches `GET /assigned-lists` for the active learner (cached per learner, `spelling_tutor_assigned_v1`) and resolves them in `getList` as read-only lists (`readOnly`, `assigned`), so a student on their own account can practise a list they do not own. They are not part of the adult's list sync, and the practice screen hides settings and import for them.
+* **Who may record practice** (F5): the server refuses attempts and grade changes from a teacher, or from anyone viewing another person's own account (`canActAsLearner`). A queued chunk that gets 403/404 for a learner is dropped so it cannot block the queue.
+* **Exports** (F3, F6): `utils/reportHtml.js` builds one self-contained HTML document (inline CSS/SVG, no scripts, all escaped) per learner; `utils/classExport.js` builds the class report (optionally with every student's report appended, one per page) and the CSV (formula-safe). PDF = the browser's print dialog on that HTML; HTML = the same string saved as a file.
 
 ## 7. Failure modes
 

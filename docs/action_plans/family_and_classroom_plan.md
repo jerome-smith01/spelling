@@ -1,4 +1,4 @@
-# Family & Classroom Accounts — Plan (F1–F5 built; F6 not started)
+# Family & Classroom Accounts — Plan (F1–F6 built; waiting on your to-do list below)
 
 ## Goal
 Let one adult (a **parent** or a **teacher**) set up and follow several children. The adult creates or links learners, assigns word lists, and sees progress and reports for each child, or for a whole class at once. Children practise exactly as they do today; their results belong to their own learner profile, not to the adult.
@@ -16,23 +16,58 @@ I made a default for each one so work can start. Change any of them; the ones ma
 
 | # | Decision | My default | Why it matters |
 |---|---|---|---|
-| D1 ⚠️ | How do young children sign in? | **No child login.** Children are *managed profiles* inside the adult's account (no email, no password). The child picks their face on the adult's device ("Who's practising?"). | Avoids collecting data from under-13s directly (COPPA). Simplest to build. |
-| D2 | Can the child leave their profile without the adult? | **No.** Switching profile or opening adult screens needs a 4-digit **adult PIN** (set once, stored hashed). Can be turned off. | Stops a child opening a sibling's profile or the reports. |
-| D3 | Can a learner with their *own* GPF account be linked to an adult? | **Yes, in a later phase (F5)**, via a one-time invite code the learner accepts. Intended for older students and for a second parent. | Needed for teachers whose students already have accounts, and for two-parent families. |
-| D4 ⚠️ | Who owns a child's practice data? | **The learner profile.** Every adult linked to it sees the same history. Deleting the profile deletes the history. | Decides what happens when an adult unlinks or deletes their account. |
-| D5 | Is "teacher" a different account type? | **No.** Any account can create *groups*. A group can be marked `family` or `class`; the class type unlocks the class report and higher limits. | One code path; no "upgrade to teacher" flow. |
-| D6 | Limits | Parent: **8** managed learners. Teacher: **40** learners per class, **5** classes. Lists stay 25 per adult. | AI budget is shared across GPF; limits keep one class from using it all. |
-| D7 | Do assigned lists copy or share? | **Shared (by reference).** The adult edits a list once and every assigned learner sees the change. Learners cannot edit assigned lists. | A copy would let lists drift; sharing keeps one source of truth. |
-| D8 | What counts as an assignment being "done"? | Every word in the list practised at least once in a session **and** ≥ 80% of words at Harvey-ball level 2 or above. Shown as a percentage, never as a fail. | Drives the "Assigned" badges and the class report. |
-| D9 | Weekly digest | One email **per adult**, with a section per learner (not one email per child). Opt-in stays off by default. | Fewer emails; reuses Phase 5c. |
-| D10 | Can a learner (or a linked account) see the adult's reports? | **No.** Pattern reports and the digest stay adult-only. Children keep seeing kid tips. | Reports are written to the adult ("your child…"). |
-| D11 ⚠️ | Teacher / school privacy | For F6, show a consent note: the teacher confirms they have the school's permission, and we store only a first name or nickname plus grade. No student emails unless they link their own account (D3). Privacy page gets a "Children" section. | Schools may need a data agreement; a lawyer check is wise before marketing to schools. |
-| D12 | Existing users | Their account becomes a **self learner** (`learner_id = user_id`). Nothing moves and nothing changes on screen until they add a child. | No data migration risk for current users. |
-| D13 | Pricing | **Free during beta**, no paywall code in this plan. | Teacher features are the natural paid tier later; not decided here. |
+| D1 ⚠️ | How do young children sign in? | ✅ **Approved:** No child login. Children are *managed profiles* inside the adult's account (no email, no password). The child picks their face on the adult's device ("Who's practising?"). | Avoids collecting data from under-13s directly (COPPA). Simplest to build. |
+| D2 | Can the child leave their profile without the adult? | ✅ **Approved:** No. Switching profile or opening adult screens needs a 4-digit **adult PIN** (set once, stored hashed). Can be turned off. | Stops a child opening a sibling's profile or the reports. |
+| D3 | Can a learner with their *own* GPF account be linked to an adult? | **Yes (F5)**, via a one-time invite code the learner accepts. *Not explicitly answered: built as proposed, please confirm.* | Needed for teachers whose students already have accounts, and for two-parent families. |
+| D4 ⚠️ | Who owns a child's practice data? | ✅ **Approved:** The learner profile. Every adult linked to it sees the same history. Unlinking an adult never deletes it. | Decides what happens when an adult unlinks or deletes their account. |
+| D5 | Is "teacher" a different account type? | ✅ **Approved:** No. Any account can create a class. | One code path; no "upgrade to teacher" flow. |
+| D6 | Limits | ✅ **Approved:** 8 children per parent. Teachers get 5 classes of 40 students. Lists stay 25 per adult. | AI budget is shared across GPF; limits keep one class from using it all. |
+| D7 | Do assigned lists copy or share? | ✅ **Approved:** Shared (by reference). The adult edits a list once and every assigned learner sees the change. Learners cannot edit assigned lists. | A copy would let lists drift; sharing keeps one source of truth. |
+| D8 | What counts as an assignment being "done"? | **Changed (owner, 2026-10-14):** 100% at every stage, from the Harvey balls. An assignment is done when **every word has passed every stage at 100%** (the Harvey ball is full). The percentage shown is stages passed over all words and stages. | Drives the "Assigned" badges and the class report. |
+| D9 | Weekly digest | **Changed (owner, 2026-10-14):** the email is **a link to the dashboard**, where the week's numbers and the PDF / HTML exports are. One email per opted-in adult, **no names and no numbers in it**. A teacher whose class practised gets it too. Opt-in stays off by default. | Nothing about a child ever goes by email; fewer emails; reuses Phase 5c. |
+| D10 | Can a learner (or a linked account) see reports? | **Changed (owner, 2026-10-14):** children and students see **their own progress** on the dashboard (Progress page: words, accuracy, tricky words, kid tips) but **no reports**: no weekly summary, no email setting, no pattern reports, no PDF/HTML exports. | Reports are written to the adult ("your child…"). |
+| D11 ⚠️ | Teacher / school privacy | **Changed (owner, 2026-10-14):** students are stored as **first name and last initial** (like "Ava S.") plus grade, an avatar, and the teacher's consent note. Full last names, emails, links and phone numbers are refused. No student emails unless they link their own account (D3). Privacy page gets a "Children" section. *Worth a lawyer's check before marketing to schools.* | Schools may need a data agreement. |
+| D12 | Existing users | Their account becomes a **self learner** (`learner_id = user_id`). Nothing moves and nothing changes on screen until they add a child. *Not explicitly answered: built as proposed.* | No data migration risk for current users. |
+| D13 | Pricing | ✅ **Approved:** Free during beta, no paywall code in this plan. | Teacher features are the natural paid tier later; not decided here. |
 
 Answered (2026-10-13):
 - **Q1 — Yes.** A teacher invited by a parent sees that child's full history (same view as the parent), through an F5 invite.
 - **Q2 — PDF report.** A printable report per learner (F3) and per class (F6), alongside CSV export. See [PDF reports](#pdf-reports).
+
+
+---
+
+## Your to-do list (placeholders for you)
+Everything below needs you (a decision, an account, or words only you can write). Code markers are searchable as `TODO(owner)`.
+
+### 1. Deploying (in this order, nothing is live yet)
+1. **Back up** the database: `npx wrangler d1 export spelling-tutor-db --remote --output backup-before-family.sql`
+2. **Apply the migrations** (in `good-plus-fast-website/apps/spelling-tutor-api`): `npx wrangler d1 migrations apply spelling-tutor-db --remote`. This applies `0012` learners, `0013` PIN, `0014` assignments, `0015` invites, `0016` classes, `0017` deck progress. `0012` rebuilds `word_scores`: after it, check `SELECT COUNT(*) FROM learners` equals `SELECT COUNT(*) FROM users`, and the `word_scores` row count is unchanged.
+3. **Check migration `0011`.** The docs say `pattern_candidates.handled_at` was added in `0011`, but there is no `0011` file in the repo. Confirm the production database already has that column (or add the file); the family migrations do not depend on it.
+4. **Deploy the Worker** (`npm run deploy`), **then publish the app** (the migrations must come first: the new Worker needs the new tables).
+5. **Smoke test with two real devices:** add two children, give each a list, practise as each offline then reconnect, set a PIN and try to leave kid mode, make a class of 3, join it from a second account with the class code, export a class report as PDF and HTML.
+
+### 2. Words and legal (placeholders in the app)
+- **Privacy page, "Children" section** for the Spelling Tutor: what we keep (first name + last initial, avatar, grade, practice), who sees it (the adults linked to the child), deletion (hidden at once, removed after 30 days), no child emails. Link it from the Family page (`TODO(owner)` in `FamilyPage.jsx`).
+- **Class consent wording** (the tick box on the "Make a class" form, `TODO(owner)` in `ClassesPage.jsx`): have it checked against your terms and any school or district data rules.
+- **Lawyer check before you market to schools** (decision D11): children's privacy rules (COPPA, FERPA, state student-privacy laws) and whether schools will ask you to sign a data agreement. This is not legal advice.
+- **Terms:** a short line that a teacher is responsible for having permission to enter students' names.
+
+### 3. Please confirm
+- **D3 and D12** were not in your last reply; I built them as proposed (students with their own login can be linked by code; existing accounts become a "self" learner with nothing changing for them).
+- **Name rule:** a name is a first name plus an optional last initial; "Ava Smith", "Mary Ann Lee", emails, links and phone numbers are refused. It is one function (`nicknameProblem` in `lib/family.ts`) if you want it looser. A two-word first name needs a hyphen ("Mary-Ann L.").
+- **Assignment progress never goes backwards** (a word once mastered in an assigned list stays done even if missed later, and a second device cannot lower it). Say if you would rather it could drop.
+- **Students on their own login** can export reports about *themselves* (it is their own account). Say if students should not have that either.
+- **Kid settings:** a child currently has no settings at all (`TODO(owner)` in `PracticePage.jsx`). Do you want audio speed only?
+- **Weekly email sender:** the email is now a plain link. Confirm the existing Resend sender is fine for this (launch plan, "Before Phase 5c").
+
+### 4. Watch after launch
+- **Cloudflare plan limits:** a class overview takes a handful of queries (tested at under 25 for 40 students), so it is fine on the free plan's limits, but check D1 read-row usage after a month: the overview scans each student's last week of attempts.
+- **AI budget:** class students get no AI weekly summary (a class of 40 would spend 40 a week), but kid tips and pattern reports for them still use the teacher's shared quota.
+- **A time field for attempts:** attempts are stamped when the server stores them, so offline practice counts on the day it syncs and there is no "minutes practised". Adding a client timestamp to each queued attempt would fix both.
+
+### 5. Not built (ideas, say if you want any)
+Co-teachers on one class, moving students between classes in one step, a note per student, syncing every deck level (not just assigned lists) so an adult can see them, emailing a PDF.
 
 ---
 
@@ -62,7 +97,7 @@ CREATE TABLE learners (
   id            TEXT PRIMARY KEY,          -- = users.id for kind 'self'
   kind          TEXT NOT NULL,             -- 'self' | 'managed'
   owner_user_id TEXT NOT NULL,             -- the adult who created it (self: the user)
-  display_name  TEXT NOT NULL,             -- first name / nickname only
+  display_name  TEXT NOT NULL,             -- first name + optional last initial only
   avatar        TEXT,                      -- emoji or preset key, never a photo
   created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
   deleted_at    DATETIME                   -- soft delete; hard delete job after 30 days
@@ -192,19 +227,20 @@ Create / edit / delete managed learners (D1, D6). "Who's practising?" picker, ad
 **Done when:** a parent with two children can hand the phone to each child, each child's practice lands only in their own progress, and the child cannot reach adult screens without the PIN.
 
 ### F3 — Monitoring & reports for the adult — ✅ built (2026-10-14)
-> Backend: `lib/supervisor.ts` (summary + period report), `/api/spelling/supervisor/overview` and `/report` (user-level), the weekly job rewritten to send **one email per opted-in adult** (their own practice first, a section per child, children who did not practise named; a guardian or teacher with report access gets their own copy), `src/supervisor.test.ts`. Front end: overview cards on `/family`, "Progress" (opens that child's Progress page with a "Back to me" banner), `/family/:learnerId/report`, `utils/reportHtml.js`, tests `reportHtml.test.js`, `reportPage.test.jsx`. No deploy step beyond the Worker and the app (no new migration).
+> Backend: `lib/supervisor.ts` (summary + period report), `/api/spelling/supervisor/overview` and `/report` (user-level), the weekly job rewritten to send **one email per opted-in adult** (a guardian or teacher with report access gets their own copy; since the owner's review the email is only a link, see the note below), `src/supervisor.test.ts`. Front end: overview cards on `/family`, "Progress" (opens that child's Progress page with a "Back to me" banner), `/family/:learnerId/report`, `utils/reportHtml.js`, tests `reportHtml.test.js`, `reportPage.test.jsx`. No deploy step beyond the Worker and the app (no new migration).
+> **Changed after review (2026-10-14):** the weekly email is now just a link to the dashboard (no names, no numbers; see D9), so the section-per-child email described above is gone. A teacher whose class practised also gets it, with a second link to `/classes`.
 > **Exports:** the report is one self-contained HTML document (inline CSS and SVG, no scripts, everything escaped). *Download PDF* prints that document (choose "Save as PDF"); *Download HTML* saves the identical string as `spelling-report-<name>-<from>-to-<to>.html`. Shown in a script-less sandboxed frame.
 > **Not built:** "minutes practised" (attempts are stamped when the server stores them, so offline practice counts on the day it syncs; real minutes need a client timestamp on each attempt — see open items). Class reports and "All students" export are F6.
 * `/family` overview: one card per learner — last practised, minutes / sessions this week, words mastered, struggling count, active patterns (all from existing tables).
 * `/family/:learnerId`: existing Progress page for that child plus pattern reports.
 * `GET /api/spelling/supervisor/overview` returns all linked learners' summary in one call (no N+1 from the client).
-* Weekly digest per adult with a section per child (D9).
+* Weekly email per adult: a link to this dashboard, no child details (D9).
 * **PDF report per learner** (Q2) — see [PDF reports](#pdf-reports).
 **Done when:** a parent can answer "how is each child doing this week?" from one screen and one email.
 
 ### F4 — Assignments — ✅ built (2026-10-14)
 > Backend: migration `0014_assignments.sql`, `lib/assignments.ts`, `/api/spelling/assignments` (user-level: POST, GET `?learner=`, DELETE), `GET /api/spelling/assigned-lists` (learner-level), assignments in the overview and the report, purge, `src/assignments.test.ts`. Front end: "Assign" modal and per-child assignment rows on `/family`; an **Assigned** row at the top of the decks page (progress bar, due date, Done badge); assigned lists open read-only through `useLists` (so a student on their own account, F5/F6, can practise a list they do not own) and are cached for offline; `assigned.test.jsx`. Deploy: apply migration `0014` before the Worker.
-> **Changed from decision D8:** the Harvey-ball levels live only in the browser, so completion is computed on the server from the practice record: a word is *done* when, since the list was assigned, it was practised and mastered or its latest visit had every letter right; *percent* = done / words; *complete* = every word tried and percent ≥ 80. Revisit if you want the server to know the deck levels (would need the levels synced).
+> **D8 (owner, 2026-10-14): done = every stage at 100%.** The Harvey-ball stage of each word lives in the learner's browser, so for a list assigned to them the app reports it (`PUT /api/spelling/progress/:listId`, migration `0017_deck_progress.sql`; `GET` lets a second device carry on). *percent* = stages passed over all words and stages (a word at stage 3 has passed 2 of 5; mastered = 5 of 5); *complete* = every word mastered. An assigned list is also practised **strictly**: a stage is passed only at 100%, whatever threshold is saved. Progress only moves forward. Deploy: migrations `0014` and `0017` before the Worker.
 > Only lists already saved to the account can be assigned (the built-in default is virtual until edited). Assigning to a class (F6) writes one row per student.
 Assign a list to a learner or a group, optional due date (D7). Children see an **Assigned** row at the top of their lists with a progress ring; the adult sees completion per learner (D8). Assigned lists are read-only for the child.
 Endpoints: `POST/GET/DELETE /api/spelling/assignments`, `GET /api/spelling/assigned-lists` (learner view).
@@ -212,12 +248,15 @@ Endpoints: `POST/GET/DELETE /api/spelling/assignments`, `GET /api/spelling/assig
 
 ### F5 — Linking existing accounts (invites) — ✅ built (2026-10-14)
 > Backend: migration `0015_invites.sql`, `lib/invites.ts`, `/api/spelling/family/invites[/:code/preview|accept]`, `/family/learners/:id/access[/:userId]`, `src/invites.test.ts`. Front end: `/join` and `/join/:code` (`JoinPage`), a Share dialog per child, "Make a code for a student", waiting codes with Cancel, "Grown-ups who can see your practice" with Remove; `invites.test.jsx`. Deploy: apply migration `0015` before the Worker.
-> **Two kinds of code** (single use, 7 days, 8 characters from a look-alike-free alphabet): *share_child* (the parent gives another adult a child: a second parent or a teacher) and *link_me* (an adult follows a student who accepts with their own login; the student can remove them any time). Creating is limited to 10 a day; looking up 10 wrong codes in an hour blocks that user's lookups; a preview shows only the inviter's first name (or a masked email) and a child's nickname.
+> **Two kinds of code** (single use, 7 days, 8 characters from a look-alike-free alphabet): *share_child* (the parent gives another adult a child: a second parent or a teacher) and *link_me* (an adult follows a student who accepts with their own login; the student can remove them any time). Creating is limited to 10 a day; looking up 10 wrong codes in an hour blocks that user's lookups; a preview shows only the inviter's first name (or a masked email) and a child's first name.
 > **Rule added:** a teacher, or anyone looking at another person's own account, can see and assign but **cannot record practice or change the grade** (`canActAsLearner`): the learner themselves, a child's owner and a child's guardian can. Unlinking removes access only; practice data is never deleted (D4).
 Invite codes (D3, Q1) for: a second parent joining a child; an adult linking a student who has their own account; a parent granting a teacher view access. Accept at `/join/:code`. Either side can unlink; unlinking never deletes data (D4).
 **Done when:** two adults see the same child, and a student with their own login shows up in an adult's list after accepting.
 
-### F6 — Teacher / classroom
+### F6 — Teacher / classroom — ✅ built (2026-10-14)
+> Backend: migration `0016_classes.sql`, `lib/classes.ts`, `/api/spelling/groups/*`, class codes handled by the invite lookup (`join_class`), summaries and assignment progress rewritten as set-based SQL (a 40-student overview takes under 25 queries, tested), weekly email leaves class students to the class page and skips AI summaries for them, `src/classes.test.ts`. Front end: `/classes`, `/classes/:groupId` (sortable, filterable roster table, who needs a look, class-wide patterns, bulk add, class code, assign to class, rename/delete), `utils/classExport.js`, `utils/download.js`; tests `classes.test.jsx`, `classExport.test.js`. Deploy: apply migration `0016` before the Worker.
+> **Exports:** class report as PDF (print) and HTML, each optionally with a full report per student after the class table; spreadsheet (CSV) following the on-screen filter and sort.
+> **Not built (decide if you want them):** co-teachers sharing one class; moving students between classes in one step; a per-student note field; seeing a student's deck levels (they live only in the browser).
 Groups of kind `class` (D5), roster bulk add (paste one name per line), class code for adding self learners, class report: a table of students × (sessions this week, assignment completion, top struggling words, active patterns) sortable and filterable, plus "class-wide patterns" (patterns active for ≥ 3 students). CSV export. **Class PDF report** plus one-click "all students" PDF (Q2). Consent note (D11).
 **Done when:** a teacher with 25 students sees who has not practised, who is stuck, and which pattern to teach next, on one screen.
 
@@ -228,7 +267,7 @@ Groups of kind `class` (D5), roster bulk add (paste one name per line), class co
 For parent–teacher meetings. Built as a **print-ready page** that the browser saves as PDF (Print → Save as PDF; a "Download PDF" button calls `window.print()`). No PDF library on the Worker, no stored files, and it works offline from cached data.
 
 * **Learner report** — `/family/:learnerId/report?from=&to=` (default: last 4 weeks). One to two A4/Letter pages:
-  1. Header: learner nickname, grade, date range, generated date (no emails or account ids).
+  1. Header: learner name (first name + last initial), grade, date range, generated date (no emails or account ids).
   2. Summary tiles: sessions, minutes practised, words practised, words mastered, accuracy, trend vs previous period.
   3. Assignments: list name, due date, completion % (D8).
   4. Spelling patterns: active and cleared, with the cached AI pattern report summary and practice ideas.
@@ -245,7 +284,7 @@ For parent–teacher meetings. Built as a **print-ready page** that the browser 
 ## Security & privacy checklist
 * Every learner route goes through `requireLearnerAccess`; tested by a route-table scan test.
 * IDs in URLs are not credentials; unknown or unlinked = 404.
-* Managed learners store nickname, avatar key and grade only. No photos, no emails, no birthdays.
+* Managed learners store first name + last initial, avatar key and grade only. No photos, no emails, no birthdays.
 * PIN: hashed (PBKDF2, per-user salt), 5 wrong tries → 5-minute lockout.
 * Invite codes: single use, 7-day expiry, rate-limited (10 per adult per day).
 * Delete learner: soft delete, hidden at once, hard-delete job after 30 days removes attempts, scores, patterns, digests, sessions.

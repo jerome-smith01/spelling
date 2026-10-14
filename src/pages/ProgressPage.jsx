@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useLearner } from '../hooks/useLearner';
 import { useLists } from '../hooks/useLists';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { buildLoginUrl } from '../services/apiService';
@@ -35,6 +36,8 @@ export default function ProgressPage() {
   usePageTitle('Progress');
   const { status } = useAuth();
   const { lists, defaultList, syncNow } = useLists();
+  // A child sees their own progress, but not the reports written for grown-ups (weekly summary, email, pattern reports)
+  const { kidMode } = useLearner();
   const [params, setParams] = useSearchParams();
   const listFilter = params.get('list') || 'all';
 
@@ -58,7 +61,7 @@ export default function ProgressPage() {
     }
     // Patterns and the digest are extras: if either fails, the scores still show.
     const [scoresResult, patternsResult, digestResult] = await Promise.allSettled([
-      getScores(), getPatterns(), getLatestDigest()
+      getScores(), kidMode ? Promise.resolve([]) : getPatterns(), kidMode ? Promise.resolve(null) : getLatestDigest()
     ]);
 
     if (scoresResult.status === 'fulfilled') {
@@ -72,7 +75,7 @@ export default function ProgressPage() {
     setPatterns(patternsResult.status === 'fulfilled' && Array.isArray(patternsResult.value) ? patternsResult.value : []);
     setDigest(digestResult.status === 'fulfilled' ? digestResult.value : null);
     setLoading(false);
-  }, []);
+  }, [kidMode]);
 
   useEffect(() => {
     if (status === 'authenticated') load();
@@ -152,7 +155,7 @@ export default function ProgressPage() {
         <p role="status" style={{ color: 'var(--muted-foreground)' }}>Loading your progress…</p>
       )}
 
-      {scores !== null && (
+      {scores !== null && !kidMode && (
         <>
           <DigestCard digest={digest} />
           <DigestEmailToggle />
@@ -175,7 +178,7 @@ export default function ProgressPage() {
           </div>
 
           <WordBuckets scores={rows} />
-          <PatternList patterns={patterns} onOpenReport={setReportFor} />
+          {!kidMode && <PatternList patterns={patterns} onOpenReport={setReportFor} />}
 
           <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -225,7 +228,7 @@ export default function ProgressPage() {
         </>
       )}
 
-      {reportFor && <PatternReportModal pattern={reportFor} onClose={() => setReportFor(null)} />}
+      {reportFor && !kidMode && <PatternReportModal pattern={reportFor} onClose={() => setReportFor(null)} />}
     </section>
   );
 }

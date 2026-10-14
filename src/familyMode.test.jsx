@@ -53,9 +53,9 @@ describe('kid mode', () => {
     open('/who');
     await user.click(await screen.findByRole('button', { name: /Maya/ }));
     expect(getActiveLearner()).toEqual({ id: 'kid-maya', kid: true });
-    // Back on the decks, with practice only: no Progress, Profile or Family tabs, no Log out
+    // Back on the decks: their own progress, but no Profile or Family tabs and no Log out
     const links = within(await nav()).getAllByRole('link').map(a => a.textContent);
-    expect(links).toEqual(['Decks']);
+    expect(links).toEqual(['Decks', 'Progress']);
     expect(await screen.findByRole('link', { name: /Maya is practising/ })).toBeInTheDocument();
     expect(screen.queryByText('Account Settings')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '+ New deck' })).not.toBeInTheDocument();
@@ -63,7 +63,7 @@ describe('kid mode', () => {
 
   it('sends a child away from grown-up screens', async () => {
     setActiveLearner({ id: 'kid-maya', kid: true });
-    for (const path of ['/profile', '/progress', '/family', '/lab']) {
+    for (const path of ['/profile', '/family', '/lab', '/classes', '/join']) {
       cleanup();
       open(path);
       expect(await screen.findByRole('heading', { name: 'My decks' })).toBeInTheDocument();
@@ -145,26 +145,26 @@ describe('Family page', () => {
     const user = userEvent.setup();
     open('/family');
     await user.click(await screen.findByRole('button', { name: '+ Add a child' }));
-    await user.type(screen.getByLabelText('First name or nickname'), 'Ana');
+    await user.type(screen.getByLabelText('First name and last initial (like Ava S.)'), 'Ana S.');
     await user.selectOptions(screen.getByLabelText('Grade'), '4');
     await user.click(screen.getByRole('button', { name: 'Avatar 🐼' }));
     await user.click(screen.getByRole('button', { name: 'Add child' }));
-    await waitFor(() => expect(fam.calls.addChild).toEqual([{ display_name: 'Ana', avatar: '🐼', grade: 4 }]));
+    await waitFor(() => expect(fam.calls.addChild).toEqual([{ display_name: 'Ana S.', avatar: '🐼', grade: 4 }]));
   });
 
   it('shows the server\'s reason when a name is refused', async () => {
     const user = userEvent.setup();
     fam.impl.addChild = () => {
-      const err = new Error('Use a first name or nickname only (no emails, links or phone numbers).');
+      const err = new Error('Use a first name and last initial, like Ava S. No emails, links, phone numbers or full last names.');
       err.name = 'ApiError';
       err.status = 400;
       return Promise.reject(err);
     };
     open('/family');
     await user.click(await screen.findByRole('button', { name: '+ Add a child' }));
-    await user.type(screen.getByLabelText('First name or nickname'), 'a@b.co');
+    await user.type(screen.getByLabelText('First name and last initial (like Ava S.)'), 'a@b.co');
     await user.click(screen.getByRole('button', { name: 'Add child' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('first name or nickname only');
+    expect(await screen.findByRole('alert')).toHaveTextContent('first name and last initial');
   });
 
   it('asks before deleting and explains the 30 days', async () => {

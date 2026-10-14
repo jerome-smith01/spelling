@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useLearner, childrenOf, followedOf, ownedChildrenOf } from '../hooks/useLearner';
+import { useLearner, childrenOf, familyCardsOf, ownedChildrenOf } from '../hooks/useLearner';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { buildLoginUrl } from '../services/apiService';
 import {
@@ -240,7 +240,7 @@ function ChildForm({ initial, avatars, submitLabel, onSubmit, onCancel }) {
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <label className="settings-field">
-        First name or nickname
+        First name and last initial (like Ava S.)
         <input value={name} maxLength={30} onChange={(e) => setName(e.target.value)} autoComplete="off" />
       </label>
       <label className="settings-field" style={{ maxWidth: '12rem' }}>
@@ -344,7 +344,7 @@ export default function FamilyPage() {
   const [mode, setMode] = useState(null); // 'add' | { editing: child }
   const [removing, setRemoving] = useState(null);
   const [error, setError] = useState('');
-  const kids = followedOf(learners);                 // children, shared children and linked students
+  const kids = familyCardsOf(learners);              // children, shared children and linked students (class students are on the class page)
   const practiceIds = new Set(childrenOf(learners).map(l => l.id));
   const ownedCount = ownedChildrenOf(learners).length;
   const picks = avatars.length ? avatars : FALLBACK_AVATARS;
@@ -424,7 +424,7 @@ export default function FamilyPage() {
       </div>
       <p style={{ margin: 0, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
         Children do not need their own login. Pick &ldquo;Practise as&rdquo; on a child and the app locks to their profile.
-        We only keep a first name or nickname, an avatar and a grade.
+        We only keep a first name and last initial (like Ava S.), an avatar and a grade.
         {/* TODO(owner): link the Spelling Tutor privacy page "Children" section here once it is written (plan decision D11). */}
       </p>
       {error && <p role="alert" style={{ margin: 0, color: '#ef4444' }}>{error}</p>}
@@ -510,6 +510,7 @@ export default function FamilyPage() {
         <h3 id="link-heading" style={{ marginTop: 0, color: 'var(--foreground)' }}>Codes</h3>
         <p style={{ margin: '0 0 0.75rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
           Got a code from a parent, teacher or student? Join with it. Teaching students who have their own login? Make a code for them.
+          Teaching a class? <Link to="/classes">Set up a class</Link> and follow everyone in one table.
         </p>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <Link to="/join" className="btn-verify" style={{ textDecoration: 'none' }}>Join with a code</Link>

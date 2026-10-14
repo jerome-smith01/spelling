@@ -15,6 +15,10 @@ export function inviteSentence(p) {
   if (p.kind === 'share_child') {
     return `${p.inviter} wants to share ${p.child_name || 'a child'} with you as ${role}. You will be able to ${what || 'see that they are practising'}.`;
   }
+  if (p.kind === 'join_class') {
+    const cls = p.class_name ? ` “${p.class_name}”` : '';
+    return `${p.inviter} invites you to join their class${cls}. Your teacher will be able to ${what || 'see that you are practising'}. You can leave the class at any time.`;
+  }
   return `${p.inviter} wants to follow your spelling practice as ${role}. They will be able to ${what || 'see that you are practising'}. You can remove them at any time.`;
 }
 
@@ -67,7 +71,7 @@ export default function JoinPage() {
     setBusy(true);
     setError('');
     try {
-      await acceptInvite(code.trim(), preview.kind === 'link_me' ? nickname.trim() : undefined);
+      await acceptInvite(code.trim(), preview.kind === 'link_me' || preview.kind === 'join_class' ? nickname.trim() : undefined);
       await refresh();
       navigate('/family');
     } catch (err) {
@@ -95,9 +99,9 @@ export default function JoinPage() {
       {preview && (
         <div style={card} aria-label="What this code does">
           <p style={{ marginTop: 0, lineHeight: 1.6, color: 'var(--foreground)' }}>{inviteSentence(preview)}</p>
-          {preview.kind === 'link_me' && (
+          {(preview.kind === 'link_me' || preview.kind === 'join_class') && (
             <label className="settings-field" style={{ maxWidth: '16rem', marginBottom: '0.75rem' }}>
-              Your first name or nickname (if your profile has none)
+              Your first name and last initial (if your profile has none)
               <input value={nickname} maxLength={30} onChange={(e) => setNickname(e.target.value)} autoComplete="off" />
             </label>
           )}

@@ -19,6 +19,8 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { useStruggle } from '../hooks/useStruggle';
 import { useStrugglePositions } from '../hooks/useStrugglePositions';
 import { useLearner } from '../hooks/useLearner';
+import { fetchStages, pushStages } from '../services/progressSync';
+import { stagesOf } from '../utils/schedule';
 import '../styles/spelling.css';
 
 // Rate (how slowly each syllable is spoken) and pause (the gap between syllables)
@@ -62,7 +64,8 @@ function PracticeView({ listId }) {
   const { kidMode } = useLearner();
   const [searchParams] = useSearchParams();
   const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
-  const { createList, atListLimit } = useLists();
+  const { createList, atListLimit, assignmentFor, refreshAssigned } = useLists();
+  const assignment = assignmentFor?.(listId);   // this list was assigned to whoever is practising
   usePageTitle(list ? `${list.name} — Practice` : 'Practice');
 
   useEffect(() => {
@@ -106,7 +109,39 @@ function PracticeView({ listId }) {
     showAllWords
   } = useHiding(words, listId);
 
-  const schedule = useDeckSchedule(listId, words.map(w => w.word));
+  const schedule = useDeckSchedule(listId, words.map(w => w.word), { strict: !!assignment });
+
+  // An assigned list is done when every word has passed every stage: report the stages, and carry on
+  // from what the server holds (another device, an earlier session). Only ever moves forward.
+  const assigned = !!assignment;
+  const stagesRef = useRef(null);
+  const unsentRef = useRef(false);
+  stagesRef.current = schedule.progress;
+  useEffect(() => {
+    if (!assigned) return undefined;
+    let cancelled = false;
+    fetchStages(listId).then(r => { if (!cancelled && r?.words) schedule.mergeRemote(r.words); }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listId, assigned]);
+  useEffect(() => {
+    if (!assigned) return undefined;
+    unsentRef.current = true;
+    const t = setTimeout(async () => {
+      try {
+        await pushStages(listId, stagesOf(schedule.progress));
+        unsentRef.current = false;
+        refreshAssigned?.();
+      } catch { /* offline: the next change (or the next visit) sends it */ }
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedule.progress, listId, assigned]);
+  // Leaving the page within the delay must not lose the last answers
+  useEffect(() => () => {
+    if (assigned && unsentRef.current) pushStages(listId, stagesOf(stagesRef.current)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listId, assigned]);
   const isGrid = schedule.prefs.view === 'grid';
   const { speak, speakSyllables, activePlayback } = useSpeech();
   const [settingsOpen, setSettingsOpen] = useState(false);

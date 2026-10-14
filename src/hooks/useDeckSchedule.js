@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState
+  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState, mergeRemoteStages
 } from '../utils/schedule';
 import { learnerKey } from '../services/activeLearner';
 
@@ -58,10 +58,14 @@ export function loadDeckSummary(listId, wordTexts) {
  * Per-list deck progress + today's session queue.
  * Prefs (view, start level, thresholds) are shared across lists; test date and
  * per-word progress are per list.
+ *
+ * `strict` (a list assigned to this learner): a stage is only passed at 100%, whatever the
+ * saved threshold says, so "done" means the same for everyone.
  */
-export function useDeckSchedule(listId, wordTexts) {
+export function useDeckSchedule(listId, wordTexts, { strict = false } = {}) {
   const today = useMemo(currentDay, []);
-  const [prefs, setPrefsState] = useState(() => read(prefsKey(), { ...DEFAULT_PREFS, view: 'deck' }));
+  const [savedPrefs, setPrefsState] = useState(() => read(prefsKey(), { ...DEFAULT_PREFS, view: 'deck' }));
+  const prefs = useMemo(() => (strict ? { ...savedPrefs, advancePct: 100 } : savedPrefs), [savedPrefs, strict]);
   const [progress, setProgress] = useState(() => read(progressKey(listId), { testDate: null, words: {} }));
   const wordsKey = wordTexts.join('|');
   const [queue, setQueue] = useState(() => buildQueue(wordTexts, progress, today, prefs));
@@ -69,7 +73,7 @@ export function useDeckSchedule(listId, wordTexts) {
   const progressRef = useRef(progress);
   progressRef.current = progress;
 
-  useEffect(() => write(prefsKey(), prefs), [prefs]);
+  useEffect(() => write(prefsKey(), savedPrefs), [savedPrefs]);
   useEffect(() => write(progressKey(listId), progress), [listId, progress]);
 
   // A new/edited word list starts a fresh queue
@@ -102,6 +106,16 @@ export function useDeckSchedule(listId, wordTexts) {
       return shuffleQueue(requeue ? q : q.slice(1), requeue ? answered : null);
     });
   }, []);
+
+  /** Carry on from the stages the server holds for an assigned list (never moves a word backwards). */
+  const mergeRemote = useCallback((remote) => {
+    const next = mergeRemoteStages(progressRef.current, remote, { prefs, today });
+    if (next === progressRef.current) return;
+    progressRef.current = next;
+    setProgress(next);
+    setQueue(buildQueue(wordTexts, next, today, prefs));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wordsKey, today, prefs]);
 
   /** Practice any word right now (extra practice), ahead of the rest of the queue. */
   const jumpTo = useCallback((word) => {
@@ -150,6 +164,6 @@ export function useDeckSchedule(listId, wordTexts) {
   return {
     prefs, setPrefs, today, testDate: progress.testDate, setTestDate,
     progress, stateFor, queue, dueCount,
-    commit, advance, jumpTo, practiceAnyway, commitQuiz, refreshQueue, resetProgress
+    commit, advance, jumpTo, practiceAnyway, commitQuiz, refreshQueue, resetProgress, mergeRemote
   };
 }

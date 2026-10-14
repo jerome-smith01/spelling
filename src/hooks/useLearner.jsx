@@ -127,5 +127,8 @@ export const childrenOf = (learners) =>
 /** Everyone this account follows besides themselves: their children, shared children and linked students. */
 export const followedOf = (learners) => learners.filter(l => l.role !== 'self');
 
+/** The people shown as cards on the Family page: everyone followed except students who are in one of your classes. */
+export const familyCardsOf = (learners) => learners.filter(l => l.role !== 'self' && !(l.group_ids && l.group_ids.length > 0));
+
 /** Child profiles this account added (counted against the limit). */
 export const ownedChildrenOf = (learners) => learners.filter(l => l.kind === 'managed' && l.role === 'owner');

@@ -67,11 +67,11 @@ export default function Header({ theme, onToggleTheme }) {
         }} aria-label="Main Navigation">
           {[
             { to: '/', label: 'Decks', active: pathname === '/' || pathname.startsWith('/lists') },
-            // Kid mode: practice only. Grown-up screens are hidden (and blocked by the routes).
+            // A child sees their own progress, but not the grown-up screens (hidden here and blocked by the routes)
+            { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') },
             ...(kidMode ? [] : [
-              { to: '/progress', label: 'Progress', active: pathname.startsWith('/progress') },
               { to: '/profile', label: 'Profile', active: pathname === '/profile' },
-              ...(status === 'authenticated' ? [{ to: '/family', label: 'Family', active: pathname === '/family' || pathname === '/who' }] : []),
+              ...(status === 'authenticated' ? [{ to: '/family', label: 'Family', active: pathname === '/family' || pathname === '/who' || pathname.startsWith('/classes') || pathname === '/join' }] : []),
               ...(canAccessLab(user) ? [{ to: '/lab', label: 'Lab', active: pathname === '/lab' }] : [])
             ])
           ].map(({ to, label, active }) => (

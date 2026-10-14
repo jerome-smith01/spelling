@@ -71,3 +71,23 @@ export const acceptInvite = (code, displayName) =>
 export const getAccess = (learnerId) => apiFetch(`/api/spelling/family/learners/${encodeURIComponent(learnerId)}/access`);
 export const removeAccess = (learnerId, userId) =>
   apiFetch(`/api/spelling/family/learners/${encodeURIComponent(learnerId)}/access/${encodeURIComponent(userId)}`, { method: 'DELETE' });
+
+// ── Classes (F6) ──
+
+export const getGroups = () => apiFetch('/api/spelling/groups');
+export const createGroup = (name) => apiFetch('/api/spelling/groups', { method: 'POST', body: { name, consent: true } });
+export const renameGroup = (id, name) => apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}`, { method: 'PUT', body: { name } });
+export const deleteGroup = (id, deleteStudents) =>
+  apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}${deleteStudents ? '?delete_students=1' : ''}`, { method: 'DELETE' });
+export const addStudents = (id, names, grade) =>
+  apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}/students`, { method: 'POST', body: { names, ...(grade !== undefined ? { grade } : {}) } });
+export const addGroupMember = (id, learnerId) =>
+  apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}/members`, { method: 'POST', body: { learner_id: learnerId } });
+export const removeGroupMember = (id, learnerId) =>
+  apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}/members/${encodeURIComponent(learnerId)}`, { method: 'DELETE' });
+export const setClassCode = (id, enabled) =>
+  apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}/code`, { method: 'PUT', body: { enabled } });
+/** { group, students: [{ id, display_name, avatar, grade, summary }], class_patterns: [{ pattern, label, students }], as_of } */
+export const getClassOverview = (id) => apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}/overview`);
+export const assignToClass = (id, { list_id, due_at }) =>
+  apiFetch(`/api/spelling/groups/${encodeURIComponent(id)}/assign`, { method: 'POST', body: { list_id, ...(due_at ? { due_at } : {}) } });

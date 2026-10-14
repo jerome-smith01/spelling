@@ -83,7 +83,7 @@ describe('Join page', () => {
     h.preview = { kind: 'link_me', role: 'teacher', inviter: 'Pat', child_name: null, can_assign: true, can_view_reports: true, expires_at: 'x' };
     open('/join/ABCD2345');
     expect(await screen.findByText(/Pat wants to follow your spelling practice as a teacher/)).toBeInTheDocument();
-    await user.type(screen.getByLabelText(/Your first name or nickname/), 'Sam');
+    await user.type(screen.getByLabelText(/Your first name and last initial/), 'Sam');
     await user.click(screen.getByRole('button', { name: 'Accept' }));
     await waitFor(() => expect(h.calls.accept).toEqual([['ABCD2345', 'Sam']]));
   });

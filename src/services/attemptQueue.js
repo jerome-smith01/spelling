@@ -99,9 +99,10 @@ export async function flush({ keepalive = false } = {}) {
       } catch (err) {
         if (err.status === 400) {
           console.error('Dropping rejected attempts', err);
-        } else if (err.status === 404 && learnerId) {
-          // The child profile was deleted (or this account was unlinked): these can never be saved
-          console.error('Dropping attempts for a learner that no longer exists', err);
+        } else if ((err.status === 404 || err.status === 403) && learnerId) {
+          // The child profile was deleted, this account was unlinked, or it may look but not practise
+          // (a teacher viewing a student): these can never be saved, and must not block the queue
+          console.error('Dropping attempts the server will not accept for this learner', err);
         } else {
           throw err;
         }

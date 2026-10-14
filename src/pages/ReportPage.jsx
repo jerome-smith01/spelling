@@ -5,6 +5,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 import { buildLoginUrl } from '../services/apiService';
 import { getReport, familyErrorMessage } from '../services/familyApi';
 import { renderReportHtml, reportFileName } from '../utils/reportHtml';
+import { downloadText } from '../utils/download';
 
 const isoDay = (d) => d.toISOString().slice(0, 10);
 const PRESETS = [{ label: 'Last 4 weeks', days: 28 }, { label: 'Last 8 weeks', days: 56 }, { label: 'Last 12 weeks', days: 84 }];
@@ -56,16 +57,7 @@ export default function ReportPage() {
     );
   }
 
-  const downloadHtml = () => {
-    const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = reportFileName(report, 'html');
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
+  const downloadHtml = () => downloadText(reportFileName(report, 'html'), html);
   const printPdf = () => {
     const win = frameRef.current?.contentWindow;
     if (win) { win.focus(); win.print(); }
