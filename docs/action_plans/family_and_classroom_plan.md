@@ -1,4 +1,4 @@
-# Family & Classroom Accounts — Plan (not started)
+# Family & Classroom Accounts — Plan (F1 built; F2–F6 not started)
 
 ## Goal
 Let one adult (a **parent** or a **teacher**) set up and follow several children. The adult creates or links learners, assigns word lists, and sees progress and reports for each child, or for a whole class at once. Children practise exactly as they do today; their results belong to their own learner profile, not to the adult.
@@ -174,9 +174,16 @@ Progress, word detail and pattern screens are reused as-is with the learner swit
 ## Phases
 Each phase ships on its own and is safe to deploy with the next one unbuilt.
 
-### F1 — Learner foundation (no visible change)
+### F1 — Learner foundation (no visible change) — ✅ built (2026-10-14)
+> Built in `good-plus-fast-website` on branch `ccr-e562d473-9a1h7s`: migration `0012_learners.sql` (0011 left free for `handled_at`), `src/lib/learners.ts`, middleware + routes in `src/index.ts`, tests in `src/learners.test.ts`. Not yet deployed — see *Deploying F1* below. Only `learners` and `learner_access` were created; the group, assignment, invite and settings tables are created by the phase that first uses them.
 Backend only. Learners and access tables; self-learner upsert; `X-Spelling-Learner` middleware; `word_scores` rebuild; every route moved to `learnerId`; digest reads `learner_id`.
 **Done when:** all existing tests pass with no header sent; new tests prove a user gets 404 for a learner they are not linked to, on every learner route; production data unchanged except new rows.
+
+**Deploying F1** (order matters — the new code needs the new tables):
+1. Back up: `npx wrangler d1 export spelling-tutor-db --remote --output backup-before-0012.sql`
+2. Migrate: `npx wrangler d1 migrations apply spelling-tutor-db --remote`
+3. Check: `SELECT COUNT(*) FROM learners` equals `SELECT COUNT(*) FROM users`; `SELECT COUNT(*) FROM word_scores` unchanged.
+4. Deploy the Worker: `npm run deploy` in `apps/spelling-tutor-api`.
 
 ### F2 — Parent: child profiles + kid mode
 Create / edit / delete managed learners (D1, D6). "Who's practising?" picker, adult PIN (D2), header wiring, per-learner attempt queue. Grade per child (existing `learner_profiles`).

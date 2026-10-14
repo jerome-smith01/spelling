@@ -65,12 +65,13 @@ flowchart LR
 - `client_id` (TEXT, nullable): client-generated id; partial unique index `(user_id, client_id)` makes retried batches idempotent (migration `0002`)
 - `session_id` (TEXT, nullable): one visit to a list; scoring counts the last answer per letter per session (migration `0003`)
 - `typed` (TEXT, nullable): the letter the child actually entered (for reversals) (migration `0003`)
-- `learner_id` (TEXT): equals `user_id` until family accounts (migration `0003`)
+- `learner_id` (TEXT): who practised (migration `0003`). Equals `user_id` for a self learner; a child profile's id when an adult records for them. `user_id` is always the logged-in account that recorded it
 
 ### `word_scores`
-*Aggregated struggle metrics per word per user, updated automatically on batch practice submission.*
+*Aggregated struggle metrics per word per learner, updated automatically on batch practice submission. Rebuilt in migration `0012` to key on the learner.*
 - `id` (TEXT, PK): UUID
-- `user_id` (TEXT, FK -> `users.id` ON DELETE CASCADE)
+- `user_id` (TEXT, FK -> `users.id` ON DELETE CASCADE): the account that recorded it
+- `learner_id` (TEXT): who the score belongs to (migration `0012`)
 - `word` (TEXT)
 - `attempt_count` (INTEGER)
 - `error_count` (INTEGER)
@@ -79,7 +80,7 @@ flowchart LR
 - `perfect_streak` (INTEGER): consecutive perfect sessions (migration `0003`)
 - `mastered_at` (DATETIME, nullable): attempts before this no longer count toward friction (migration `0003`)
 - `last_practiced` (DATETIME)
-- Constraint: `UNIQUE(user_id, word)`
+- Constraint: `UNIQUE(learner_id, word)` (was `(user_id, word)` before `0012`)
 
 ### `practice_sessions` / `pattern_stats` (migration `0003`)
 See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, list_id, started_at, last_seen_at)`; `pattern_stats(learner_id, pattern, attempts, misses, distinct_words, sessions_missed, missed_words_json, status, first_qualified_at, cleared_at, report_json, report_generated_at, updated_at)` keyed by `(learner_id, pattern)`.
@@ -89,6 +90,12 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 - `photo_import_log(id, user_id, ip_hash, created_at)` (`0008`): per-user daily and per-IP hourly photo limits. The IP is stored hashed; the photo is never stored.
 - `learner_profiles(learner_id PK, grade, updated_at)` (`0009`): student grade 0 (K) to 8, default 3. `pattern_stats` gains `last_practiced_at`. `word_generation_log(id, learner_id, pattern, accepted_json, rejected_json, created_at)`: daily cap and a record of rejected words.
 - `pattern_candidates(pattern, source, example_words_json, count, first_seen, last_seen, handled_at)` (`0010`, `handled_at` added in `0011`): letter groups the tagger doesn't recognise (`source` = `untagged` | `photo`). Aggregates only, no learner ids. Shown on the admin portal's Spelling patterns page; `handled_at` hides a group until it is seen again.
+
+### `learners` / `learner_access` (migration `0012`, family accounts F1)
+See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_classroom_plan.md). A *user* logs in; a *learner* practises.
+- `learners(id PK, kind 'self'|'managed', owner_user_id, display_name, avatar, created_at, deleted_at)`: every user is their own `self` learner (`id = users.id`), created by the auth middleware on each request (`INSERT OR IGNORE`). `managed` child profiles arrive in F2. `deleted_at` hides a learner at once.
+- `learner_access(learner_id, user_id, role 'self'|'owner'|'guardian'|'teacher', can_assign, can_view_reports, created_at)`, primary key `(learner_id, user_id)`: which users may act for which learner.
+- Requests pick a learner with the **`X-Spelling-Learner`** header (none = the user's self learner). The auth middleware resolves it (`lib/learners.ts` → `resolveLearner`); no access, a deleted learner or a malformed id returns **404** on every route, the same as a learner that does not exist. Practice data routes (attempts, scores, patterns, profile, digest/latest) use the learner; lists, digest prefs, syllables, photo import and AI quotas stay with the logged-in user. `can_view_reports = 0` → 403 on `/patterns/:p/analyze` and `/digest/latest`.
 
 ### `weekly_digests` / `digest_prefs` (migration `0004`)
 `weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
