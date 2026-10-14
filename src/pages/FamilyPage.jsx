@@ -550,7 +550,10 @@ export default function FamilyPage() {
       )}
 
       <PinSettings pinSet={pinSet} onChanged={refresh} />
-      <p style={{ margin: 0, fontSize: '0.85rem' }}><Link to="/who">Who&apos;s practising?</Link></p>
+      <p style={{ margin: 0, fontSize: '0.85rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <Link to="/who">Who&apos;s practising?</Link>
+        {myself && <Link to={`/family/${myself.id}/report`}>Your own progress report (PDF or HTML)</Link>}
+      </p>
 
       {sharing && (
         <SharingModal learner={sharing.learner} mode={sharing.mode} onClose={() => setSharing(null)} onChanged={async () => { setSharingTick(t => t + 1); await refresh(); }} />

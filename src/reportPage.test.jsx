@@ -124,6 +124,7 @@ describe('Family overview', () => {
     expect(screen.getByText(/12 words mastered \(2 this week\) · 1 tricky word/)).toBeInTheDocument();
     expect(screen.getByText('To work on: Silent letters')).toBeInTheDocument();
     expect(maya.querySelector('a[href="/family/kid-maya/report"]')).not.toBeNull();
+    expect(screen.getByRole('link', { name: /Your own progress report/ })).toHaveAttribute('href', '/family/u1/report');
 
     await user.click(screen.getByRole('button', { name: "See Maya's progress" }));
     expect(getActiveLearner()).toEqual({ id: 'kid-maya', kid: false });   // a grown-up looking, not kid mode
