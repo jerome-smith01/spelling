@@ -65,7 +65,7 @@ export function ListsProvider({ children }) {
   const auth = useAuth();
   const authRef = useRef(auth);
   authRef.current = auth;
-  const { activeId } = useLearner();
+  const { activeId, kidMode } = useLearner();
   const [assigned, setAssigned] = useState(() => readAssignedCache(activeId));
 
   const [lists, setLists] = useState(loadLists);
@@ -219,17 +219,20 @@ export function ListsProvider({ children }) {
     };
   }, [auth.status, syncNow]);
 
-  const visible = useMemo(() => visibleLists(lists), [lists]);
+  // The decks on this device belong to the grown-up. A child in kid mode gets only what was assigned to them.
+  const visible = useMemo(() => (kidMode ? [] : visibleLists(lists)), [lists, kidMode]);
 
   const assignedLists = useMemo(() => assigned.map(toList), [assigned]);
   /** The open assignment of this list to whoever is practising, or undefined. */
   const assignmentFor = useCallback((id) => assigned.find(a => a.list_id === id), [assigned]);
 
   const getList = useCallback(
-    (id) => (id === DEFAULT_LIST_ID
-      ? DEFAULT_LIST
-      : visible.find(l => l.id === id) ?? assignedLists.find(l => l.id === id) ?? null),
-    [visible, assignedLists]
+    (id) => {
+      if (kidMode) return assignedLists.find(l => l.id === id) ?? null;
+      if (id === DEFAULT_LIST_ID) return DEFAULT_LIST;
+      return visible.find(l => l.id === id) ?? assignedLists.find(l => l.id === id) ?? null;
+    },
+    [kidMode, visible, assignedLists]
   );
 
   // Deep links can only be resolved once we know whether the server has the list
@@ -241,7 +244,7 @@ export function ListsProvider({ children }) {
       assigned,
       assignmentFor,
       refreshAssigned,
-      defaultList: DEFAULT_LIST,
+      defaultList: DEFAULT_LIST,   // the built-in deck: hidden from a child by the pages that show it
       getList,
       createList,
       saveWords,

@@ -34,10 +34,11 @@ export default function DashboardPage() {
     try { localStorage.setItem(SORT_KEY, v); } catch { /* storage unavailable */ }
   };
 
-  const decks = useMemo(() => [defaultList, ...lists].map(l => {
+  // A child sees only the lists assigned to them (below), never the grown-up's own decks
+  const decks = useMemo(() => (kidMode ? [] : [defaultList, ...lists]).map(l => {
     const words = parseWordList(l.wordsRaw).map(w => w.word);
     return { id: l.id, name: l.name, added: l.updatedAt || '', ...loadDeckSummary(l.id, words) };
-  }), [defaultList, lists]);
+  }), [kidMode, defaultList, lists]);
   // Array.sort is stable, so ties keep their original order
   const sorted = useMemo(() => [...decks].sort(SORTS[sort].cmp), [decks, sort]);
 
@@ -102,12 +103,19 @@ export default function DashboardPage() {
           </ul>
         </section>
       )}
-      <label className="settings-field" style={{ maxWidth: '16rem' }}>
-        Sort by
-        <select value={sort} onChange={(e) => changeSort(e.target.value)}>
-          {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-      </label>
+      {kidMode && assigned.length === 0 && (
+        <p role="status" style={{ margin: 0, color: 'var(--muted-foreground)' }}>
+          Nothing has been assigned yet. Ask your grown-up to give you a list.
+        </p>
+      )}
+      {!kidMode && (
+        <label className="settings-field" style={{ maxWidth: '16rem' }}>
+          Sort by
+          <select value={sort} onChange={(e) => changeSort(e.target.value)}>
+            {Object.entries(SORTS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+        </label>
+      )}
       <ul className="dash-grid">
         {sorted.map(d => {
           const pct = d.total ? Math.round((d.learned / d.total) * 100) : 0;

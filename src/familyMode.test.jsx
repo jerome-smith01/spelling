@@ -7,7 +7,7 @@ import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 
 const fam = vi.hoisted(() => ({
-  data: null, calls: {}, verify: null, impl: {}, me: { id: 'u1', email: 'parent@example.com', name: 'Pat' }
+  data: null, calls: {}, verify: null, impl: {}, assigned: [], me: { id: 'u1', email: 'parent@example.com', name: 'Pat' }
 }));
 
 vi.mock('./services/apiService', async (importOriginal) => ({
@@ -17,6 +17,7 @@ vi.mock('./services/apiService', async (importOriginal) => ({
 vi.mock('./services/familyApi', async (importOriginal) => ({
   ...(await importOriginal()),
   getFamily: () => Promise.resolve(JSON.parse(JSON.stringify(fam.data))),
+  getAssignedLists: () => Promise.resolve(JSON.parse(JSON.stringify(fam.assigned))),
   addChild: (v) => { (fam.calls.addChild ||= []).push(v); return fam.impl.addChild ? fam.impl.addChild(v) : Promise.resolve({}); },
   updateChild: (id, v) => { (fam.calls.updateChild ||= []).push([id, v]); return Promise.resolve({}); },
   deleteChild: (id) => { (fam.calls.deleteChild ||= []).push(id); return Promise.resolve(null); },
@@ -27,10 +28,20 @@ vi.mock('./services/familyApi', async (importOriginal) => ({
 
 import App from './App';
 import { setActiveLearner, getActiveLearner } from './services/activeLearner';
+import { LISTS_KEY } from './services/storageService';
 
 const ME = { id: 'u1', kind: 'self', role: 'self', display_name: '', avatar: null, grade: 3, can_assign: true, can_view_reports: true };
 const MAYA = { id: 'kid-maya', kind: 'managed', role: 'owner', display_name: 'Maya', avatar: '🐼', grade: 2, can_assign: true, can_view_reports: true };
 const LEO = { id: 'kid-leo', kind: 'managed', role: 'owner', display_name: 'Leo', avatar: '🦊', grade: 1, can_assign: true, can_view_reports: true };
+
+// A grown-up's own deck on this device (a test list), and one deck assigned to the child
+const PARENT_DECK_ID = '11111111-1111-4111-8111-111111111111';
+const parentDeck = { id: PARENT_DECK_ID, name: 'Pat test list', wordsRaw: 'apple\nberry', isDefault: 0, updatedAt: '2026-01-01T00:00:00.000Z', dirty: false, deleted: false, focusGroups: [], hints: [] };
+const ASSIGNED = {
+  assignment_id: 'as-1', list_id: '22222222-2222-4222-8222-222222222222', list_name: 'Maya spelling words',
+  words_raw: 'cat\ndog', created_at: '2026-01-02T00:00:00.000Z', due_at: null, percent: 0, complete: false,
+  focus_groups: [], hints: []
+};
 
 const open = (path) => render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>);
 const nav = () => screen.findByRole('navigation', { name: 'Main Navigation' });
@@ -40,6 +51,7 @@ beforeEach(() => {
   setActiveLearner({ id: null });
   fam.calls = {};
   fam.impl = {};
+  fam.assigned = [];
   fam.verify = async () => ({ ok: true });
   fam.data = { learners: [ME, MAYA, LEO], pin_set: false, max_children: 8, avatars: ['🦊', '🐼'] };
   window.matchMedia ||= () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
@@ -73,7 +85,8 @@ describe('kid mode', () => {
   it('hides deck settings and word import while a child practises, but offers audio speed', async () => {
     const user = userEvent.setup();
     setActiveLearner({ id: 'kid-maya', kid: true });
-    open('/lists/default');
+    fam.assigned = [ASSIGNED];
+    open(`/lists/${ASSIGNED.list_id}`);
     expect(await screen.findByLabelText('Spelling Practice Controls')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Settings/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Import Words/)).not.toBeInTheDocument();
@@ -87,6 +100,44 @@ describe('kid mode', () => {
     expect(localStorage.getItem('spelling_tutor_rate_preset_v1')).toBe('slow');
     await user.click(screen.getByRole('button', { name: /Speed/ }));
     expect(screen.queryByRole('combobox', { name: 'Audio speed' })).not.toBeInTheDocument();
+  });
+
+  it('shows a child only the lists assigned to them, never the grown-up\'s own decks', async () => {
+    localStorage.setItem(LISTS_KEY, JSON.stringify([parentDeck]));
+    setActiveLearner({ id: 'kid-maya', kid: true });
+    fam.assigned = [ASSIGNED];
+    open('/');
+    expect(await screen.findByLabelText('Assigned Maya spelling words')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Deck Pat test list')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Deck /)).not.toBeInTheDocument();          // not even the built-in default deck
+    expect(screen.queryByLabelText('Sort by')).not.toBeInTheDocument();
+  });
+
+  it('tells a child when nothing is assigned yet', async () => {
+    localStorage.setItem(LISTS_KEY, JSON.stringify([parentDeck]));
+    setActiveLearner({ id: 'kid-maya', kid: true });
+    open('/');
+    expect(await screen.findByText(/Nothing has been assigned yet/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Deck /)).not.toBeInTheDocument();
+  });
+
+  it('will not open a grown-up\'s deck or the default deck for a child, even by link', async () => {
+    localStorage.setItem(LISTS_KEY, JSON.stringify([parentDeck]));
+    setActiveLearner({ id: 'kid-maya', kid: true });
+    fam.assigned = [ASSIGNED];
+    for (const id of [PARENT_DECK_ID, 'default']) {
+      cleanup();
+      open(`/lists/${id}`);
+      expect(await screen.findByText('List not found')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Spelling Practice Controls')).not.toBeInTheDocument();
+    }
+  });
+
+  it('still shows a grown-up (or a student on their own login) their own decks', async () => {
+    localStorage.setItem(LISTS_KEY, JSON.stringify([parentDeck]));
+    open('/');
+    expect(await screen.findByLabelText('Deck Pat test list')).toBeInTheDocument();
+    expect(screen.getByLabelText('Sort by')).toBeInTheDocument();
   });
 
   it('without a PIN the grown-up tile leaves kid mode straight away', async () => {

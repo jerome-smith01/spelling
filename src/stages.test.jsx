@@ -118,6 +118,7 @@ describe('stages of an assigned list', () => {
 
   it('a list that is not assigned to whoever is practising is never reported', async () => {
     h.assigned = [];
+    setActiveLearner({ id: null });   // a child cannot open an unassigned list at all (see familyMode.test.jsx)
     localStorage.setItem('spelling_tutor_lists_v5', JSON.stringify([{ id: LIST, name: 'Mine', wordsRaw: 'cat\ndog', isDefault: 0, updatedAt: 'x', dirty: true, deleted: false, focusGroups: [], hints: [] }]));
     open(`/lists/${LIST}`);
     await screen.findByLabelText('Spelling Practice Controls');
