@@ -49,6 +49,7 @@ Categories: `silent_letters`, `double_consonants`, `vowel_teams`, `r_controlled`
 Notes on the newer categories:
 - `open_syllables` covers **one-syllable** words only (me, hi, go, fly). Multi-syllable cases such as ti/ger need syllable breaks, which the server does not receive yet.
 - `drop_silent_e` is tagged on the first letter of `-ing` after a consonant-vowel-consonant base (making). Words like "visiting" match the same shape, so they add harmless correct answers; only real misses matter.
+- `soft_c_g` (label **"Hard and soft c and g"**, Oct 2026) tags **both** sides of the contrast: a c or g before e/i/y is soft, before a/o/u hard, and the first letter of `cc`/`gg` is hard (accept, bigger). Letters with no vowel after them (clap, magic, ch, ng) are not tagged. g before e/i/y is **soft by default**; it stays hard for `HARD_G_WORDS` (get, girl, tiger, finger…; a trailing s is ignored), the second g of `gg`, and ng + ing (singing) unless the word matches `SOFT_NGE_ING` (changing). `soccer` is the one hard-c exception (`HARD_C_WORDS`). The key stays `soft_c_g` so saved `pattern_stats` rows keep working. The description carries the "Gentle Cindy" mnemonic (Ge Gi Gy, Ce Ci Cy) for AI tips and reports. Extend the exception lists as the admin portal shows gaps.
 - `high_frequency_irregular` and `roots` are list-based (`IRREGULAR_HIGH_FREQUENCY`, `ROOTS_*` in `patternTagger.ts`); extend the lists as the Phase 9 report shows gaps.
 - Not built: homophones (needs sentence context) and compound words (needs a curated word list). Revisit later.
 
