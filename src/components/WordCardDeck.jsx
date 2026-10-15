@@ -10,7 +10,7 @@ import AutoplayToggle from './AutoplayToggle';
 import ProgressBars from './ProgressBars';
 import DeckLegend from './DeckLegend';
 import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
-import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { useTutorial } from '../hooks/useTutorial';
 import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
@@ -37,7 +37,7 @@ const fmtDay = (iso, today) => {
 
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
-  words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
+  words, schedule, onSpeak, onSpeakSyllables, onSpeakBoth, activePlayback, onAttempts, frictionByWord = {},
   focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice', keyboardHidden = false, dueDate = null
 }) {
   const { queue, today, testDate, progress, stateFor, commit, practiceAnyway, commitQuiz, refreshQueue } = schedule;
@@ -80,6 +80,7 @@ export default function WordCardDeck({
 
   const userSpeak = (id, text) => { setLastSpeed('normal'); onSpeak(id, text); };
   const userSpeakSyllables = (id, syl) => { setLastSpeed('slow'); onSpeakSyllables?.(id, syl); };
+  const userSpeakBoth = (id, text, syl) => onSpeakBoth?.(id, text, syl);
 
   const byText = useMemo(() => Object.fromEntries(words.map(w => [w.word, w])), [words]);
   const curWord = currentWord(session);
@@ -189,6 +190,8 @@ export default function WordCardDeck({
           words={words}
           isMastered={(w) => !!progress.words[w]?.mastered}
           onSpeak={onSpeak}
+          onSpeakSyllables={onSpeakSyllables}
+          onSpeakBoth={onSpeakBoth}
           onAttempts={onAttempts}
           commitQuiz={commitQuiz}
           onExit={() => { refreshQueue(); restartSession(); setMode('practice'); }}
@@ -216,7 +219,9 @@ export default function WordCardDeck({
               aria-current={isCurrent ? 'step' : undefined}
               onClick={() => goToCard(i)}
             >
-              {dotIcon[st]}
+              {isCurrent && useChoice && !result && !st
+                ? <span className="sess-dot-q" aria-hidden="true">?</span>
+                : dotIcon[st]}
             </button>
           );
         })}
@@ -281,6 +286,7 @@ export default function WordCardDeck({
                 groups={focusGroups}
                 onSpeak={userSpeak}
                 onSpeakSyllables={userSpeakSyllables}
+                onSpeakBoth={onSpeakBoth ? userSpeakBoth : undefined}
                 activePlayback={activePlayback}
                 onAttempts={onAttempts}
                 autoFocus
@@ -295,6 +301,7 @@ export default function WordCardDeck({
               onShow={() => {}}
               onSpeak={userSpeak}
               onSpeakSyllables={userSpeakSyllables}
+              onSpeakBoth={onSpeakBoth ? userSpeakBoth : undefined}
               activePlayback={activePlayback}
               onAttempts={onAttempts}
               friction={frictionByWord[current.word] || 0}
@@ -321,11 +328,16 @@ export default function WordCardDeck({
               >
                 <div className="word-card-header" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
+                      aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
                     <button type="button" className="speaker-btn"
                       onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
                       aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
-                    <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
-                      aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
+                    {onSpeakBoth && (
+                      <button type="button" className="speaker-btn speaker-btn-both"
+                        onClick={() => userSpeakBoth(current.id, current.word, buildPronunciationSyllables(current))}
+                        aria-label={`Hear ${current.word} at normal speed, then slowly`}><BothSpeedIcon size="1em" /></button>
+                    )}
                   </div>
                   <AutoplayToggle checked={schedule.prefs.autoSpeak !== false}
                     onChange={(v) => schedule.setPrefs({ autoSpeak: v })} />
@@ -376,8 +388,9 @@ export default function WordCardDeck({
             prevDisabled={session.idx === 0}
             onNext={result ? goNext : skipCard}
             nextLabel={result ? 'Next card' : 'Skip this card for now'}
-            onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
             onPlay={() => userSpeak(current.id, current.word)}
+            onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
+            onPlayBoth={onSpeakBoth ? () => userSpeakBoth(current.id, current.word, buildPronunciationSyllables(current)) : undefined}
           />
         </div>
       )}

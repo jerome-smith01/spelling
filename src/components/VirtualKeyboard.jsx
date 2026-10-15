@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { TaskAltIcon, ChevronLeftIcon, ChevronRightIcon } from './ActionIcons';
 
 const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
@@ -8,7 +8,7 @@ const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
  * Letters-only on-screen keyboard (no digits or symbols), so the phone's
  * native keyboard and its spell check never come into play.
  */
-export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled, enterLabel = 'Check', onPlaySlow, onPlay, onPrev, prevDisabled, onNext, nextLabel = 'Next card' }) {
+export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDisabled, enterLabel = 'Check', onPlaySlow, onPlay, onPlayBoth, onPrev, prevDisabled, onNext, nextLabel = 'Next card' }) {
   const [shift, setShift] = useState(false);
 
   const press = (c) => {
@@ -40,11 +40,14 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
         </div>
       ))}
       <div className="vkb-row">
+        {onPlay && (
+          <button type="button" className="vkb-key vkb-audio" onClick={onPlay} aria-label="Hear the word at normal speed"><PlayIcon /></button>
+        )}
         {onPlaySlow && (
           <button type="button" className="vkb-key vkb-audio" onClick={onPlaySlow} aria-label="Hear the word syllable by syllable"><SlowPlayIcon /></button>
         )}
-        {onPlay && (
-          <button type="button" className="vkb-key vkb-audio" onClick={onPlay} aria-label="Hear the word at normal speed"><PlayIcon /></button>
+        {onPlayBoth && (
+          <button type="button" className="vkb-key vkb-audio" onClick={onPlayBoth} aria-label="Hear the word at normal speed, then slowly"><BothSpeedIcon size="1em" /></button>
         )}
         <button type="button" className={`vkb-key vkb-enter${enterLabel === 'Check' ? ' vkb-enter-icon' : ''}`} onClick={onEnter} disabled={enterDisabled}
           aria-label={enterLabel}>{enterLabel === 'Check' ? <TaskAltIcon size="1.5rem" /> : enterLabel}</button>

@@ -151,7 +151,7 @@ function PracticeView({ listId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listId, assigned]);
   const isGrid = schedule.prefs.view === 'grid';
-  const { speak, speakSyllables, activePlayback } = useSpeech();
+  const { speak, speakSyllables, speakBoth, activePlayback } = useSpeech();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const limited = kidMode || !!list?.readOnly;   // no deck settings or importing
   const [isImportExpanded, setIsImportExpanded] = useState(false);
@@ -192,6 +192,12 @@ function PracticeView({ listId }) {
     const rate = RATE_PRESETS[ratePreset] ?? RATE_PRESETS.normal;
     const pauseDurationMs = PAUSE_PRESETS[pausePreset] ?? PAUSE_PRESETS.short;
     speakSyllables(wordId, syllableTexts, { rate, pauseDurationMs });
+  };
+
+  const handleSpeakBoth = (wordId, wordText, syllableTexts) => {
+    const rate = RATE_PRESETS[ratePreset] ?? RATE_PRESETS.normal;
+    const pauseDurationMs = PAUSE_PRESETS[pausePreset] ?? PAUSE_PRESETS.short;
+    speakBoth(wordId, wordText, syllableTexts, { rate, pauseDurationMs });
   };
 
   return (
@@ -390,6 +396,7 @@ function PracticeView({ listId }) {
           onShowWord={showAllLettersForWord}
           onSpeak={speak}
           onSpeakSyllables={handleSpeakSyllables}
+          onSpeakBoth={handleSpeakBoth}
           activePlayback={activePlayback}
           onAttempts={handleAttempts}
           frictionByWord={frictionByWord}
@@ -400,6 +407,7 @@ function PracticeView({ listId }) {
           schedule={schedule}
           onSpeak={speak}
           onSpeakSyllables={handleSpeakSyllables}
+          onSpeakBoth={handleSpeakBoth}
           activePlayback={activePlayback}
           onAttempts={handleAttempts}
           frictionByWord={frictionByWord}

@@ -10,6 +10,16 @@ export function PlayIcon({ size = '1.25em' }) {
   );
 }
 
+// Normal then slow: the two glyphs side by side, shrunk so the pair fits a speaker button.
+export function BothSpeedIcon({ size = '1.25em' }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center' }} aria-hidden="true">
+      <PlayIcon size={size} />
+      <SlowPlayIcon size={size} />
+    </span>
+  );
+}
+
 export function SlowPlayIcon({ size = '1.25em' }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 -960 960 960"

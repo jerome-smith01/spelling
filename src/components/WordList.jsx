@@ -8,6 +8,7 @@ export default function WordList({
   onShowWord,
   onSpeak,
   onSpeakSyllables,
+  onSpeakBoth,
   activePlayback,
   onAttempts,
   frictionByWord = {}
@@ -43,6 +44,7 @@ export default function WordList({
           onShow={onShowWord}
           onSpeak={onSpeak}
           onSpeakSyllables={onSpeakSyllables}
+          onSpeakBoth={onSpeakBoth}
           activePlayback={activePlayback}
           onAttempts={onAttempts}
           friction={frictionByWord[word.word] || 0}

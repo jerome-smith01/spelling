@@ -187,9 +187,69 @@ export function useSpeech() {
     playSyllableAtIndex(0);
   }, [isSpeaking, activePlayback, stop]);
 
+  // Says the word at normal speed, then again slowly, syllable by syllable
+  const speakBoth = useCallback((wordId, wordText, syllablesArray, options = {}) => {
+    if (!wordText || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (isSpeaking && activePlayback.wordId === wordId) {
+      stop();
+      return;
+    }
+
+    stop();
+    const runId = activeRunIdRef.current;
+    const { rate = 0.75, pauseDurationMs = 450 } = options;
+    const live = () => activeRunIdRef.current === runId;
+
+    const slow = (i) => {
+      if (!live()) return;
+      if (i >= syllablesArray.length) {
+        setIsSpeaking(false);
+        setActivePlayback({ wordId: null, activeSyllableIndex: null, isSlow: false });
+        return;
+      }
+      const s = new SpeechSynthesisUtterance(syllablesArray[i]);
+      s.lang = 'en-US';
+      s.rate = rate;
+      s.onstart = () => {
+        if (live()) {
+          setIsSpeaking(true);
+          setActivePlayback({ wordId, activeSyllableIndex: i, isSlow: true });
+        }
+      };
+      s.onend = () => {
+        if (!live()) return;
+        timerRef.current = setTimeout(() => slow(i + 1), pauseDurationMs);
+      };
+      s.onerror = () => { if (live()) stop(); };
+      window.speechSynthesis.speak(s);
+    };
+
+    try {
+      const u = new SpeechSynthesisUtterance(wordText);
+      u.lang = 'en-US';
+      u.rate = 0.85;
+      u.onstart = () => {
+        if (live()) {
+          setIsSpeaking(true);
+          setActivePlayback({ wordId, activeSyllableIndex: null, isSlow: false });
+        }
+      };
+      u.onend = () => {
+        if (!live()) return;
+        if (!syllablesArray || syllablesArray.length === 0) { stop(); return; }
+        timerRef.current = setTimeout(() => slow(0), 500);
+      };
+      u.onerror = () => { if (live()) stop(); };
+      window.speechSynthesis.speak(u);
+    } catch {
+      stop();
+    }
+  }, [isSpeaking, activePlayback, stop]);
+
   return {
     speak,
     speakSyllables,
+    speakBoth,
     stop,
     isSpeaking,
     isSupported,

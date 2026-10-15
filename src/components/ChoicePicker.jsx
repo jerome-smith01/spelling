@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
-import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 
 /**
  * Smart-hiding level 1: the lesson's letters are blank and the student picks
@@ -9,7 +9,7 @@ import { PlayIcon, SlowPlayIcon } from './AudioIcons';
  * each position so friction and pattern stats keep working.
  */
 export default function ChoicePicker({
-  word, targets, groups, onSpeak, onSpeakSyllables, activePlayback, onAttempts, onResult, autoFocus = false
+  word, targets, groups, onSpeak, onSpeakSyllables, onSpeakBoth, activePlayback, onAttempts, onResult, autoFocus = false
 }) {
   const [picks, setPicks] = useState({}); // target index -> chosen group
   const firstRef = useRef(null);
@@ -60,6 +60,13 @@ export default function ChoicePicker({
             aria-label={speakingSlow ? `Stop audio for ${word.word}` : `Hear ${word.word} syllable by syllable`}>
             {speakingSlow ? '⏹️' : <SlowPlayIcon />}
           </button>
+          {onSpeakBoth && (
+            <button type="button" className="speaker-btn speaker-btn-both"
+              onClick={() => onSpeakBoth(word.id, word.word, buildPronunciationSyllables(word))}
+              aria-label={`Hear ${word.word} at normal speed, then slowly`}>
+              <BothSpeedIcon size="1em" />
+            </button>
+          )}
         </div>
         <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
           Pick the missing letters
@@ -77,7 +84,7 @@ export default function ChoicePicker({
                 const chosen = picks[ti];
                 return (
                   <div key={l.index} className="letter-box choice-blank" aria-hidden="true">
-                    {chosen ? (chosen[l.index - t.start] || '') : '?'}
+                    {chosen ? (chosen[l.index - t.start] || '') : ''}
                   </div>
                 );
               })}
