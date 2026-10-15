@@ -433,6 +433,18 @@
 .quiz-right { color: #16a34a; }
 .quiz-wrong { color: #dc2626; }
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem 1rem; }
+.settings-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 0.9rem; }
+.settings-section { display: flex; flex-direction: column; gap: 0.75rem; padding: 0.8rem 0.9rem; border: 1px solid var(--card-border); border-radius: var(--radius-lg); background: var(--card-bg); min-width: 0; }
+.settings-section-title { margin: 0; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground); }
+.settings-maint { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.settings-danger { color: #ef4444; }
+.view-toggle { display: flex; gap: 0.4rem; }
+.view-toggle-btn { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.45rem 0.6rem; border-radius: var(--radius-md); border: 1px solid var(--card-border); background: var(--card-bg); color: var(--foreground); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.view-toggle-btn[aria-pressed="true"] { background: var(--selected-color-bg); border-color: var(--selected-color-border); }
+.date-field { position: relative; display: flex; align-items: center; }
+.date-field input[type="text"] { width: 100%; padding-right: 2.4rem; }
+.date-field-btn { position: absolute; right: 0.2rem; display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border: 0; background: transparent; color: var(--foreground); cursor: pointer; border-radius: var(--radius-md); }
+.date-field-native { position: absolute; right: 0.2rem; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; padding: 0 !important; border: 0 !important; }
 .settings-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: var(--muted-foreground); }
 .settings-field input, .settings-field select { padding: 0.35rem 0.6rem; border-radius: var(--radius-md); border: 1px solid var(--card-border); background: var(--card-bg); color: var(--foreground); font-size: 0.85rem; }
 
@@ -461,9 +473,7 @@
 .deck-has-dock { padding-bottom: calc(17rem + env(safe-area-inset-bottom)); }
 /* One complete dashed border around the focused square (no outline/shadow ring on top of it) */
 .letter-box.input-mode:focus-within { border: 2px dashed var(--color-primary); box-shadow: none; }
-.letter-input:focus, .letter-input:focus-visible { outline: none; }
-.sess-dot-q { font-weight: 800; }
-.vkb-row { display: flex; gap: 0.35rem; justify-content: center; }
+.letter-input:focus, .letter-input:focus-visible { outline: none; }.vkb-row { display: flex; gap: 0.35rem; justify-content: center; }
 .vkb-row-inset { padding: 0 4%; }
 .vkb-key { flex: 1 1 0; min-width: 0; height: 3rem; border: 0; border-radius: var(--radius-md); background: var(--card-bg); color: var(--foreground); font-size: 1.25rem; font-weight: 500; font-family: inherit; box-shadow: 0 1px 0 var(--card-border); cursor: pointer; touch-action: manipulation; }
 .vkb-key:active { filter: brightness(0.92); }
@@ -481,8 +491,9 @@
 .deck-dot.harvey { width: auto; height: auto; background: none; border-radius: 50%; padding: 1px; }
 .deck-dot.harvey.current { border-color: var(--foreground); }
 .deck-level { display: inline-flex; align-items: center; gap: 0.35rem; }
-.choice-blank { border-style: dashed; color: var(--color-primary); }
-.choice-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.75rem; }
+/* Blank to fill: complete dashed border in the selected (green) color, like the typing blanks */
+.choice-blank { border: 2px dashed var(--selected-color); color: var(--foreground); }
+.choice-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
 .choice-btn { min-width: 3.5rem; min-height: 2.75rem; padding: 0.4rem 0.9rem; border-radius: var(--radius-md); border: 2px solid var(--card-border); background: var(--muted); color: var(--foreground); font-size: 1.25rem; font-weight: 800; font-family: inherit; cursor: pointer; }
 .choice-btn[aria-pressed="true"] { background: var(--color-primary); border-color: var(--color-primary); color: var(--primary-foreground); }
 .deck-hint { margin: 0; font-size: 0.9rem; color: var(--foreground); background: var(--muted); border-radius: var(--radius-md); padding: 0.5rem 0.75rem; }
@@ -622,7 +633,7 @@ button.sess-dot { cursor: pointer; }
 /* Date fields: our own calendar icon (the native one is dark-on-dark or missing), with the native
    picker trigger laid invisibly over it so a click still opens the calendar */
 input[type="date"] {
-  padding-right: 2.2rem;
+  padding-right: 0.25rem; /* the (invisible) picker trigger below fills the right 2.2rem, over our icon */
   background-repeat: no-repeat;
   background-position: right 0.6rem center;
   background-size: 1.1rem 1.1rem;
@@ -633,7 +644,10 @@ input[type="date"] {
 }
 input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0;
-  width: 1.6rem;
+  width: 2.2rem;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   cursor: pointer;
 }
 

@@ -219,9 +219,7 @@ export default function WordCardDeck({
               aria-current={isCurrent ? 'step' : undefined}
               onClick={() => goToCard(i)}
             >
-              {isCurrent && useChoice && !result && !st
-                ? <span className="sess-dot-q" aria-hidden="true">?</span>
-                : dotIcon[st]}
+              {dotIcon[st]}
             </button>
           );
         })}
@@ -287,6 +285,11 @@ export default function WordCardDeck({
                 onSpeak={userSpeak}
                 onSpeakSyllables={userSpeakSyllables}
                 onSpeakBoth={onSpeakBoth ? userSpeakBoth : undefined}
+                autoPlay={schedule.prefs.autoSpeak !== false}
+                onAutoPlayChange={(v) => schedule.setPrefs({ autoSpeak: v })}
+                onBack={goBack}
+                onSkip={skipCard}
+                canBack={session.idx > 0}
                 activePlayback={activePlayback}
                 onAttempts={onAttempts}
                 autoFocus

@@ -254,6 +254,37 @@ function PracticeView({ listId }) {
           testDate={schedule.testDate}
           setTestDate={schedule.setTestDate}
           onReset={schedule.resetProgress}
+          appearanceControls={<ColorPicker />}
+          speechControls={(
+            <div className="settings-grid">
+              <label className="settings-field">
+                Syllable speed
+                <select
+                  id="syllable-rate-select"
+                  value={ratePreset}
+                  onChange={(e) => handleRatePresetChange(e.target.value)}
+                  aria-label="Syllable pronunciation speed"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="slow">Slow</option>
+                  <option value="slowest">Slowest</option>
+                </select>
+              </label>
+              <label className="settings-field">
+                Pause between syllables
+                <select
+                  id="syllable-pause-select"
+                  value={pausePreset}
+                  onChange={(e) => handlePausePresetChange(e.target.value)}
+                  aria-label="Pause between syllables"
+                >
+                  <option value="short">Short (0.4s)</option>
+                  <option value="medium">Medium (0.65s)</option>
+                  <option value="long">Long (0.9s)</option>
+                </select>
+              </label>
+            </div>
+          )}
         />
 
         {/* Main Controls Row */}
@@ -271,83 +302,13 @@ function PracticeView({ listId }) {
             flexWrap: 'wrap'
           }}>
             {isGrid && (
-              <>
-                <HideControls
-                  denominator={denominator}
-                  onDenominatorChange={setDenominator}
-                  onHideAll={hideAllWords}
-                  onShowAll={showAllWords}
-                />
-                <div style={{
-                  height: '1.5rem',
-                  width: '1px',
-                  backgroundColor: 'var(--card-border)'
-                }} />
-              </>
+              <HideControls
+                denominator={denominator}
+                onDenominatorChange={setDenominator}
+                onHideAll={hideAllWords}
+                onShowAll={showAllWords}
+              />
             )}
-            <ColorPicker />
-            <div style={{
-              height: '1.5rem',
-              width: '1px',
-              backgroundColor: 'var(--card-border)'
-            }} />
-            {/* Syllable Rate Preset Dropdown — independent of pause length */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <label
-                htmlFor="syllable-rate-select"
-                style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: 'var(--muted-foreground)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>🐢</span> Speed:
-              </label>
-              <select
-                id="syllable-rate-select"
-                value={ratePreset}
-                onChange={(e) => handleRatePresetChange(e.target.value)}
-                className="speed-preset-select"
-                aria-label="Syllable pronunciation speed"
-              >
-                <option value="normal">Normal</option>
-                <option value="slow">Slow</option>
-                <option value="slowest">Slowest</option>
-              </select>
-            </div>
-
-            {/* Syllable Pause Preset Dropdown — independent of speech rate */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <label
-                htmlFor="syllable-pause-select"
-                style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: 'var(--muted-foreground)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>⏸️</span> Pause:
-              </label>
-              <select
-                id="syllable-pause-select"
-                value={pausePreset}
-                onChange={(e) => handlePausePresetChange(e.target.value)}
-                className="speed-preset-select"
-                aria-label="Pause between syllables"
-              >
-                <option value="short">Short (0.4s)</option>
-                <option value="medium">Medium (0.65s)</option>
-                <option value="long">Long (0.9s)</option>
-              </select>
-            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

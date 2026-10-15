@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
+import AutoplayToggle from './AutoplayToggle';
+import { ChevronLeftIcon, ChevronRightIcon, TaskAltIcon } from './ActionIcons';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 
 /**
@@ -9,7 +11,7 @@ import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
  * each position so friction and pattern stats keep working.
  */
 export default function ChoicePicker({
-  word, targets, groups, onSpeak, onSpeakSyllables, onSpeakBoth, activePlayback, onAttempts, onResult, autoFocus = false
+  word, targets, groups, onSpeak, onSpeakSyllables, onSpeakBoth, autoPlay, onAutoPlayChange, onBack, onSkip, canBack = false, activePlayback, onAttempts, onResult, autoFocus = false
 }) {
   const [picks, setPicks] = useState({}); // target index -> chosen group
   const firstRef = useRef(null);
@@ -68,12 +70,10 @@ export default function ChoicePicker({
             </button>
           )}
         </div>
-        <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
-          Pick the missing letters
-        </span>
+        <AutoplayToggle checked={autoPlay} onChange={onAutoPlayChange} />
       </div>
 
-      <div className="syllables-wrapper" data-tutorial="blanks">
+      <div className="syllables-wrapper" data-tutorial="blanks" style={{ justifyContent: 'center' }}>
         {word.syllables.map((syl, si) => (
           <React.Fragment key={si}>
             <div className="syllable-group">
@@ -94,6 +94,10 @@ export default function ChoicePicker({
         ))}
       </div>
 
+      <p style={{ margin: '0 0 -0.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+        Pick the missing letters
+      </p>
+
       {targets.map((t, ti) => (
         <div key={ti} className="choice-row" role="group"
           aria-label={targets.length > 1 ? `Choose the letters for blank ${ti + 1}` : 'Choose the missing letters'}>
@@ -112,11 +116,25 @@ export default function ChoicePicker({
         </div>
       ))}
 
-      <div className="word-card-footer" style={{ justifyContent: 'flex-end' }}>
-        <button type="button" className="btn-verify" onClick={check} disabled={!allPicked}
-          aria-label={`Check your answer for ${word.word}`}>
-          Check
-        </button>
+      <div className="word-card-footer">
+        <div className="deck-actions">
+          {onSkip && (
+            <button type="button" className="btn-nav" onClick={onBack} disabled={!canBack}
+              aria-label="Back to the previous card">
+              <ChevronLeftIcon /><span className="btn-nav-label">Back</span>
+            </button>
+          )}
+          <button type="button" className="btn-verify btn-check" onClick={check} disabled={!allPicked}
+            aria-label={`Check your answer for ${word.word}`}>
+            <TaskAltIcon /> Check
+          </button>
+          {onSkip && (
+            <button type="button" className="btn-nav" onClick={onSkip}
+              aria-label="Skip this card for now">
+              <span className="btn-nav-label">Skip</span><ChevronRightIcon />
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );
