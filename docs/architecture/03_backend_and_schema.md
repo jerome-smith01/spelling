@@ -138,7 +138,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 
 ### Crons and deletion
 - `0 13 * * SUN`: builds the weekly digests (one per learner who practised; the learner's owner pays for the AI summary, except class students, who get the template summary), sends the link-only email, then **purges** child profiles deleted more than 30 days ago (`purgeDeletedLearners`: attempts, scores, patterns, sessions, profile, digests, generation log, assignments, deck progress, invites, class membership, access, the learner row).
-- `0 14 * * TUE`: new-pattern candidates for the admin (unchanged).
+- The Tuesday new-pattern email (`0 14 * * TUE`) was removed in Oct 2026: the free Workers plan allows 5 cron triggers per account. Candidates are read on the admin portal instead.
 - **Known gap: deleting a Good Plus Fast account does not reach this database.** `DELETE /api/auth/account` removes the user from `good-plus-fast-db` only; the shadow `users` row, the user's lists, attempts and any children (and the access others have to them) stay in `spelling-tutor-db`. Children's data is therefore orphaned rather than deleted. A sweep (delete everything for users no longer in `good_plus_fast_db`, and unlink them from others' learners) is not built.
 
 ## API Endpoints (`spelling-tutor-api`)
