@@ -61,3 +61,36 @@ describe('DeckSettings view', () => {
     expect(screen.queryByLabelText(/Say each word/)).not.toBeInTheDocument();
   });
 });
+
+describe('DeckSettings grading bar', () => {
+  it('keeps "Move up at" at least 5% above "Drop back below"', () => {
+    const { setPrefs } = setup({ prefs: { ...DEFAULT_PREFS, advancePct: 90, dropPct: 80 } });
+    fireEvent.change(screen.getByRole('slider', { name: 'Move up at' }), { target: { value: '60' } });
+    expect(setPrefs).toHaveBeenCalledWith({ advancePct: 85 });
+  });
+
+  it('keeps "Drop back below" at least 5% under "Move up at"', () => {
+    const { setPrefs } = setup({ prefs: { ...DEFAULT_PREFS, advancePct: 70, dropPct: 60 } });
+    fireEvent.change(screen.getByRole('slider', { name: 'Drop back below' }), { target: { value: '95' } });
+    expect(setPrefs).toHaveBeenCalledWith({ dropPct: 65 });
+  });
+
+  it('shows saved values that are not multiples of 5 rounded to the nearest 5', () => {
+    setup({ prefs: { ...DEFAULT_PREFS, advancePct: 93, dropPct: 62 } });
+    expect(screen.getByRole('slider', { name: 'Move up at' })).toHaveValue('95');
+    expect(screen.getByRole('slider', { name: 'Drop back below' })).toHaveValue('60');
+  });
+
+  it('restores both thresholds to their defaults in one click', () => {
+    const { setPrefs } = setup({ prefs: { ...DEFAULT_PREFS, advancePct: 80, dropPct: 40 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Restore grading to defaults' }));
+    expect(setPrefs).toHaveBeenCalledWith({ advancePct: 100, dropPct: 60 });
+  });
+
+  it('explains the handles behind a ? button', () => {
+    setup();
+    expect(screen.queryByText(/moves up a level/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /What do the grading handles do/ }));
+    expect(screen.getByText(/moves up a level/)).toBeInTheDocument();
+  });
+});

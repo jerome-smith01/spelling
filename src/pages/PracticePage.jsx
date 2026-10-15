@@ -7,10 +7,12 @@ import { useSpeech } from '../hooks/useSpeech';
 import WordList from '../components/WordList';
 import WordCardDeck from '../components/WordCardDeck';
 import DeckSettings from '../components/DeckSettings';
+import { SpeedSlowestIcon, SpeedSlowIcon, SpeedNormalIcon } from '../components/SpeedIcons';
+import { PauseShortIcon, PauseMediumIcon, PauseLongIcon } from '../components/TimerIcons';
 import HideControls from '../components/HideControls';
 import ColorPicker from '../components/ColorPicker';
 import ImportSection from '../components/ImportSection';
-import WordListManager from '../components/WordListManager';
+import WordListManager, { DeleteListButton } from '../components/WordListManager';
 import NotFoundPage from './NotFoundPage';
 import { useLists } from '../hooks/useLists';
 import { enqueue } from '../services/attemptQueue';
@@ -236,6 +238,8 @@ function PracticeView({ listId }) {
         )}
       </div>
 
+      {settingsOpen && !limited && <WordListManager listId={listId} />}
+
       {settingsOpen && !limited && (
       <section aria-label="Practice settings" style={{
         backgroundColor: 'var(--card-bg)',
@@ -246,7 +250,6 @@ function PracticeView({ listId }) {
         flexDirection: 'column',
         gap: '0.9rem'
       }}>
-        <WordListManager listId={listId} />
         <div id="practice-settings" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <DeckSettings
           prefs={schedule.prefs}
@@ -255,34 +258,41 @@ function PracticeView({ listId }) {
           setTestDate={schedule.setTestDate}
           onReset={schedule.resetProgress}
           appearanceControls={<ColorPicker />}
+          deleteControl={<DeleteListButton listId={listId} />}
           speechControls={(
-            <div className="settings-grid">
-              <label className="settings-field">
+            <div className="settings-stack">
+              <div className="settings-field">
                 Syllable speed
-                <select
-                  id="syllable-rate-select"
-                  value={ratePreset}
-                  onChange={(e) => handleRatePresetChange(e.target.value)}
-                  aria-label="Syllable pronunciation speed"
-                >
-                  <option value="normal">Normal</option>
-                  <option value="slow">Slow</option>
-                  <option value="slowest">Slowest</option>
-                </select>
-              </label>
-              <label className="settings-field">
+                <div className="view-toggle" role="group" aria-label="Syllable pronunciation speed">
+                  {[
+                    { value: 'slowest', label: 'Slowest', Icon: SpeedSlowestIcon },
+                    { value: 'slow', label: 'Slow', Icon: SpeedSlowIcon },
+                    { value: 'normal', label: 'Normal', Icon: SpeedNormalIcon }
+                  ].map(({ value, label, Icon }) => (
+                    <button key={value} type="button" className="view-toggle-btn"
+                      aria-pressed={ratePreset === value}
+                      onClick={() => handleRatePresetChange(value)}>
+                      <Icon />{label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-field">
                 Pause between syllables
-                <select
-                  id="syllable-pause-select"
-                  value={pausePreset}
-                  onChange={(e) => handlePausePresetChange(e.target.value)}
-                  aria-label="Pause between syllables"
-                >
-                  <option value="short">Short (0.4s)</option>
-                  <option value="medium">Medium (0.65s)</option>
-                  <option value="long">Long (0.9s)</option>
-                </select>
-              </label>
+                <div className="view-toggle" role="group" aria-label="Pause between syllables">
+                  {[
+                    { value: 'short', label: 'Short', hint: '0.4s', Icon: PauseShortIcon },
+                    { value: 'medium', label: 'Medium', hint: '0.65s', Icon: PauseMediumIcon },
+                    { value: 'long', label: 'Long', hint: '0.9s', Icon: PauseLongIcon }
+                  ].map(({ value, label, hint, Icon }) => (
+                    <button key={value} type="button" className="view-toggle-btn"
+                      aria-pressed={pausePreset === value} title={`${label} (${hint})`}
+                      onClick={() => handlePausePresetChange(value)}>
+                      <Icon />{label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         />

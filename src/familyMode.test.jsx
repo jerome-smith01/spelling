@@ -108,7 +108,7 @@ describe('kid mode', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     open('/lists/default');
     await user.click(await screen.findByRole('button', { name: /Settings/ }));
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete deck' }));
     expect(await screen.findByRole('heading', { name: 'My decks' })).toBeInTheDocument();
     expect(screen.queryByLabelText(/3rd-Grade Default/)).not.toBeInTheDocument();
     expect(localStorage.getItem('spelling_tutor_default_hidden_v1')).toBe('1');
