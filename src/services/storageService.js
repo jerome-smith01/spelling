@@ -49,7 +49,7 @@ function safeSet(key, value) {
 }
 
 /**
- * Pick the legacy single-list text (v4 > v3 > v2), normalising known old defaults.
+ * Pick the legacy single-list text (v4 > v3 > v2), normalizing known old defaults.
  * Returns null when there is nothing custom worth migrating.
  */
 export function legacyWordsToMigrate(read = safeGet) {

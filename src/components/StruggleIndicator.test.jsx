@@ -14,7 +14,7 @@ describe('StruggleIndicator', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows a labelled flame at the threshold', () => {
+  it('shows a labeled flame at the threshold', () => {
     render(<StruggleIndicator friction={40} word="love" />);
     expect(screen.getByRole('img', { name: /tricky word: love/i })).toBeInTheDocument();
   });

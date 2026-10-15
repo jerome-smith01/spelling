@@ -8,7 +8,7 @@ const withWords = (words) => ({ testDate: null, words });
 const st = (level, mastered = false, extra = {}) => ({ level, mastered, due: TODAY, lastScore: null, advancedOn: null, attempts: 0, ...extra });
 
 describe('stagesOf', () => {
-  it('reports the stage of every practised word, clamped to the ladder', () => {
+  it('reports the stage of every practiced word, clamped to the ladder', () => {
     expect(stagesOf(withWords({ cat: st(3), dog: st(5, true), odd: st(99), none: { mastered: false } }))).toEqual({
       cat: { level: 3, mastered: false }, dog: { level: 5, mastered: true }, odd: { level: MAX_LEVEL, mastered: false }, none: { level: 1, mastered: false }
     });
@@ -18,7 +18,7 @@ describe('stagesOf', () => {
 });
 
 describe('seedRemoteStages', () => {
-  it('starts a word this device has never practised where the server has it', () => {
+  it('starts a word this device has never practiced where the server has it', () => {
     const next = seedRemoteStages(empty(), { dog: { level: 3, mastered: false } }, ctx);
     expect(next.words.dog).toMatchObject({ level: 3, mastered: false, due: TODAY });
   });

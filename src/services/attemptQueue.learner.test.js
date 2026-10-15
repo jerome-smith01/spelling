@@ -39,7 +39,7 @@ describe('active learner', () => {
 });
 
 describe('attemptQueue with learners', () => {
-  it('stamps attempts with the child who practised, and leaves the user\'s own unstamped', () => {
+  it('stamps attempts with the child who practiced, and leaves the user\'s own unstamped', () => {
     enqueue([attempt(0)]);
     setActiveLearner({ id: KID_A, kid: true });
     enqueue([attempt(1)]);

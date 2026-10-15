@@ -112,24 +112,24 @@ describe('Join page', () => {
 });
 
 describe('Family page: shared children and students', () => {
-  it('a shared child and a linked student can be followed but not practised as, edited or deleted', async () => {
+  it('a shared child and a linked student can be followed but not practiced as, edited or deleted', async () => {
     h.learners = [ME, OWN, SHARED, STUDENT];
     open('/family');
     const zed = await screen.findByRole('listitem', { name: 'Child Zed' });
     expect(within(zed).getByText('Shared with you')).toBeInTheDocument();
-    expect(within(zed).queryByRole('button', { name: /Practise as/ })).not.toBeInTheDocument();
+    expect(within(zed).queryByRole('button', { name: /Practice as/ })).not.toBeInTheDocument();
     expect(within(zed).queryByRole('button', { name: /Edit|Delete|Share/ })).not.toBeInTheDocument();
     expect(within(zed).getByRole('button', { name: "See Zed's progress" })).toBeInTheDocument();
     const sam = screen.getByRole('listitem', { name: 'Child Sam' });
     expect(within(sam).getByText('Student')).toBeInTheDocument();
-    expect(within(sam).queryByRole('button', { name: /Practise as/ })).not.toBeInTheDocument();
+    expect(within(sam).queryByRole('button', { name: /Practice as/ })).not.toBeInTheDocument();
     // The child you added keeps everything
     const maya = screen.getByRole('listitem', { name: 'Child Maya' });
-    expect(within(maya).getByRole('button', { name: 'Practise as Maya' })).toBeInTheDocument();
+    expect(within(maya).getByRole('button', { name: 'Practice as Maya' })).toBeInTheDocument();
     expect(within(maya).getByRole('button', { name: 'Share Maya' })).toBeInTheDocument();
   });
 
-  it('"Who is practising" offers only children you can practise as', async () => {
+  it('"Who is practicing" offers only children you can practice as', async () => {
     const user = userEvent.setup();
     h.learners = [ME, OWN, SHARED, STUDENT];
     open('/who');

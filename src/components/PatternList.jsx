@@ -9,7 +9,7 @@ const card = {
 
 /**
  * Spelling patterns the child keeps missing (for the parent). Active patterns have
- * a "Read report" button; patterns still being watched are only summarised.
+ * a "Read report" button; patterns still being watched are only summarized.
  */
 export default function PatternList({ patterns, onOpenReport }) {
   const active = (patterns || []).filter((p) => p.status === 'active');

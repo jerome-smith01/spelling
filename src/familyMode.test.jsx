@@ -68,7 +68,7 @@ describe('kid mode', () => {
     // Back on the decks: their own progress, but no Profile or Family tabs and no Log out
     const links = within(await nav()).getAllByRole('link').map(a => a.textContent);
     expect(links).toEqual(['Decks', 'Progress']);
-    expect(await screen.findByRole('link', { name: /Maya is practising/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /Maya is practicing/ })).toBeInTheDocument();
     expect(screen.queryByText('Account Settings')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '+ New deck' })).not.toBeInTheDocument();
   });
@@ -82,7 +82,7 @@ describe('kid mode', () => {
     }
   });
 
-  it('hides deck settings, word import and the speed panel while a child practises', async () => {
+  it('hides deck settings, word import and the speed panel while a child practices', async () => {
     setActiveLearner({ id: 'kid-maya', kid: true });
     fam.assigned = [ASSIGNED];
     open(`/lists/${ASSIGNED.list_id}`);
@@ -206,12 +206,12 @@ describe('kid mode', () => {
 });
 
 describe('Family page', () => {
-  it('lists the children and starts kid mode with "Practise as"', async () => {
+  it('lists the children and starts kid mode with "Practice as"', async () => {
     const user = userEvent.setup();
     open('/family');
     const maya = await screen.findByRole('listitem', { name: 'Child Maya' });
     expect(within(maya).getByText('Grade 2')).toBeInTheDocument();
-    await user.click(within(maya).getByRole('button', { name: 'Practise as Maya' }));
+    await user.click(within(maya).getByRole('button', { name: 'Practice as Maya' }));
     expect(getActiveLearner()).toEqual({ id: 'kid-maya', kid: true });
   });
 

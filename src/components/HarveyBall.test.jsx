@@ -8,7 +8,7 @@ import HarveyBall from './HarveyBall';
 describe('HarveyBall', () => {
   afterEach(cleanup);
 
-  it('is a labelled image when given a label', () => {
+  it('is a labeled image when given a label', () => {
     render(<HarveyBall quarters={2} label="Level 3 of 4" />);
     const img = screen.getByRole('img', { name: 'Level 3 of 4' });
     expect(img).toHaveAttribute('data-quarters', '2');

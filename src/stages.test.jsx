@@ -71,7 +71,7 @@ describe('stages of an assigned list', () => {
     expect(h.pushes).toEqual([]);                   // a stale device must not overwrite newer progress
   });
 
-  it('practising reports the new stage (after a short pause), and carries the server\'s words along', async () => {
+  it('practicing reports the new stage (after a short pause), and carries the server\'s words along', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);   // cards come in list order: cat first
     const user = userEvent.setup();
     h.remote = { dog: { level: 5, mastered: true } };   // finished on another device: not due here
@@ -116,7 +116,7 @@ describe('stages of an assigned list', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('a list that is not assigned to whoever is practising is never reported', async () => {
+  it('a list that is not assigned to whoever is practicing is never reported', async () => {
     h.assigned = [];
     setActiveLearner({ id: null });   // a child cannot open an unassigned list at all (see familyMode.test.jsx)
     localStorage.setItem('spelling_tutor_lists_v5', JSON.stringify([{ id: LIST, name: 'Mine', wordsRaw: 'cat\ndog', isDefault: 0, updatedAt: 'x', dirty: true, deleted: false, focusGroups: [], hints: [] }]));
@@ -144,7 +144,7 @@ describe('strict stages', () => {
     expect(strict.result.current.stateFor('cat').level).toBe(1);
   });
 
-  it('mergeRemote starts words this device has not practised and leaves the ones it has', () => {
+  it('mergeRemote starts words this device has not practiced and leaves the ones it has', () => {
     setActiveLearner({ id: null });
     const { result } = renderHook(() => useDeckSchedule('l3', ['cat', 'dog', 'sun'], { strict: true }));
     act(() => { result.current.commit('dog', 100); });

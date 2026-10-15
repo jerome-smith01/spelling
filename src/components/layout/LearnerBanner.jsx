@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLearner } from '../../hooks/useLearner';
 
-/** A grown-up is viewing or practising as a child (not kid mode): say so, with a way back. */
+/** A grown-up is viewing or practicing as a child (not kid mode): say so, with a way back. */
 export default function LearnerBanner() {
   const { activeLearner, kidMode, switchTo } = useLearner();
   const navigate = useNavigate();

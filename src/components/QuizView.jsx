@@ -41,7 +41,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorial.decided, tutorial.enabled]);
 
-  // Speak each new word (small delay so the previous utterance is cancelled cleanly)
+  // Speak each new word (small delay so the previous utterance is canceled cleanly)
   useEffect(() => {
     if (!word) return undefined;
     const t = setTimeout(() => onSpeak(word.id, word.word), 350);

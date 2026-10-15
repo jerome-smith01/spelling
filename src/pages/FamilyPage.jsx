@@ -23,14 +23,14 @@ const FALLBACK_AVATARS = ['🦊', '🐼', '🐸', '🦁', '🐙', '🦄', '🐢'
 
 /** "today", "yesterday", "3 days ago", or "not yet" for a 'YYYY-MM-DD HH:MM:SS' UTC time. */
 export function lastPracticedText(ts, now = new Date()) {
-  if (!ts) return 'Has not practised yet';
+  if (!ts) return 'Has not practiced yet';
   const then = new Date(`${String(ts).replace(' ', 'T')}Z`);
-  if (Number.isNaN(then.getTime())) return 'Has not practised yet';
+  if (Number.isNaN(then.getTime())) return 'Has not practiced yet';
   const days = Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
     Date.UTC(then.getUTCFullYear(), then.getUTCMonth(), then.getUTCDate())) / 86_400_000);
-  if (days <= 0) return 'Last practised today';
-  if (days === 1) return 'Last practised yesterday';
-  return `Last practised ${days} days ago`;
+  if (days <= 0) return 'Last practiced today';
+  if (days === 1) return 'Last practiced yesterday';
+  return `Last practiced ${days} days ago`;
 }
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -423,7 +423,7 @@ export default function FamilyPage() {
         </button>
       </div>
       <p style={{ margin: 0, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
-        Children do not need their own login. Pick &ldquo;Practise as&rdquo; on a child and the app locks to their profile.
+        Children do not need their own login. Pick &ldquo;Practice as&rdquo; on a child and the app locks to their profile.
         We only keep a first name and last initial (like Ava S.), an avatar and a grade.
         {/* TODO(owner): link the Spelling Tutor privacy page "Children" section here once it is written (plan decision D11). */}
       </p>
@@ -481,7 +481,7 @@ export default function FamilyPage() {
                 )}
                 <div className="dash-actions">
                   {practiceIds.has(k.id) && (
-                    <button type="button" className="btn-verify" onClick={() => practiceAs(k.id)} aria-label={`Practise as ${k.display_name}`}>Practise as</button>
+                    <button type="button" className="btn-verify" onClick={() => practiceAs(k.id)} aria-label={`Practice as ${k.display_name}`}>Practice as</button>
                   )}
                   {k.can_assign && (
                     <button type="button" className="btn-secondary-sm" onClick={() => setAssigning(k)} aria-label={`Assign a list to ${k.display_name}`}>Assign</button>
@@ -551,7 +551,7 @@ export default function FamilyPage() {
 
       <PinSettings pinSet={pinSet} onChanged={refresh} />
       <p style={{ margin: 0, fontSize: '0.85rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <Link to="/who">Who&apos;s practising?</Link>
+        <Link to="/who">Who&apos;s practicing?</Link>
         {myself && <Link to={`/family/${myself.id}/report`}>Your own progress report (PDF or HTML)</Link>}
       </p>
 

@@ -6,12 +6,12 @@ import {
 } from '../services/activeLearner';
 
 /**
- * Family accounts: who is practising on this device, and the kid-mode lock.
+ * Family accounts: who is practicing on this device, and the kid-mode lock.
  *
  *  - `learners`     the learners this user can act for (themselves first, then children)
- *  - `activeLearner` the one practising now (the user themselves unless a child is chosen)
- *  - `kidMode`      a child is practising and the adult screens are locked
- *  - `switchTo(id)` practise as a child, in kid mode (id null = back to the user, needs the PIN if kid mode is on)
+ *  - `activeLearner` the one practicing now (the user themselves unless a child is chosen)
+ *  - `kidMode`      a child is practicing and the adult screens are locked
+ *  - `switchTo(id)` practice as a child, in kid mode (id null = back to the user, needs the PIN if kid mode is on)
  *  - `unlock(pin)`  leave kid mode; resolves true on success
  *
  * The PIN is a soft lock for a child on a parent's device. The server checks it, but kid mode
@@ -59,7 +59,7 @@ export function LearnerProvider({ children }) {
       const cur = getActiveLearner();
       if (cur.id && !next.learners.some(l => l.id === cur.id)) storeActiveLearner({ id: null });
     } catch {
-      // Offline or signed out: keep the cached list so a child can still practise
+      // Offline or signed out: keep the cached list so a child can still practice
     } finally {
       setLoaded(true);
     }
@@ -78,7 +78,7 @@ export function LearnerProvider({ children }) {
       setLoaded(true);
     } else {
       // Loading, expired, or anonymous because the app launched offline: keep the cached family and the
-      // chosen child, so a child can keep practising offline (their attempts stay queued for them)
+      // chosen child, so a child can keep practicing offline (their attempts stay queued for them)
       setLoaded(true);
     }
   }, [status, refresh]);
@@ -120,7 +120,7 @@ export function useLearner() {
   return useContext(LearnerContext) || NO_FAMILY;
 }
 
-/** Children a grown-up can practise as: child profiles they own, or are a guardian of. */
+/** Children a grown-up can practice as: child profiles they own, or are a guardian of. */
 export const childrenOf = (learners) =>
   learners.filter(l => l.kind === 'managed' && (l.role === 'owner' || l.role === 'guardian'));
 

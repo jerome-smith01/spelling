@@ -107,7 +107,7 @@ export function useDeckSchedule(listId, wordTexts, { strict = false } = {}) {
     });
   }, []);
 
-  /** Start words this device has not practised where the server has them (another device); never changes a word already here. */
+  /** Start words this device has not practiced where the server has them (another device); never changes a word already here. */
   const mergeRemote = useCallback((remote) => {
     const next = seedRemoteStages(progressRef.current, remote, { prefs, today });
     if (next === progressRef.current) return false;

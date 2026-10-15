@@ -56,7 +56,7 @@ function readAssignedCache(learnerId) {
   }
 }
 
-// An assigned list as a read-only list: the owner edits it, the learner only practises it
+// An assigned list as a read-only list: the owner edits it, the learner only practices it
 const toList = (a) => ({
   id: a.list_id, name: a.list_name, wordsRaw: a.words_raw, isDefault: 0, updatedAt: a.created_at,
   dirty: false, deleted: false, focusGroups: a.focus_groups || [], hints: a.hints || [],
@@ -136,7 +136,7 @@ export function ListsProvider({ children }) {
     );
   }, [commit]);
 
-  // Lists assigned to whoever is practising (the user, or the chosen child). Cached for offline use.
+  // Lists assigned to whoever is practicing (the user, or the chosen child). Cached for offline use.
   const refreshAssigned = useCallback(async () => {
     if (authRef.current.status !== 'authenticated') return;
     try {
@@ -232,7 +232,7 @@ export function ListsProvider({ children }) {
   const visible = useMemo(() => (kidMode ? [] : visibleLists(lists)), [lists, kidMode]);
 
   const assignedLists = useMemo(() => assigned.map(toList), [assigned]);
-  /** The open assignment of this list to whoever is practising, or undefined. */
+  /** The open assignment of this list to whoever is practicing, or undefined. */
   const assignmentFor = useCallback((id) => assigned.find(a => a.list_id === id), [assigned]);
 
   const getList = useCallback(

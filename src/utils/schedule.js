@@ -186,7 +186,7 @@ export function applyQuizResult(progress, word, pct, { prefs = DEFAULT_PREFS, to
 
 /**
  * Each word's stage as the server stores it for an assigned list: { word: { level, mastered } }.
- * Only words that have been practised have a stage.
+ * Only words that have been practiced have a stage.
  */
 export function stagesOf(progress) {
   const out = {};
@@ -197,9 +197,9 @@ export function stagesOf(progress) {
 }
 
 /**
- * Carry on from stages stored on the server (another device): a word this device has never practised starts
+ * Carry on from stages stored on the server (another device): a word this device has never practiced starts
  * where the server has it. A word this device already has keeps its own stage, which may be lower than the
- * server's (progress can go down, and the device that last practised is the one that counts).
+ * server's (progress can go down, and the device that last practiced is the one that counts).
  * Returns the same object when nothing changed.
  */
 export function seedRemoteStages(progress, remote, { prefs = DEFAULT_PREFS, today } = {}) {

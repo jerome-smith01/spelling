@@ -6,7 +6,7 @@
  * POST /api/spelling/attempts in chunks. Each attempt carries a client_id, so a
  * retried batch is ignored by the server and scores are never double-counted.
  *
- * Family accounts: each attempt is stamped with the learner who practised (`learner_id`,
+ * Family accounts: each attempt is stamped with the learner who practiced (`learner_id`,
  * absent = the user themselves). A flush sends one request per learner, naming that
  * learner in a header, so a child's practice can never land on a sibling or the parent.
  */
@@ -100,7 +100,7 @@ export async function flush({ keepalive = false } = {}) {
         if (err.status === 400) {
           console.error('Dropping rejected attempts', err);
         } else if ((err.status === 404 || err.status === 403) && learnerId) {
-          // The child profile was deleted, this account was unlinked, or it may look but not practise
+          // The child profile was deleted, this account was unlinked, or it may look but not practice
           // (a teacher viewing a student): these can never be saved, and must not block the queue
           console.error('Dropping attempts the server will not accept for this learner', err);
         } else {

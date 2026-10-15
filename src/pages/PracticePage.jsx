@@ -65,7 +65,7 @@ function PracticeView({ listId }) {
   const [searchParams] = useSearchParams();
   const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
   const { createList, atListLimit, assignmentFor, refreshAssigned } = useLists();
-  const assignment = assignmentFor?.(listId);   // this list was assigned to whoever is practising
+  const assignment = assignmentFor?.(listId);   // this list was assigned to whoever is practicing
   usePageTitle(list ? `${list.name} — Practice` : 'Practice');
 
   useEffect(() => {

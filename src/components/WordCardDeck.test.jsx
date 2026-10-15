@@ -171,7 +171,7 @@ describe('WordCardDeck', () => {
     }
   });
 
-  it('a letter missed twice gets a focus retry, then one normal try, then a grey check dot', async () => {
+  it('a letter missed twice gets a focus retry, then one normal try, then a gray check dot', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99); // [kitten, puppy]
     const user = userEvent.setup();
     render(<Harness />);

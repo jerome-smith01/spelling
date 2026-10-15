@@ -13,13 +13,13 @@ export function inviteSentence(p) {
   const what = [p.can_view_reports && 'see progress and reports', p.can_assign && 'assign lists'].filter(Boolean).join(' and ');
   const role = p.role === 'teacher' ? 'a teacher' : 'a parent or guardian';
   if (p.kind === 'share_child') {
-    return `${p.inviter} wants to share ${p.child_name || 'a child'} with you as ${role}. You will be able to ${what || 'see that they are practising'}.`;
+    return `${p.inviter} wants to share ${p.child_name || 'a child'} with you as ${role}. You will be able to ${what || 'see that they are practicing'}.`;
   }
   if (p.kind === 'join_class') {
     const cls = p.class_name ? ` “${p.class_name}”` : '';
-    return `${p.inviter} invites you to join their class${cls}. Your teacher will be able to ${what || 'see that you are practising'}. You can leave the class at any time.`;
+    return `${p.inviter} invites you to join their class${cls}. Your teacher will be able to ${what || 'see that you are practicing'}. You can leave the class at any time.`;
   }
-  return `${p.inviter} wants to follow your spelling practice as ${role}. They will be able to ${what || 'see that you are practising'}. You can remove them at any time.`;
+  return `${p.inviter} wants to follow your spelling practice as ${role}. They will be able to ${what || 'see that you are practicing'}. You can remove them at any time.`;
 }
 
 /** Route: /join and /join/:code. Enter a code, see exactly what it does, then accept. Grown-ups only. */

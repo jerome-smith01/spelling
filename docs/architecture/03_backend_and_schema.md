@@ -66,7 +66,7 @@ flowchart LR
 - `client_id` (TEXT, nullable): client-generated id; partial unique index `(user_id, client_id)` makes retried batches idempotent (migration `0002`)
 - `session_id` (TEXT, nullable): one visit to a list; scoring counts the last answer per letter per session (migration `0003`)
 - `typed` (TEXT, nullable): the letter the child actually entered (for reversals) (migration `0003`)
-- `learner_id` (TEXT): who practised (migration `0003`). Equals `user_id` for a self learner; a child profile's id when an adult records for them. `user_id` is always the logged-in account that recorded it
+- `learner_id` (TEXT): who practiced (migration `0003`). Equals `user_id` for a self learner; a child profile's id when an adult records for them. `user_id` is always the logged-in account that recorded it
 
 ### `word_scores`
 *Aggregated struggle metrics per word per learner, updated automatically on batch practice submission. Rebuilt in migration `0012` to key on the learner.*
@@ -90,7 +90,7 @@ See [`05_ai_engine.md`](./05_ai_engine.md). `practice_sessions(id, learner_id, l
 - `syllable_cache(word PK, split, created_at)` (`0007`): one row per word the AI split, shared by all users; `split = ''` means the answer failed validation.
 - `photo_import_log(id, user_id, ip_hash, created_at)` (`0008`): per-user daily and per-IP hourly photo limits. The IP is stored hashed; the photo is never stored.
 - `learner_profiles(learner_id PK, grade, updated_at)` (`0009`): student grade 0 (K) to 8, default 3. `pattern_stats` gains `last_practiced_at`. `word_generation_log(id, learner_id, pattern, accepted_json, rejected_json, created_at)`: daily cap and a record of rejected words.
-- `pattern_candidates(pattern, source, example_words_json, count, first_seen, last_seen, handled_at)` (`0010`, `handled_at` added in `0011`): letter groups the tagger doesn't recognise (`source` = `untagged` | `photo`). Aggregates only, no learner ids. Shown on the admin portal's Spelling patterns page; `handled_at` hides a group until it is seen again.
+- `pattern_candidates(pattern, source, example_words_json, count, first_seen, last_seen, handled_at)` (`0010`, `handled_at` added in `0011`): letter groups the tagger doesn't recognize (`source` = `untagged` | `photo`). Aggregates only, no learner ids. Shown on the admin portal's Spelling patterns page; `handled_at` hides a group until it is seen again.
 
 ### Who a request acts for (family accounts)
 The auth middleware (`src/index.ts`, `lib/learners.ts`) runs five steps: read the session, look it up in `good_plus_fast_db`, upsert the shadow user **and the user's own `self` learner** (one batch), resolve the learner (`resolveLearner`: header `X-Spelling-Learner`, default the user), then set `userId`, `learnerId` and `access` on the context. `resolveLearner` joins `learner_access` to `learners` and returns nothing for a missing, malformed, deleted or unlinked learner: the response is **404**, identical to a learner that never existed.
@@ -102,7 +102,7 @@ Two kinds of route:
 Lists, digest preferences, photo import, auto-syllables and the **AI budget** stay with the logged-in user whichever learner is chosen: one parent's children share one budget. A test walks the whole route table and asserts every learner-level route returns 404 for a learner the caller is not linked to, so a new route cannot skip the check.
 
 ### `learners` / `learner_access` (migration `0012`, family accounts F1)
-See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_classroom_plan.md). A *user* logs in; a *learner* practises.
+See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_classroom_plan.md). A *user* logs in; a *learner* practices.
 - `learners(id PK, kind 'self'|'managed', owner_user_id, display_name, avatar, created_at, deleted_at)`: every user is their own `self` learner (`id = users.id`), created by the auth middleware on each request (`INSERT OR IGNORE`). `managed` child profiles arrive in F2. `deleted_at` hides a learner at once.
 - `learner_access(learner_id, user_id, role 'self'|'owner'|'guardian'|'teacher', can_assign, can_view_reports, created_at)`, primary key `(learner_id, user_id)`: which users may act for which learner.
 - Requests pick a learner with the **`X-Spelling-Learner`** header (none = the user's self learner). The auth middleware resolves it (`lib/learners.ts` → `resolveLearner`); no access, a deleted learner or a malformed id returns **404** on every route, the same as a learner that does not exist. Practice data routes (attempts, scores, patterns, profile, digest/latest) use the learner; lists, digest prefs, syllables, photo import and AI quotas stay with the logged-in user. `can_view_reports = 0` → 403 on `/patterns/:p/analyze` and `/digest/latest`.
@@ -117,7 +117,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 - Limits: 8 child profiles per adult (200 once they have a class); 5 classes per teacher; 40 students per class. Deleting a child or class student hides them at once and the cron purges all their data after 30 days (`purgeDeletedLearners`).
 
 ### `weekly_digests` / `digest_prefs` (migration `0004`)
-`weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period (built for children too; the learner's owner pays for the AI summary). The weekly job sends **one link-only email per opted-in adult** who can view any of them (including a teacher whose class practised): a link to the dashboard (`/spelling/app/family`, plus `/classes` for a teacher) and the unsubscribe link, with no names and no numbers. The details are in the app, where reports export as PDF or HTML. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
+`weekly_digests(learner_id, week_start, digest_json, created_at)`, primary key `(learner_id, week_start)`: one digest per learner per 7-day period (built for children too; the learner's owner pays for the AI summary). The weekly job sends **one link-only email per opted-in adult** who can view any of them (including a teacher whose class practiced): a link to the dashboard (`/spelling/app/family`, plus `/classes` for a teacher) and the unsubscribe link, with no names and no numbers. The details are in the app, where reports export as PDF or HTML. `digest_prefs(user_id, email_opt_in, unsubscribe_token, updated_at)`: the weekly-email opt-in (default off) and the token used by the unsubscribe link.
 
 ---
 
@@ -137,7 +137,7 @@ See [`../action_plans/family_and_classroom_plan.md`](../action_plans/family_and_
 `learnerSummaries` and assignment progress (`lib/supervisor.ts`, `lib/assignments.ts`) are set-based: the week's totals count a letter as correct only if it was never missed in the visit (`GROUP BY learner, session, word, position` with `MIN(correct)`), so a class overview of 40 students costs a handful of queries (a test asserts under 25), well inside a Worker's subrequest limit. Single-learner paths call the same functions with one id.
 
 ### Crons and deletion
-- `0 13 * * SUN`: builds the weekly digests (one per learner who practised; the learner's owner pays for the AI summary, except class students, who get the template summary), sends the link-only email, then **purges** child profiles deleted more than 30 days ago (`purgeDeletedLearners`: attempts, scores, patterns, sessions, profile, digests, generation log, assignments, deck progress, invites, class membership, access, the learner row).
+- `0 13 * * SUN`: builds the weekly digests (one per learner who practiced; the learner's owner pays for the AI summary, except class students, who get the template summary), sends the link-only email, then **purges** child profiles deleted more than 30 days ago (`purgeDeletedLearners`: attempts, scores, patterns, sessions, profile, digests, generation log, assignments, deck progress, invites, class membership, access, the learner row).
 - The Tuesday new-pattern email (`0 14 * * TUE`) was removed in Oct 2026: the free Workers plan allows 5 cron triggers per account. Candidates are read on the admin portal instead.
 - **Known gap: deleting a Good Plus Fast account does not reach this database.** `DELETE /api/auth/account` removes the user from `good-plus-fast-db` only; the shadow `users` row, the user's lists, attempts and any children (and the access others have to them) stay in `spelling-tutor-db`. Children's data is therefore orphaned rather than deleted. A sweep (delete everything for users no longer in `good_plus_fast_db`, and unlink them from others' learners) is not built.
 

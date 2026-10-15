@@ -201,6 +201,6 @@ Fill = levels **passed**:
 
 ## Open items
 - Pick the vision model (Workers AI vs Claude API) by cost, accuracy on real worksheets, and data-handling terms.
-- Choose the graded word list source for Phase 4 (licence, grade coverage).
+- Choose the graded word list source for Phase 4 (license, grade coverage).
 - Mobile table examples: port from the other app's `07_table_patterns.md` when Phase 4 starts.
 - Tutorial steps for smart hiding (choice picker, Harvey ball) — add last, per the tutorial-mode rule.

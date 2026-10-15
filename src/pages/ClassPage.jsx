@@ -18,7 +18,7 @@ const card = { backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-
 const isoDay = (d) => d.toISOString().slice(0, 10);
 const COLUMNS = [
   { key: 'name', label: 'Student' },
-  { key: 'last', label: 'Last practised' },
+  { key: 'last', label: 'Last practiced' },
   { key: 'sessions', label: 'Sessions this week' },
   { key: 'accuracy', label: 'Letters correct' },
   { key: 'tricky', label: 'Tricky words' }
@@ -180,7 +180,7 @@ export default function ClassPage() {
                 {shown.map(s => (
                   <tr key={s.id} aria-label={`Student ${s.display_name}`}>
                     <th scope="row"><span aria-hidden="true">{s.avatar}</span> {s.display_name}</th>
-                    <td>{lastPracticedText(s.summary.last_practiced).replace('Last practised ', '').replace('Has not practised yet', 'Not yet')}</td>
+                    <td>{lastPracticedText(s.summary.last_practiced).replace('Last practiced ', '').replace('Has not practiced yet', 'Not yet')}</td>
                     <td>{s.summary.sessions_7d}</td>
                     <td>{s.summary.accuracy_7d === null ? '—' : `${s.summary.accuracy_7d}%`}</td>
                     <td>{s.summary.struggling_words.length ? s.summary.struggling_words.join(', ') : '—'}</td>

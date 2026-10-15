@@ -53,7 +53,7 @@ const csvCell = (v) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export const CSV_HEADER = ['Student', 'Last practised', 'Sessions this week', 'Days practised', 'Letters correct %', 'Words mastered', 'Tricky words', 'Patterns to work on', 'Assignments'];
+export const CSV_HEADER = ['Student', 'Last practiced', 'Sessions this week', 'Days practiced', 'Letters correct %', 'Words mastered', 'Tricky words', 'Patterns to work on', 'Assignments'];
 
 export function classCsv(overview, { filter = 'all', sort = 'name' } = {}) {
   const rows = visibleStudents([...overview.students], filter, sort).map(s => [
@@ -90,7 +90,7 @@ export function renderClassReportHtml(overview, { studentReports = [], today = n
   const quiet = students.filter(s => s.summary.sessions_7d === 0);
   const quietLine = quiet.length
     ? `<p style="font-size:13px"><strong>No practice this week:</strong> ${esc(quiet.map(s => s.display_name).join(', '))}</p>`
-    : '<p class="empty">Everyone practised this week.</p>';
+    : '<p class="empty">Everyone practiced this week.</p>';
 
   const appended = studentReports.map(r => `<div class="student-page">${renderReportBody(r)}</div>`).join('\n');
 
@@ -110,7 +110,7 @@ ${quietLine}
 ${patterns}
 
 <h2>Students</h2>
-<table class="class-table"><thead><tr><th>Student</th><th>Last practised</th><th>Sessions</th><th>Letters correct</th><th>Mastered</th><th>Tricky words</th><th>Patterns</th><th>Assignments</th></tr></thead>
+<table class="class-table"><thead><tr><th>Student</th><th>Last practiced</th><th>Sessions</th><th>Letters correct</th><th>Mastered</th><th>Tricky words</th><th>Patterns</th><th>Assignments</th></tr></thead>
 <tbody>${rows || '<tr><td colspan="8">No students yet.</td></tr>'}</tbody></table>
 <footer>Made with Spelling Tutor by Good Plus Fast.</footer>
 </div>
