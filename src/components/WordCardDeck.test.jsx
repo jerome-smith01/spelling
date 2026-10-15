@@ -26,7 +26,11 @@ const fill = async (user, letters) => {
 };
 
 describe('WordCardDeck', () => {
-  beforeEach(() => localStorage.clear());
+  // New words start at level 2 here (1 in 2 letters visible, typed); level 1 is the pick-the-letters exercise
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('spelling_tutor_deck_prefs_v1', JSON.stringify({ startLevel: 2, levelScheme: 2 }));
+  });
   afterEach(cleanup);
 
   const dots = () => within(screen.getByRole('list', { name: 'Session cards' })).getAllByRole('listitem');
@@ -173,6 +177,8 @@ describe('WordCardDeck', () => {
 
   it('a letter missed twice gets a focus retry, then one normal try, then a gray check dot', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99); // [kitten, puppy]
+    // never drop a level on a miss, so all four tries stay at level 2 (typed letters)
+    localStorage.setItem('spelling_tutor_deck_prefs_v1', JSON.stringify({ startLevel: 2, levelScheme: 2, dropPct: 0 }));
     const user = userEvent.setup();
     render(<Harness />);
     const check = () => user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));

@@ -2,11 +2,12 @@
  * Smart hiding (pure functions): hide the letters a lesson is about.
  *
  * A list's "focus letters" (e.g. ou, ow, oi, oy) are the target groups. Levels reuse
- * the deck's 4-level ladder; only *which* letters hide changes:
+ * the deck's 5-level ladder; only *which* letters hide changes:
  *   L1  target letters hidden, answered by multiple choice from the lesson's groups
  *   L2  target letters hidden, typed
  *   L3  target letters + every other letter from the 2nd (or the learner's struggle letters)
- *   L4  all letters hidden
+ *   L4  1 in 4 letters visible
+ *   L5  all letters hidden (the audio quiz)
  */
 
 export const MAX_FOCUS_GROUPS = 12;
@@ -63,7 +64,7 @@ export function smartHiddenIndices(word, level, groups, struggleIndices = []) {
   if (targets.length === 0) return null;
   const hidden = targetIndexSet(targets);
   if (level >= 5) return new Set(Array.from({ length: n }, (_, i) => i));
-  if (level === 4) return new Set(Array.from({ length: n }, (_, i) => i).filter(i => i % 5 !== 0));
+  if (level === 4) return new Set(Array.from({ length: n }, (_, i) => i).filter(i => i % 4 !== 0));
   if (level === 3) {
     const struggle = [...(struggleIndices || [])].filter(i => Number.isInteger(i) && i >= 0 && i < n && !hidden.has(i));
     if (struggle.length) struggle.forEach(i => hidden.add(i));
@@ -77,8 +78,8 @@ export const SMART_LEVEL_LABELS = [
   'Pick the focus letters',
   'Type the focus letters',
   'Focus letters + every other letter',
-  '1 in 5 letters shown',
-  'No letters shown'
+  '1 in 4 letters visible',
+  'Quiz from audio'
 ];
 
 /** Harvey-ball fill (0-4 quarters) = levels passed. */

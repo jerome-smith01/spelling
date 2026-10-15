@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState, seedRemoteStages
+  DEFAULT_PREFS, applyResult, applyQuizResult, buildQueue, shuffleQueue, toDateStr, getWordState, seedRemoteStages,
+  migrateProgress, migratePrefs
 } from '../utils/schedule';
 import { learnerKey } from '../services/activeLearner';
 
@@ -9,12 +10,24 @@ const prefsKey = () => learnerKey('spelling_tutor_deck_prefs_v1');
 const progressKey = (listId) => learnerKey(`spelling_tutor_deck_progress_v1:${listId}`);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-function read(key, fallback) {
+// Saved data from the old level ladder is moved up one level the first time it is read
+function readPrefs() {
   try {
-    const raw = localStorage.getItem(key);
-    return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
+    const raw = localStorage.getItem(prefsKey());
+    if (!raw) return { ...DEFAULT_PREFS, view: 'deck' };
+    return { ...DEFAULT_PREFS, view: 'deck', ...migratePrefs(JSON.parse(raw)) };
   } catch {
-    return fallback;
+    return { ...DEFAULT_PREFS, view: 'deck' };
+  }
+}
+
+function readProgress(listId) {
+  const fresh = { testDate: null, words: {}, levelScheme: DEFAULT_PREFS.levelScheme };
+  try {
+    const raw = localStorage.getItem(progressKey(listId));
+    return raw ? migrateProgress({ ...fresh, levelScheme: undefined, ...JSON.parse(raw) }) : fresh;
+  } catch {
+    return fresh;
   }
 }
 
@@ -39,8 +52,8 @@ function currentDay() {
 
 /** Read-only snapshot of a deck's progress for the dashboard (no hook state needed). */
 export function loadDeckSummary(listId, wordTexts) {
-  const prefs = read(prefsKey(), { ...DEFAULT_PREFS, view: 'deck' });
-  const progress = read(progressKey(listId), { testDate: null, words: {} });
+  const prefs = readPrefs();
+  const progress = readProgress(listId);
   return {
     total: wordTexts.length,
     learned: wordTexts.filter(w => progress.words[w]?.mastered).length,
@@ -64,9 +77,9 @@ export function loadDeckSummary(listId, wordTexts) {
  */
 export function useDeckSchedule(listId, wordTexts, { strict = false } = {}) {
   const today = useMemo(currentDay, []);
-  const [savedPrefs, setPrefsState] = useState(() => read(prefsKey(), { ...DEFAULT_PREFS, view: 'deck' }));
+  const [savedPrefs, setPrefsState] = useState(readPrefs);
   const prefs = useMemo(() => (strict ? { ...savedPrefs, advancePct: 100 } : savedPrefs), [savedPrefs, strict]);
-  const [progress, setProgress] = useState(() => read(progressKey(listId), { testDate: null, words: {} }));
+  const [progress, setProgress] = useState(() => readProgress(listId));
   const wordsKey = wordTexts.join('|');
   const [queue, setQueue] = useState(() => buildQueue(wordTexts, progress, today, prefs));
   // Latest progress for synchronous reads inside callbacks
@@ -148,7 +161,7 @@ export function useDeckSchedule(listId, wordTexts, { strict = false } = {}) {
   }, [wordsKey, today, prefs]);
 
   const resetProgress = useCallback(() => {
-    const fresh = { testDate: progressRef.current.testDate, words: {} };
+    const fresh = { testDate: progressRef.current.testDate, words: {}, levelScheme: DEFAULT_PREFS.levelScheme };
     progressRef.current = fresh;
     setProgress(fresh);
     setQueue(buildQueue(wordTexts, fresh, today, prefs));

@@ -11,7 +11,7 @@ import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
  * each position so friction and pattern stats keep working.
  */
 export default function ChoicePicker({
-  word, targets, groups, onSpeak, onSpeakSyllables, onSpeakBoth, autoPlay, onAutoPlayChange, onBack, onSkip, canBack = false, activePlayback, onAttempts, onResult, autoFocus = false
+  word, targets, groups = [], onSpeak, onSpeakSyllables, onSpeakBoth, autoPlay, onAutoPlayChange, onBack, onSkip, canBack = false, activePlayback, onAttempts, onResult, autoFocus = false
 }) {
   const [picks, setPicks] = useState({}); // target index -> chosen group
   const firstRef = useRef(null);
@@ -101,7 +101,7 @@ export default function ChoicePicker({
       {targets.map((t, ti) => (
         <div key={ti} className="choice-row" role="group"
           aria-label={targets.length > 1 ? `Choose the letters for blank ${ti + 1}` : 'Choose the missing letters'}>
-          {groups.map((g, gi) => (
+          {(t.options || groups).map((g, gi) => (
             <button
               key={g}
               ref={ti === 0 && gi === 0 ? firstRef : undefined}

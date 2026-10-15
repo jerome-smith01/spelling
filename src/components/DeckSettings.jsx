@@ -154,7 +154,7 @@ export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, o
   const views = [
     { value: 'deck', label: 'Flashcards' },
     { value: 'grid', label: 'Grid' },
-    { value: 'list', label: 'List', placeholder: true } // not built yet
+    { value: 'list', label: 'List' }
   ];
   return (
     <div className="settings-sections" role="group" aria-label="Flashcard settings">

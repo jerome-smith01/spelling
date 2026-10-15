@@ -14,7 +14,7 @@ describe('stagesOf', () => {
     });
     expect(stagesOf(empty())).toEqual({});
   });
-  it('has five stages: four with letters shown, then none', () => { expect(MAX_LEVEL).toBe(5); });
+  it('has five stages: pick the letters, three with letters visible, then the audio quiz', () => { expect(MAX_LEVEL).toBe(5); });
 });
 
 describe('seedRemoteStages', () => {

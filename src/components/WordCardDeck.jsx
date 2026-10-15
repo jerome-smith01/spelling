@@ -5,6 +5,8 @@ import VirtualKeyboard from './VirtualKeyboard';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
+import AudioCard from './AudioCard';
+import { buildPlainPick } from '../utils/plainChoice';
 import StageBall from './StageBall';
 import AutoplayToggle from './AutoplayToggle';
 import ProgressBars from './ProgressBars';
@@ -109,22 +111,36 @@ export default function WordCardDeck({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const focus = useMemo(() => (current ? focusFor(session, current.word) : null), [current?.word, cardKey]);
   const focusTry = focus?.phase === 'focus';
-  const hiddenIndices = useMemo(
-    () => (!current ? new Set()
-      : focusTry ? new Set(focus.positions)
-        : hiddenIndicesForLevel(current.letterCount, level,
-          focusGroups.length ? { word: current.word, groups: focusGroups, struggle } : null)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [current, level, focusTry, (focus?.positions || []).join(','), focusGroups.join(','), (struggle || []).join(',')]
-  );
   const targets = useMemo(
     () => (current && focusGroups.length ? findTargets(current.word, focusGroups) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [current?.word, focusGroups.join(',')]
   );
   const smartWord = targets.length > 0;
-  // Level 1 is multiple choice when the lesson offers at least two groups to choose from
-  const useChoice = smartWord && level === 1 && focusGroups.length >= 2 && !focusTry;
+  // Level 1 is "pick the missing letters". With lesson letters (two or more groups to choose
+  // from) the choices are the lesson's groups; any other word gets one or two blanks with
+  // believable wrong letters (plainChoice.js).
+  const lessonPick = smartWord && level === 1 && focusGroups.length >= 2 && !focusTry;
+  const plainPick = useMemo(
+    () => (current && level === 1 && !lessonPick && !focusTry ? buildPlainPick(current.word) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current?.word, level, lessonPick, focusTry]
+  );
+  const useChoice = lessonPick || plainPick.length > 0;
+  // Level 5 is the audio quiz: nothing shown, the student types what they hear
+  const audioQuiz = level === 5 && !focusTry;
+  const pickTargets = lessonPick ? targets : plainPick;
+  const hiddenIndices = useMemo(
+    () => {
+      if (!current) return new Set();
+      if (focusTry) return new Set(focus.positions);
+      if (plainPick.length) return new Set(plainPick.flatMap(t => Array.from({ length: t.end - t.start }, (_, i) => t.start + i)));
+      return hiddenIndicesForLevel(current.letterCount, level,
+        focusGroups.length ? { word: current.word, groups: focusGroups, struggle } : null);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current, level, focusTry, plainPick, (focus?.positions || []).join(','), focusGroups.join(','), (struggle || []).join(',')]
+  );
 
   useEffect(() => { if (result) backRef.current?.focus(); }, [result]);
 
@@ -292,7 +308,7 @@ export default function WordCardDeck({
               <ChoicePicker
                 key={`${current.id}-${cardKey}`}
                 word={current}
-                targets={targets}
+                targets={pickTargets}
                 groups={focusGroups}
                 onSpeak={userSpeak}
                 onSpeakSyllables={userSpeakSyllables}
@@ -306,6 +322,26 @@ export default function WordCardDeck({
                 onAttempts={onAttempts}
                 autoFocus
                 onResult={handleResult}
+              />
+            ) : audioQuiz ? (
+              <AudioCard
+                key={`${current.id}-${cardKey}`}
+                word={current}
+                onSpeak={userSpeak}
+                onSpeakSyllables={userSpeakSyllables}
+                onSpeakBoth={onSpeakBoth ? userSpeakBoth : undefined}
+                activePlayback={activePlayback}
+                onAttempts={onAttempts}
+                autoFocus
+                keyboardRef={kbRef}
+                onCanCheck={setCanCheck}
+                onResult={handleResult}
+                onBack={goBack}
+                onSkip={skipCard}
+                canBack={session.idx > 0}
+                autoPlay={schedule.prefs.autoSpeak !== false}
+                onAutoPlayChange={(v) => schedule.setPrefs({ autoSpeak: v })}
+                touchKeyboard={coarse}
               />
             ) : (
             <WordCard

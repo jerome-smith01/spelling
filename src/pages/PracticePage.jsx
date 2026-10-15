@@ -5,6 +5,7 @@ import { useHiding } from '../hooks/useHiding';
 import { useDeckSchedule } from '../hooks/useDeckSchedule';
 import { useSpeech } from '../hooks/useSpeech';
 import WordList from '../components/WordList';
+import WordTable from '../components/WordTable';
 import WordCardDeck from '../components/WordCardDeck';
 import DeckSettings from '../components/DeckSettings';
 import { SpeedSlowestIcon, SpeedSlowIcon, SpeedNormalIcon } from '../components/SpeedIcons';
@@ -153,6 +154,8 @@ function PracticeView({ listId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listId, assigned]);
   const isGrid = schedule.prefs.view === 'grid';
+  const isList = schedule.prefs.view === 'list';
+  const isWide = isGrid || isList;   // grid and list use the full width; one card at a time uses a 640px column
   const { speak, speakSyllables, speakBoth, activePlayback } = useSpeech();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const limited = kidMode || !!list?.readOnly;   // no deck settings or importing
@@ -313,7 +316,7 @@ function PracticeView({ listId }) {
     <div className="practice-immersive">
     <div className="practice-inner">
       {/* Top bar: back to the dashboard, deck name, settings */}
-      <div className={`practice-top${isGrid ? '' : ' practice-top-deck'}`} role="region" aria-label="Spelling Practice Controls">
+      <div className={`practice-top${isWide ? '' : ' practice-top-deck'}`} role="region" aria-label="Spelling Practice Controls">
         <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
             strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -336,14 +339,16 @@ function PracticeView({ listId }) {
         >
           {list?.name}
         </h2>
-        {isGrid ? settingsToggle : <span />}
+        {isWide ? settingsToggle : <span />}
       </div>
 
-      {isGrid && listActions}
-      {isGrid && settingsPanel}
+      {isWide && listActions}
+      {isWide && settingsPanel}
 
       {/* Main Words Grid */}
-      {isGrid ? (
+      {isList ? (
+        <WordTable words={words} progress={schedule.progress} today={schedule.today} onSpeak={speak} />
+      ) : isGrid ? (
         <WordList
           words={words}
           hiddenMap={hiddenMap}

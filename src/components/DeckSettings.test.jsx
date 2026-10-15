@@ -94,3 +94,13 @@ describe('DeckSettings grading bar', () => {
     expect(screen.getByText(/moves up a level/)).toBeInTheDocument();
   });
 });
+
+describe('DeckSettings list view', () => {
+  it('offers List as a real view', () => {
+    const { setPrefs } = setup({ prefs: { ...DEFAULT_PREFS, view: 'deck' } });
+    const list = screen.getByRole('button', { name: 'List' });
+    expect(list).not.toHaveAttribute('aria-disabled');
+    fireEvent.click(list);
+    expect(setPrefs).toHaveBeenCalledWith({ view: 'list' });
+  });
+});
