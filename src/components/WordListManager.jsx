@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLists } from '../hooks/useLists';
 import { useAuth } from '../hooks/useAuth';
 import { DEFAULT_LIST_ID } from '../services/storageService';
@@ -27,15 +27,15 @@ export function DeleteListButton({ listId }) {
     navigate('/', { replace: true });
   };
   return (
-    <button type="button" onClick={onDelete} className="btn-secondary-sm settings-danger" style={btnStyle}>
+    <button type="button" onClick={onDelete} className="btn-secondary-sm settings-maint-btn settings-danger">
       <Icon><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></Icon>
       Delete deck
     </button>
   );
 }
 
-/** Rename, save a copy, and back to all decks, shown above the settings card (plus sync status). */
-export default function WordListManager({ listId }) {
+/** Rename, save a copy, and import words, shown above the settings card (plus word count and sync status). */
+export default function WordListManager({ listId, wordCount = 0, importOpen = false, onToggleImport }) {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
   const { getList, createList, renameList, syncStatus, syncMessage, atListLimit } = useLists();
@@ -74,10 +74,16 @@ export default function WordListManager({ listId }) {
         <Icon><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></Icon>
         Save as…
       </button>
-      <Link to="/" className="btn-secondary-sm" style={{ ...btnStyle, textDecoration: 'none' }}>
-        <Icon><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></Icon>
-        All decks
-      </Link>
+      {onToggleImport && (
+        <button type="button" onClick={onToggleImport} className="btn-secondary-sm" style={btnStyle}
+          aria-expanded={importOpen}>
+          <Icon><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></Icon>
+          {importOpen ? 'Close import' : 'Import words'}
+        </button>
+      )}
+      <span style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>
+        {wordCount} {wordCount === 1 ? 'word' : 'words'}
+      </span>
       {(statusText || syncMessage) && (
         <span role="status" style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
           {statusText}{syncStatus === 'partial' && syncMessage ? ` — ${syncMessage}` : ''}

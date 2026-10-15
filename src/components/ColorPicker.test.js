@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hexToHsv, hsvToHex, hexToRgb, rgbToHex, hexToRgba, COLOR_PRESETS } from './ColorPicker';
+import { hexToHsv, hsvToHex, hexToRgb, rgbToHex, hexToRgba, onColor, COLOR_PRESETS } from './ColorPicker';
 
 describe('hexToHsv / hsvToHex', () => {
   it('converts primary colors', () => {
@@ -50,5 +50,20 @@ describe('hexToRgba', () => {
 
   it('falls back to the default green on invalid input', () => {
     expect(hexToRgba('nonsense', 0.2)).toBe('rgba(16, 185, 129, 0.2)');
+  });
+});
+
+describe('onColor', () => {
+  it('picks white text on dark colors and dark text on light ones', () => {
+    expect(onColor('#000000')).toBe('#ffffff');
+    expect(onColor('#1e3a8a')).toBe('#ffffff');
+    expect(onColor('#ffffff')).toBe('#111827');
+    expect(onColor('#ecd646')).toBe('#111827');
+  });
+
+  it('uses white text on every preset, dark only on clearly light colors', () => {
+    for (const p of COLOR_PRESETS) expect(onColor(p.hex)).toBe('#ffffff');
+    expect(onColor('#ecd646')).toBe('#111827');
+    expect(onColor('#fde68a')).toBe('#111827');
   });
 });

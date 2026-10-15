@@ -21,6 +21,13 @@ const toIso = (text) => {
 const snap5 = (v) => Math.round(Number(v) / 5) * 5; // grading is set in multiples of 5
 const GRADE_GAP = 5; // the two handles always stay at least this far apart
 
+function MaintIcon({ children }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{children}</svg>
+  );
+}
+
 function CalendarIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
@@ -194,10 +201,16 @@ export default function DeckSettings({ prefs, setPrefs, testDate, setTestDate, o
       <section className="settings-section" aria-label="Maintenance">
         <h3 className="settings-section-title">Maintenance</h3>
         <div className="settings-maint">
-          <button type="button" className="btn-secondary-sm" onClick={tutorial.enableAll}>Show tutorials again</button>
-          <button type="button" className="btn-secondary-sm settings-danger" onClick={() => {
+          <button type="button" className="btn-secondary-sm settings-maint-btn" onClick={tutorial.enableAll}>
+            <MaintIcon><path d="M22 10 12 5 2 10l10 5 10-5Z" /><path d="M6 12v5c3 2 9 2 12 0v-5" /></MaintIcon>
+            Show tutorials again
+          </button>
+          <button type="button" className="btn-secondary-sm settings-maint-btn settings-danger" onClick={() => {
             if (window.confirm('Reset all flashcard progress for this list?')) onReset();
-          }}>Reset progress</button>
+          }}>
+            <MaintIcon><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></MaintIcon>
+            Reset progress
+          </button>
           {deleteControl}
         </div>
       </section>

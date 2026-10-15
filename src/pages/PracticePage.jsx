@@ -202,48 +202,17 @@ function PracticeView({ listId }) {
     speakBoth(wordId, wordText, syllableTexts, { rate, pauseDurationMs });
   };
 
-  return (
-    <div className="practice-immersive">
-    <div className="practice-inner">
-      {/* Top bar: back to the dashboard, deck name, settings */}
-      <div className="practice-top" role="region" aria-label="Spelling Practice Controls">
-        <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700 }}>← Decks</Link>
-        <h2
-          tabIndex={-1}
-          style={{
-            margin: 0,
-            fontSize: '1.15rem',
-            fontWeight: 800,
-            color: 'var(--foreground)',
-            overflowWrap: 'anywhere',
-            textAlign: 'center',
-            flex: 1
-          }}
-        >
-          {list?.name}
-        </h2>
-        {/* A child (or a student on an assigned list) gets no deck settings or word importing */}
-        {!limited && (
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(prev => !prev)}
-          className="btn-secondary-sm"
-          style={{ fontWeight: 700 }}
-          aria-expanded={settingsOpen}
-          aria-controls="practice-settings"
-          data-tutorial="settings-button"
-        >
-          {settingsOpen ? '▲ Settings' : '⚙ Settings'}
-        </button>
-        )}
-      </div>
+  // Rename / Save as / Import: they replace the mode tabs while settings are open
+  const listActions = settingsOpen && !limited ? (
+    <WordListManager listId={listId} wordCount={words.length}
+      importOpen={isImportExpanded} onToggleImport={() => setIsImportExpanded(prev => !prev)} />
+  ) : null;
 
-      {settingsOpen && !limited && <WordListManager listId={listId} />}
-
-      {settingsOpen && !limited && (
+  const settingsPanel = settingsOpen && !limited ? (
+    <>
       <section aria-label="Practice settings" style={{
         backgroundColor: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
+        border: '1px solid var(--selected-color)',
         borderRadius: 'var(--radius-xl)',
         padding: '1rem 1.25rem',
         display: 'flex',
@@ -297,52 +266,14 @@ function PracticeView({ listId }) {
           )}
         />
 
-        {/* Main Controls Row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1.25rem',
-            flexWrap: 'wrap'
-          }}>
-            {isGrid && (
-              <HideControls
-                denominator={denominator}
-                onDenominatorChange={setDenominator}
-                onHideAll={hideAllWords}
-                onShowAll={showAllWords}
-              />
-            )}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{
-              fontSize: '0.85rem',
-              color: 'var(--muted-foreground)',
-              fontWeight: 600
-            }}>
-              {words.length} {words.length === 1 ? 'word' : 'words'}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsImportExpanded(prev => !prev)}
-              className="btn-secondary-sm"
-              style={{
-                fontWeight: 700,
-                backgroundColor: isImportExpanded ? 'var(--card-border)' : 'var(--muted)'
-              }}
-              aria-expanded={isImportExpanded}
-            >
-              {isImportExpanded ? '▲ Close Import' : '▼ Import Words'}
-            </button>
-          </div>
-        </div>
+        {isGrid && (
+          <HideControls
+            denominator={denominator}
+            onDenominatorChange={setDenominator}
+            onHideAll={hideAllWords}
+            onShowAll={showAllWords}
+          />
+        )}
 
         {/* Expandable Import Section */}
         <ImportSection
@@ -356,7 +287,60 @@ function PracticeView({ listId }) {
         />
         </div>
       </section>
-      )}
+    </>
+  ) : null;
+
+  // A child (or a student on an assigned list) gets no deck settings or word importing
+  const settingsToggle = limited ? null : (
+    <button
+      type="button"
+      onClick={() => setSettingsOpen(prev => !prev)}
+      className="btn-secondary-sm settings-toggle"
+      aria-expanded={settingsOpen}
+      aria-controls="practice-settings"
+      data-tutorial="settings-button"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+      </svg>
+      <span className="settings-toggle-label">Settings</span>
+    </button>
+  );
+
+  return (
+    <div className="practice-immersive">
+    <div className="practice-inner">
+      {/* Top bar: back to the dashboard, deck name, settings */}
+      <div className={`practice-top${isGrid ? '' : ' practice-top-deck'}`} role="region" aria-label="Spelling Practice Controls">
+        <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+            <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          Decks
+        </Link>
+        <h2
+          tabIndex={-1}
+          style={{
+            margin: 0,
+            fontSize: '1.15rem',
+            fontWeight: 800,
+            color: 'var(--foreground)',
+            overflowWrap: 'anywhere',
+            textAlign: 'center',
+            flex: 1
+          }}
+        >
+          {list?.name}
+        </h2>
+        {isGrid ? settingsToggle : <span />}
+      </div>
+
+      {isGrid && listActions}
+      {isGrid && settingsPanel}
 
       {/* Main Words Grid */}
       {isGrid ? (
@@ -388,6 +372,10 @@ function PracticeView({ listId }) {
           initialMode={searchParams.get('mode') === 'quiz' ? 'quiz' : 'practice'}
           dueDate={assignment?.due_at || null}
           keyboardHidden={settingsOpen}
+          settingsToggle={settingsToggle}
+          settingsOpen={settingsOpen && !limited}
+          listActions={listActions}
+          settingsPanel={settingsPanel}
         />
       )}
     </div>

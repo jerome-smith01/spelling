@@ -11,6 +11,7 @@ import ProgressBars from './ProgressBars';
 import DeckLegend from './DeckLegend';
 import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
+import { TourIcon } from './ActionIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { useTutorial } from '../hooks/useTutorial';
 import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
@@ -37,7 +38,7 @@ const fmtDay = (iso, today) => {
 
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
-  words, schedule, onSpeak, onSpeakSyllables, onSpeakBoth, activePlayback, onAttempts, frictionByWord = {},
+  words, schedule, onSpeak, onSpeakSyllables, onSpeakBoth, settingsToggle = null, settingsPanel = null, settingsOpen = false, listActions = null, activePlayback, onAttempts, frictionByWord = {},
   focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice', keyboardHidden = false, dueDate = null
 }) {
   const { queue, today, testDate, progress, stateFor, commit, practiceAnyway, commitQuiz, refreshQueue } = schedule;
@@ -172,12 +173,23 @@ export default function WordCardDeck({
   const tabs = (
     <>
     <div className="deck-bar">
-      <div className="deck-tabs" role="group" aria-label="Mode" data-tutorial="modes">
-        <button type="button" className="deck-tab" aria-pressed={mode === 'practice'} onClick={() => setMode('practice')}>Practice</button>
-        <button type="button" className="deck-tab" aria-pressed={mode === 'quiz'} onClick={() => setMode('quiz')}>Quiz</button>
+      {settingsOpen ? listActions : (
+        <div className="deck-tabs" role="group" aria-label="Mode" data-tutorial="modes">
+          <button type="button" className="deck-tab" aria-pressed={mode === 'practice'} onClick={() => setMode('practice')}>Practice</button>
+          <button type="button" className="deck-tab" aria-pressed={mode === 'quiz'} onClick={() => setMode('quiz')}>Quiz</button>
+        </div>
+      )}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {!settingsOpen && (
+          <button type="button" className="btn-secondary-sm" onClick={startTour} aria-label="Restart the guided tour"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+            <TourIcon size="1.1em" />Tour
+          </button>
+        )}
+        {settingsToggle}
       </div>
-      <button type="button" className="btn-secondary-sm" style={{ marginLeft: 'auto' }} onClick={startTour} aria-label="Restart the guided tour">❓ Tour</button>
     </div>
+    {settingsPanel}
     <div className="deck-test-line">{testLine}</div>
     </>
   );

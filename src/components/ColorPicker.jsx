@@ -62,6 +62,28 @@ export function hexToRgb(hex) {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
+// WCAG relative luminance of a '#rrggbb' color (0 = black, 1 = white)
+function luminance(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const lin = (v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+/**
+ * White or near-black text for a filled background of this color. White is preferred, since it
+ * looks right on bold buttons, so every preset (amber included) gets it. Only clearly light
+ * colors (yellows, pastels) fall back to dark text. The 2:1 cutoff is deliberately lenient:
+ * strict WCAG (4.5:1) would make most of the presets dark.
+ */
+const WHITE_TEXT_MIN_CONTRAST = 2;
+export function onColor(hex) {
+  const vsWhite = 1.05 / (luminance(hex) + 0.05);
+  return vsWhite >= WHITE_TEXT_MIN_CONTRAST ? '#ffffff' : '#111827';
+}
+
 export function rgbToHex({ r, g, b }) {
   return `#${[r, g, b].map(c => clamp(Math.round(c), 0, 255).toString(16).padStart(2, '0')).join('')}`;
 }
@@ -279,6 +301,7 @@ export function applyColorTokens(colorHex) {
   root.style.setProperty('--selected-color', hex);
   root.style.setProperty('--selected-color-bg', bg);
   root.style.setProperty('--selected-color-border', border);
+  root.style.setProperty('--on-selected-color', onColor(hex));
 }
 
 export default function ColorPicker() {
