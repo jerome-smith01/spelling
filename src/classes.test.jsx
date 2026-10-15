@@ -117,7 +117,7 @@ describe('Class page', () => {
     expect(shared).toHaveTextContent('Silent letters: 3 students are working on this');
   });
 
-  it('filters to who has not practised and sorts by a column', async () => {
+  it('filters to who has not practiced and sorts by a column', async () => {
     const user = userEvent.setup();
     open('/classes/g1');
     await screen.findByRole('table', { name: 'Class progress' });

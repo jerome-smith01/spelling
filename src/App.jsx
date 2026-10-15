@@ -73,7 +73,7 @@ function LearnerRoutes() {
  *   /progress                  -> progress dashboard (?list=<id> filter)
  *   /progress/words/:word      -> one word: letter-by-letter results and its tip
  *   /profile                   -> grade + pattern progress table (Generate 5 words)
- *   /who                       -> "Who's practising?" (children + grown-up; starts kid mode)
+ *   /who                       -> "Who's practicing?" (children + grown-up; starts kid mode)
  *   /family                    -> add and manage children, this week's summary, the grown-up PIN (not in kid mode)
  *   /classes, /classes/:groupId -> a teacher's classes: roster, who needs a look, class code, assignments, exports (not in kid mode)
  *   /join, /join/:code         -> enter an invite code, see what it does, accept (not in kid mode)

@@ -27,7 +27,7 @@ describe('PatternList', () => {
     expect(onOpen).toHaveBeenCalledWith(silent);
   });
 
-  it('summarises improved and watched patterns without report buttons', () => {
+  it('summarizes improved and watched patterns without report buttons', () => {
     render(
       <PatternList
         patterns={[p('digraphs', 'Digraphs', 'cleared'), p('schwa', 'Schwa sounds', 'watching', 2, 1), p('roots', 'Greek and Latin roots', 'watching', 0, 0)]}

@@ -5,12 +5,15 @@ import { useHiding } from '../hooks/useHiding';
 import { useDeckSchedule } from '../hooks/useDeckSchedule';
 import { useSpeech } from '../hooks/useSpeech';
 import WordList from '../components/WordList';
+import WordTable from '../components/WordTable';
 import WordCardDeck from '../components/WordCardDeck';
 import DeckSettings from '../components/DeckSettings';
+import { SpeedSlowestIcon, SpeedSlowIcon, SpeedNormalIcon } from '../components/SpeedIcons';
+import { PauseShortIcon, PauseMediumIcon, PauseLongIcon } from '../components/TimerIcons';
 import HideControls from '../components/HideControls';
 import ColorPicker from '../components/ColorPicker';
 import ImportSection from '../components/ImportSection';
-import WordListManager from '../components/WordListManager';
+import WordListManager, { DeleteListButton } from '../components/WordListManager';
 import NotFoundPage from './NotFoundPage';
 import { useLists } from '../hooks/useLists';
 import { enqueue } from '../services/attemptQueue';
@@ -65,15 +68,15 @@ function PracticeView({ listId }) {
   const [searchParams] = useSearchParams();
   const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
   const { createList, atListLimit, assignmentFor, refreshAssigned } = useLists();
-  const assignment = assignmentFor?.(listId);   // this list was assigned to whoever is practising
+  const assignment = assignmentFor?.(listId);   // this list was assigned to whoever is practicing
   usePageTitle(list ? `${list.name} — Practice` : 'Practice');
 
   useEffect(() => {
     saveLastListId(listId);
   }, [listId]);
 
-  // One visit to a list = one practice session. Scoring uses the LAST answer per
-  // letter within a session, so a corrected miss counts as correct.
+  // One visit to a list = one practice session. Scoring counts every miss per letter
+  // within a session, so a letter missed again and again scores as a struggle.
   const sessionId = useRef(crypto.randomUUID());
   const frictionByWord = useStruggle();
   const struggleByWord = useStrugglePositions(list?.focusGroups?.length ? words.map(w => w.word) : []);
@@ -151,7 +154,9 @@ function PracticeView({ listId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listId, assigned]);
   const isGrid = schedule.prefs.view === 'grid';
-  const { speak, speakSyllables, activePlayback } = useSpeech();
+  const isList = schedule.prefs.view === 'list';
+  const isWide = isGrid || isList;   // grid and list use the full width; one card at a time uses a 640px column
+  const { speak, speakSyllables, speakBoth, activePlayback } = useSpeech();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const limited = kidMode || !!list?.readOnly;   // no deck settings or importing
   const [isImportExpanded, setIsImportExpanded] = useState(false);
@@ -194,12 +199,132 @@ function PracticeView({ listId }) {
     speakSyllables(wordId, syllableTexts, { rate, pauseDurationMs });
   };
 
+  const handleSpeakBoth = (wordId, wordText, syllableTexts) => {
+    const rate = RATE_PRESETS[ratePreset] ?? RATE_PRESETS.normal;
+    const pauseDurationMs = PAUSE_PRESETS[pausePreset] ?? PAUSE_PRESETS.short;
+    speakBoth(wordId, wordText, syllableTexts, { rate, pauseDurationMs });
+  };
+
+  // Rename / Save as / Import: they replace the mode tabs while settings are open
+  const listActions = settingsOpen && !limited ? (
+    <WordListManager listId={listId} wordCount={words.length}
+      importOpen={isImportExpanded} onToggleImport={() => setIsImportExpanded(prev => !prev)} />
+  ) : null;
+
+  const settingsPanel = settingsOpen && !limited ? (
+    <>
+      <section aria-label="Practice settings" style={{
+        backgroundColor: 'var(--card-bg)',
+        border: '1px solid var(--selected-color)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '1rem 1.25rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.9rem'
+      }}>
+        <div id="practice-settings" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <DeckSettings
+          prefs={schedule.prefs}
+          setPrefs={schedule.setPrefs}
+          testDate={schedule.testDate}
+          setTestDate={schedule.setTestDate}
+          onReset={schedule.resetProgress}
+          appearanceControls={<ColorPicker />}
+          deleteControl={<DeleteListButton listId={listId} />}
+          speechControls={(
+            <div className="settings-stack">
+              <div className="settings-field">
+                Syllable speed
+                <div className="view-toggle" role="group" aria-label="Syllable pronunciation speed">
+                  {[
+                    { value: 'slowest', label: 'Slowest', Icon: SpeedSlowestIcon },
+                    { value: 'slow', label: 'Slow', Icon: SpeedSlowIcon },
+                    { value: 'normal', label: 'Normal', Icon: SpeedNormalIcon }
+                  ].map(({ value, label, Icon }) => (
+                    <button key={value} type="button" className="view-toggle-btn"
+                      aria-pressed={ratePreset === value}
+                      onClick={() => handleRatePresetChange(value)}>
+                      <Icon />{label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-field">
+                Pause between syllables
+                <div className="view-toggle" role="group" aria-label="Pause between syllables">
+                  {[
+                    { value: 'short', label: 'Short', hint: '0.4s', Icon: PauseShortIcon },
+                    { value: 'medium', label: 'Medium', hint: '0.65s', Icon: PauseMediumIcon },
+                    { value: 'long', label: 'Long', hint: '0.9s', Icon: PauseLongIcon }
+                  ].map(({ value, label, hint, Icon }) => (
+                    <button key={value} type="button" className="view-toggle-btn"
+                      aria-pressed={pausePreset === value} title={`${label} (${hint})`}
+                      onClick={() => handlePausePresetChange(value)}>
+                      <Icon />{label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        />
+
+        {isGrid && (
+          <HideControls
+            denominator={denominator}
+            onDenominatorChange={setDenominator}
+            onHideAll={hideAllWords}
+            onShowAll={showAllWords}
+          />
+        )}
+
+        {/* Expandable Import Section */}
+        <ImportSection
+          isExpanded={isImportExpanded}
+          onClose={() => setIsImportExpanded(false)}
+          currentRaw={rawList}
+          currentFocus={list?.focusGroups ?? []}
+          onImport={handleImport}
+          onCreateList={handleCreateList}
+          onResetDefault={resetToDefault}
+        />
+        </div>
+      </section>
+    </>
+  ) : null;
+
+  // A child (or a student on an assigned list) gets no deck settings or word importing
+  const settingsToggle = limited ? null : (
+    <button
+      type="button"
+      onClick={() => setSettingsOpen(prev => !prev)}
+      className="btn-secondary-sm settings-toggle"
+      aria-expanded={settingsOpen}
+      aria-controls="practice-settings"
+      data-tutorial="settings-button"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+      </svg>
+      <span className="settings-toggle-label">Settings</span>
+    </button>
+  );
+
   return (
     <div className="practice-immersive">
     <div className="practice-inner">
       {/* Top bar: back to the dashboard, deck name, settings */}
-      <div className="practice-top" role="region" aria-label="Spelling Practice Controls">
-        <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700 }}>← Decks</Link>
+      <div className={`practice-top${isWide ? '' : ' practice-top-deck'}`} role="region" aria-label="Spelling Practice Controls">
+        <Link to="/" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+            <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          Decks
+        </Link>
         <h2
           tabIndex={-1}
           style={{
@@ -214,175 +339,16 @@ function PracticeView({ listId }) {
         >
           {list?.name}
         </h2>
-        {/* A child (or a student on an assigned list) gets no deck settings or word importing */}
-        {!limited && (
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(prev => !prev)}
-          className="btn-secondary-sm"
-          style={{ fontWeight: 700 }}
-          aria-expanded={settingsOpen}
-          aria-controls="practice-settings"
-          data-tutorial="settings-button"
-        >
-          {settingsOpen ? '▲ Settings' : '⚙ Settings'}
-        </button>
-        )}
+        {isWide ? settingsToggle : <span />}
       </div>
 
-      {settingsOpen && !limited && (
-      <section aria-label="Practice settings" style={{
-        backgroundColor: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '1rem 1.25rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.9rem'
-      }}>
-        <WordListManager listId={listId} />
-        <div id="practice-settings" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <DeckSettings
-          prefs={schedule.prefs}
-          setPrefs={schedule.setPrefs}
-          testDate={schedule.testDate}
-          setTestDate={schedule.setTestDate}
-          onReset={schedule.resetProgress}
-        />
-
-        {/* Main Controls Row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1.25rem',
-            flexWrap: 'wrap'
-          }}>
-            {isGrid && (
-              <>
-                <HideControls
-                  denominator={denominator}
-                  onDenominatorChange={setDenominator}
-                  onHideAll={hideAllWords}
-                  onShowAll={showAllWords}
-                />
-                <div style={{
-                  height: '1.5rem',
-                  width: '1px',
-                  backgroundColor: 'var(--card-border)'
-                }} />
-              </>
-            )}
-            <ColorPicker />
-            <div style={{
-              height: '1.5rem',
-              width: '1px',
-              backgroundColor: 'var(--card-border)'
-            }} />
-            {/* Syllable Rate Preset Dropdown — independent of pause length */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <label
-                htmlFor="syllable-rate-select"
-                style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: 'var(--muted-foreground)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>🐢</span> Speed:
-              </label>
-              <select
-                id="syllable-rate-select"
-                value={ratePreset}
-                onChange={(e) => handleRatePresetChange(e.target.value)}
-                className="speed-preset-select"
-                aria-label="Syllable pronunciation speed"
-              >
-                <option value="normal">Normal</option>
-                <option value="slow">Slow</option>
-                <option value="slowest">Slowest</option>
-              </select>
-            </div>
-
-            {/* Syllable Pause Preset Dropdown — independent of speech rate */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <label
-                htmlFor="syllable-pause-select"
-                style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: 'var(--muted-foreground)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem',
-                  cursor: 'pointer'
-                }}
-              >
-                <span>⏸️</span> Pause:
-              </label>
-              <select
-                id="syllable-pause-select"
-                value={pausePreset}
-                onChange={(e) => handlePausePresetChange(e.target.value)}
-                className="speed-preset-select"
-                aria-label="Pause between syllables"
-              >
-                <option value="short">Short (0.4s)</option>
-                <option value="medium">Medium (0.65s)</option>
-                <option value="long">Long (0.9s)</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{
-              fontSize: '0.85rem',
-              color: 'var(--muted-foreground)',
-              fontWeight: 600
-            }}>
-              {words.length} {words.length === 1 ? 'word' : 'words'}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsImportExpanded(prev => !prev)}
-              className="btn-secondary-sm"
-              style={{
-                fontWeight: 700,
-                backgroundColor: isImportExpanded ? 'var(--card-border)' : 'var(--muted)'
-              }}
-              aria-expanded={isImportExpanded}
-            >
-              {isImportExpanded ? '▲ Close Import' : '▼ Import Words'}
-            </button>
-          </div>
-        </div>
-
-        {/* Expandable Import Section */}
-        <ImportSection
-          isExpanded={isImportExpanded}
-          onClose={() => setIsImportExpanded(false)}
-          currentRaw={rawList}
-          currentFocus={list?.focusGroups ?? []}
-          onImport={handleImport}
-          onCreateList={handleCreateList}
-          onResetDefault={resetToDefault}
-        />
-        </div>
-      </section>
-      )}
+      {isWide && listActions}
+      {isWide && settingsPanel}
 
       {/* Main Words Grid */}
-      {isGrid ? (
+      {isList ? (
+        <WordTable words={words} progress={schedule.progress} today={schedule.today} onSpeak={speak} />
+      ) : isGrid ? (
         <WordList
           words={words}
           hiddenMap={hiddenMap}
@@ -390,6 +356,7 @@ function PracticeView({ listId }) {
           onShowWord={showAllLettersForWord}
           onSpeak={speak}
           onSpeakSyllables={handleSpeakSyllables}
+          onSpeakBoth={handleSpeakBoth}
           activePlayback={activePlayback}
           onAttempts={handleAttempts}
           frictionByWord={frictionByWord}
@@ -400,6 +367,7 @@ function PracticeView({ listId }) {
           schedule={schedule}
           onSpeak={speak}
           onSpeakSyllables={handleSpeakSyllables}
+          onSpeakBoth={handleSpeakBoth}
           activePlayback={activePlayback}
           onAttempts={handleAttempts}
           frictionByWord={frictionByWord}
@@ -409,6 +377,10 @@ function PracticeView({ listId }) {
           initialMode={searchParams.get('mode') === 'quiz' ? 'quiz' : 'practice'}
           dueDate={assignment?.due_at || null}
           keyboardHidden={settingsOpen}
+          settingsToggle={settingsToggle}
+          settingsOpen={settingsOpen && !limited}
+          listActions={listActions}
+          settingsPanel={settingsPanel}
         />
       )}
     </div>

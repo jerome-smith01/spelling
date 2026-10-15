@@ -150,10 +150,10 @@ describe('Family overview', () => {
 describe('lastPracticedText', () => {
   const now = new Date('2026-10-14T12:00:00Z');
   it('speaks in days', () => {
-    expect(lastPracticedText(null, now)).toBe('Has not practised yet');
-    expect(lastPracticedText('2026-10-14 01:00:00', now)).toBe('Last practised today');
-    expect(lastPracticedText('2026-10-13 23:00:00', now)).toBe('Last practised yesterday');
-    expect(lastPracticedText('2026-10-09 10:00:00', now)).toBe('Last practised 5 days ago');
-    expect(lastPracticedText('garbage', now)).toBe('Has not practised yet');
+    expect(lastPracticedText(null, now)).toBe('Has not practiced yet');
+    expect(lastPracticedText('2026-10-14 01:00:00', now)).toBe('Last practiced today');
+    expect(lastPracticedText('2026-10-13 23:00:00', now)).toBe('Last practiced yesterday');
+    expect(lastPracticedText('2026-10-09 10:00:00', now)).toBe('Last practiced 5 days ago');
+    expect(lastPracticedText('garbage', now)).toBe('Has not practiced yet');
   });
 });

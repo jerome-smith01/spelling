@@ -10,7 +10,7 @@ export default function TutorialPrompt({ onAccept }) {
       <div>
         <strong>Would you like a guided tour?</strong>
         <div className="deck-message" style={{ fontSize: '0.85rem' }}>
-          A quick walkthrough of the flashcards. You can restart it any time with the ❓ Tour button.
+          A quick walkthrough of the flashcards. You can restart it any time with the Tour button.
         </div>
       </div>
       <div style={{ display: 'flex', gap: '0.4rem' }}>

@@ -58,7 +58,7 @@ export default function ClassesPage() {
         <Link to="/family" className="btn-secondary-sm" style={{ textDecoration: 'none', fontWeight: 700 }}>← Family</Link>
       </div>
       <p style={{ margin: 0, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
-        Add your students once and see at a glance who has practised, who is stuck and which spelling pattern to teach next.
+        Add your students once and see at a glance who has practiced, who is stuck and which spelling pattern to teach next.
         Students do not need a login: we keep a first name and last initial (like Ava S.), an avatar and a grade. Students who do have a login can join with the class code.
       </p>
       {error && <p role="alert" style={{ margin: 0, color: '#ef4444' }}>{error}</p>}

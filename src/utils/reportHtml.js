@@ -106,8 +106,8 @@ export function renderReportBody(report) {
 
 <div class="tiles">
 ${tile('Practice sessions', t.sessions, trend(t.sessions, t.previous.sessions, '', prevWord))}
-${tile('Days practised', t.days_active, trend(t.days_active, t.previous.days_active, '', prevWord))}
-${tile('Words practised', t.words, trend(t.words, t.previous.words, '', prevWord))}
+${tile('Days practiced', t.days_active, trend(t.days_active, t.previous.days_active, '', prevWord))}
+${tile('Words practiced', t.words, trend(t.words, t.previous.words, '', prevWord))}
 ${tile('Letters correct', t.accuracy === null ? 'n/a' : `${t.accuracy}%`, trend(t.accuracy, t.previous.accuracy, ' points', prevWord))}
 ${tile('Words mastered', t.mastered, trend(t.mastered, t.previous.mastered, '', prevWord))}
 </div>

@@ -4,7 +4,8 @@ import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import VirtualKeyboard from './VirtualKeyboard';
-import { PlayIcon } from './AudioIcons';
+import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
+import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 
 const shuffle = (arr) => {
   const a = [...arr];
@@ -19,7 +20,7 @@ const shuffle = (arr) => {
  * Quiz mode: the word is spoken, nothing is shown, the student types it.
  * 100% tests the word out (mastered). A miss changes nothing.
  */
-export default function QuizView({ words, isMastered = () => false, onSpeak, onAttempts, commitQuiz, onExit, keyboardHidden = false }) {
+export default function QuizView({ words, isMastered = () => false, onSpeak, onSpeakSyllables, onSpeakBoth, onAttempts, commitQuiz, onExit, keyboardHidden = false }) {
   const [order, setOrder] = useState(() => shuffle(words.filter(w => !isMastered(w.word)))); // fixed for each round
   const [idx, setIdx] = useState(0);
   const [text, setText] = useState('');
@@ -41,7 +42,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorial.decided, tutorial.enabled]);
 
-  // Speak each new word (small delay so the previous utterance is cancelled cleanly)
+  // Speak each new word (small delay so the previous utterance is canceled cleanly)
   useEffect(() => {
     if (!word) return undefined;
     const t = setTimeout(() => onSpeak(word.id, word.word), 350);
@@ -139,16 +140,39 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
       <div className="quiz-stage">
         {!result ? (
           <>
-            <button
-              type="button"
-              className="speaker-btn"
-              data-tutorial="quiz-audio"
-              style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
-              onClick={() => onSpeak(word.id, word.word)}
-              aria-label="Hear the word again"
-            >
-              <PlayIcon size="1.5em" />
-            </button>
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }} data-tutorial="quiz-audio">
+              <button
+                type="button"
+                className="speaker-btn"
+                style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
+                onClick={() => onSpeak(word.id, word.word)}
+                aria-label="Hear the word again"
+              >
+                <PlayIcon size="1.5em" />
+              </button>
+              {onSpeakSyllables && (
+                <button
+                  type="button"
+                  className="speaker-btn"
+                  style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
+                  onClick={() => onSpeakSyllables(word.id, buildPronunciationSyllables(word))}
+                  aria-label="Hear the word syllable by syllable"
+                >
+                  <SlowPlayIcon size="1.5em" />
+                </button>
+              )}
+              {onSpeakBoth && (
+                <button
+                  type="button"
+                  className="speaker-btn speaker-btn-both"
+                  style={{ height: '4rem', fontSize: '1.8rem' }}
+                  onClick={() => onSpeakBoth(word.id, word.word, buildPronunciationSyllables(word))}
+                  aria-label="Hear the word at normal speed, then slowly"
+                >
+                  <BothSpeedIcon size="1em" />
+                </button>
+              )}
+            </div>
             <input
               ref={inputRef}
               className="quiz-input"
@@ -193,6 +217,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onA
           onEnter={keyboardEnter}
           enterDisabled={!result && !text.trim()}
           enterLabel={result ? (idx + 1 < order.length ? 'Next word' : 'See results') : 'Check'}
+          onPlay={result ? undefined : () => onSpeak(word.id, word.word)}
+          onPlaySlow={result || !onSpeakSyllables ? undefined : () => onSpeakSyllables(word.id, buildPronunciationSyllables(word))}
+          onPlayBoth={result || !onSpeakBoth ? undefined : () => onSpeakBoth(word.id, word.word, buildPronunciationSyllables(word))}
         />
       ) : (
         <div className="quiz-actions">

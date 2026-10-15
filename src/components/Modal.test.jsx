@@ -9,7 +9,7 @@ import Modal from './Modal';
 afterEach(cleanup);
 
 describe('Modal', () => {
-  it('is an accessible, labelled dialog', () => {
+  it('is an accessible, labeled dialog', () => {
     render(<Modal title="Hello" onClose={() => {}}><p>Body</p></Modal>);
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveAttribute('aria-modal', 'true');

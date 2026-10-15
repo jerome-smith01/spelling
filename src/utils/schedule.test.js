@@ -1,27 +1,53 @@
 import { describe, it, expect } from 'vitest';
 import {
   hiddenIndicesForLevel, outcomeFor, alignSpelling, gapAfterPass, applyResult, applyQuizResult,
-  buildQueue, requeueFront, shuffleQueue, addDays, DEFAULT_PREFS
-} from './schedule';
+  buildQueue, requeueFront, shuffleQueue, addDays, DEFAULT_PREFS, migrateProgress, migratePrefs, LEVEL_SCHEME } from './schedule';
 
 const empty = { words: {} };
 const MON = '2026-10-05';
 const TEST = '2026-10-09'; // Friday
 
 describe('hiddenIndicesForLevel', () => {
-  it('hides every other letter at level 1', () => {
+  it('hides every other letter at levels 1 and 2 (level 1 is normally answered by choice, see the deck)', () => {
     expect([...hiddenIndicesForLevel(6, 1)]).toEqual([1, 3, 5]);
+    expect([...hiddenIndicesForLevel(6, 2)]).toEqual([1, 3, 5]);
   });
-  it('shows 1 in 3 / 1 in 4 at levels 2 and 3', () => {
-    expect([...hiddenIndicesForLevel(6, 2)]).toEqual([1, 2, 4, 5]);
-    expect([...hiddenIndicesForLevel(8, 3)]).toEqual([1, 2, 3, 5, 6, 7]);
+  it('shows 1 in 3 / 1 in 4 at levels 3 and 4', () => {
+    expect([...hiddenIndicesForLevel(6, 3)]).toEqual([1, 2, 4, 5]);
+    expect([...hiddenIndicesForLevel(8, 4)]).toEqual([1, 2, 3, 5, 6, 7]);
   });
-  it('shows 1 in 5 letters at level 4', () => {
-    expect([...hiddenIndicesForLevel(7, 4)]).toEqual([1, 2, 3, 4, 6]);
-  });
-  it('hides everything at level 5 and never returns an empty set', () => {
+  it('hides everything at level 5 (the audio quiz) and never returns an empty set', () => {
     expect(hiddenIndicesForLevel(4, 5).size).toBe(4);
     expect([...hiddenIndicesForLevel(1, 1)]).toEqual([0]);
+  });
+});
+
+describe('level ladder migration', () => {
+  it('moves old levels up one, keeping the last level and mastered words', () => {
+    const old = { testDate: null, words: {
+      cat: { level: 1, mastered: false, history: [{ pct: 80, level: 1 }, { pct: 100, level: 2 }] },
+      dog: { level: 4, mastered: false },
+      owl: { level: 5, mastered: false },
+      eel: { level: 5, mastered: true }
+    } };
+    const m = migrateProgress(old);
+    expect(m.levelScheme).toBe(LEVEL_SCHEME);
+    expect(m.words.cat.level).toBe(2);
+    expect(m.words.cat.history).toEqual([{ pct: 80, level: 2 }, { pct: 100, level: 3 }]);
+    expect(m.words.dog.level).toBe(5);
+    expect(m.words.owl.level).toBe(5);
+    expect(m.words.eel).toMatchObject({ level: 5, mastered: true });
+  });
+  it('only migrates once', () => {
+    const m = migrateProgress({ words: { cat: { level: 1 } } });
+    expect(migrateProgress(m)).toBe(m);
+    expect(migrateProgress(m).words.cat.level).toBe(2);
+  });
+  it('moves the starting level up one for old prefs, and leaves new prefs alone', () => {
+    expect(migratePrefs({ startLevel: 1, advancePct: 80 })).toMatchObject({ startLevel: 2, advancePct: 80, levelScheme: LEVEL_SCHEME });
+    expect(migratePrefs({ startLevel: 5 }).startLevel).toBe(5);
+    const fresh = { ...DEFAULT_PREFS };
+    expect(migratePrefs(fresh)).toBe(fresh);
   });
 });
 

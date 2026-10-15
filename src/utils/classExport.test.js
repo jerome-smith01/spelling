@@ -60,7 +60,7 @@ describe('classCsv', () => {
 });
 
 describe('renderClassReportHtml', () => {
-  it('is self-contained and shows the table, who has not practised, and shared patterns', () => {
+  it('is self-contained and shows the table, who has not practiced, and shared patterns', () => {
     const html = renderClassReportHtml(
       overview([student('Ava'), student('Bo', { sessions_7d: 0, last_practiced: null })], [{ pattern: 'silent_letters', label: 'Silent letters', students: 4 }]),
       { today: '2026-10-14' }
@@ -97,7 +97,7 @@ describe('renderClassReportHtml', () => {
   it('copes with an empty class', () => {
     const html = renderClassReportHtml(overview([]));
     expect(html).toContain('No students yet.');
-    expect(html).toContain('Everyone practised this week.');
+    expect(html).toContain('Everyone practiced this week.');
   });
 });
 

@@ -50,6 +50,8 @@ const open = (path) => render(<MemoryRouter initialEntries={[path]}><App /></Mem
 beforeEach(() => {
   localStorage.clear();
   setActiveLearner({ id: 'kid-maya', kid: true });
+  // New words start at level 2 here (1 in 2 letters visible, typed); level 1 is the pick-the-letters exercise
+  localStorage.setItem('spelling_tutor_deck_prefs_v1:Lkid-maya', JSON.stringify({ startLevel: 2, levelScheme: 2 }));
   Object.assign(h, { assigned: [ASSIGNED], pushes: [], fetches: [], remote: {}, pushErr: false, scores: [], patternCalls: 0, digestCalls: 0 });
   window.matchMedia ||= () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
   vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('[]', { status: 200 }));
@@ -71,7 +73,7 @@ describe('stages of an assigned list', () => {
     expect(h.pushes).toEqual([]);                   // a stale device must not overwrite newer progress
   });
 
-  it('practising reports the new stage (after a short pause), and carries the server\'s words along', async () => {
+  it('practicing reports the new stage (after a short pause), and carries the server\'s words along', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);   // cards come in list order: cat first
     const user = userEvent.setup();
     h.remote = { dog: { level: 5, mastered: true } };   // finished on another device: not due here
@@ -83,7 +85,7 @@ describe('stages of an assigned list', () => {
     await waitFor(() => expect(h.pushes.length).toBeGreaterThan(0), { timeout: 4000 });
     const [id, words] = h.pushes.at(-1);
     expect(id).toBe(LIST);
-    expect(words.cat).toEqual({ level: 2, mastered: false });   // passed stage 1 at 100%
+    expect(words.cat).toEqual({ level: 3, mastered: false });   // passed stage 2 at 100%
     expect(words.dog).toEqual({ level: 5, mastered: true });    // started from the server
   });
 
@@ -92,7 +94,7 @@ describe('stages of an assigned list', () => {
     const user = userEvent.setup();
     h.remote = { cat: { level: 3, mastered: false } };
     localStorage.setItem(`spelling_tutor_deck_progress_v1:${LIST}:Lkid-maya`, JSON.stringify({
-      testDate: null, words: { cat: { level: 3, mastered: false, due: '2000-01-01', lastScore: 100, advancedOn: null, attempts: 2 } }
+      testDate: null, levelScheme: 2, words: { cat: { level: 3, mastered: false, due: '2000-01-01', lastScore: 100, advancedOn: null, attempts: 2 } }
     }));
     open(`/lists/${LIST}`);
     await screen.findByLabelText('Spelling card for cat');
@@ -116,7 +118,7 @@ describe('stages of an assigned list', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('a list that is not assigned to whoever is practising is never reported', async () => {
+  it('a list that is not assigned to whoever is practicing is never reported', async () => {
     h.assigned = [];
     setActiveLearner({ id: null });   // a child cannot open an unassigned list at all (see familyMode.test.jsx)
     localStorage.setItem('spelling_tutor_lists_v5', JSON.stringify([{ id: LIST, name: 'Mine', wordsRaw: 'cat\ndog', isDefault: 0, updatedAt: 'x', dirty: true, deleted: false, focusGroups: [], hints: [] }]));
@@ -131,7 +133,7 @@ describe('stages of an assigned list', () => {
 describe('strict stages', () => {
   const wrapper = ({ children }) => children;
   it('an assigned list is passed at 100% whatever threshold is saved', () => {
-    localStorage.setItem('spelling_tutor_deck_prefs_v1', JSON.stringify({ advancePct: 60, dropPct: 40, startLevel: 1 }));
+    localStorage.setItem('spelling_tutor_deck_prefs_v1', JSON.stringify({ advancePct: 60, dropPct: 40, startLevel: 1, levelScheme: 2 }));
     setActiveLearner({ id: null });
     const lenient = renderHook(() => useDeckSchedule('l1', ['cat'], { strict: false }), { wrapper });
     act(() => { lenient.result.current.commit('cat', 80); });
@@ -144,7 +146,7 @@ describe('strict stages', () => {
     expect(strict.result.current.stateFor('cat').level).toBe(1);
   });
 
-  it('mergeRemote starts words this device has not practised and leaves the ones it has', () => {
+  it('mergeRemote starts words this device has not practiced and leaves the ones it has', () => {
     setActiveLearner({ id: null });
     const { result } = renderHook(() => useDeckSchedule('l3', ['cat', 'dog', 'sun'], { strict: true }));
     act(() => { result.current.commit('dog', 100); });

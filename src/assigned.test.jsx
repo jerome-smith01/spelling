@@ -83,7 +83,7 @@ describe('assigned lists for the learner', () => {
     expect(screen.getByRole('heading', { name: 'Assigned to Maya' })).toBeInTheDocument();
   });
 
-  it('opens the assigned list to practise, read-only: no settings or import', async () => {
+  it('opens the assigned list to practice, read-only: no settings or import', async () => {
     setActiveLearner({ id: 'kid-maya', kid: true });
     open(`/lists/${ASSIGNED.list_id}`);
     expect(await screen.findByLabelText('Spelling Practice Controls')).toBeInTheDocument();
@@ -91,7 +91,7 @@ describe('assigned lists for the learner', () => {
     expect(screen.queryByRole('button', { name: /Settings/ })).not.toBeInTheDocument();
   });
 
-  it('a grown-up practising on their own account also gets read-only settings for an assigned list', async () => {
+  it('a grown-up practicing on their own account also gets read-only settings for an assigned list', async () => {
     open(`/lists/${ASSIGNED.list_id}`);   // not kid mode: e.g. a student with their own login
     expect(await screen.findByRole('heading', { name: 'Week 6 words' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Settings/ })).not.toBeInTheDocument();

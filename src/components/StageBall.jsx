@@ -3,7 +3,7 @@ import { TaskAltIcon } from './ActionIcons';
 
 /**
  * Stage Harvey ball: stage 1-4 fill 1-4 quarters (shade grows with the stage, see --stage-N
- * in spelling.css); stage 5 (no letters, the last stage) is a check circle.
+ * in spelling.css); stage 5 (the audio quiz, the last stage) is a check circle.
  */
 export default function StageBall({ level, size = 22, label }) {
   const lv = Math.max(1, Math.min(5, Math.round(level)));

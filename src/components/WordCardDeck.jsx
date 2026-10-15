@@ -5,19 +5,22 @@ import VirtualKeyboard from './VirtualKeyboard';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
+import AudioCard from './AudioCard';
+import { buildPlainPick } from '../utils/plainChoice';
 import StageBall from './StageBall';
 import AutoplayToggle from './AutoplayToggle';
 import ProgressBars from './ProgressBars';
 import DeckLegend from './DeckLegend';
 import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
-import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
+import { TourIcon } from './ActionIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { useTutorial } from '../hooks/useTutorial';
 import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import { hiddenIndicesForLevel, addDays, daysLeft } from '../utils/schedule';
 import { findTargets, hintsForWord } from '../utils/smartHide';
 import {
-  makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly, sessionGrade
+  makeSession, currentWord, recordResult, recordSkip, advance as advanceSession, goTo, endEarly, sessionGrade, focusFor
 } from '../utils/session';
 
 // Auto-play repeats whichever speed button the student used last (kept across visits)
@@ -37,7 +40,7 @@ const fmtDay = (iso, today) => {
 
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
-  words, schedule, onSpeak, onSpeakSyllables, activePlayback, onAttempts, frictionByWord = {},
+  words, schedule, onSpeak, onSpeakSyllables, onSpeakBoth, settingsToggle = null, settingsPanel = null, settingsOpen = false, listActions = null, activePlayback, onAttempts, frictionByWord = {},
   focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice', keyboardHidden = false, dueDate = null
 }) {
   const { queue, today, testDate, progress, stateFor, commit, practiceAnyway, commitQuiz, refreshQueue } = schedule;
@@ -82,6 +85,7 @@ export default function WordCardDeck({
   const [speed, setSpeed] = useState(lastSpeed);
   const userSpeak = (id, text) => { setLastSpeed('normal'); setSpeed('normal'); onSpeak(id, text); };
   const userSpeakSyllables = (id, syl) => { setLastSpeed('slow'); setSpeed('slow'); onSpeakSyllables?.(id, syl); };
+  const userSpeakBoth = (id, text, syl) => onSpeakBoth?.(id, text, syl);
 
   const byText = useMemo(() => Object.fromEntries(words.map(w => [w.word, w])), [words]);
   const curWord = currentWord(session);
@@ -104,22 +108,41 @@ export default function WordCardDeck({
   const level = useMemo(() => (current ? stateFor(current.word).level : 1), [current?.word, cardKey]);
   // Smart hiding: a list with focus letters hides the lesson's letters (see smartHide.js)
   const struggle = current ? struggleByWord[current.word] : undefined;
-  const hiddenIndices = useMemo(
-    () => (current
-      ? hiddenIndicesForLevel(current.letterCount, level,
-        focusGroups.length ? { word: current.word, groups: focusGroups, struggle } : null)
-      : new Set()),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [current, level, focusGroups.join(','), (struggle || []).join(',')]
-  );
+  // Focus retry (same letter missed twice this session): hide only those letters.
+  // Frozen with the card like `level`, so grading doesn't change what's on screen.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const focus = useMemo(() => (current ? focusFor(session, current.word) : null), [current?.word, cardKey]);
+  const focusTry = focus?.phase === 'focus';
   const targets = useMemo(
     () => (current && focusGroups.length ? findTargets(current.word, focusGroups) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [current?.word, focusGroups.join(',')]
   );
   const smartWord = targets.length > 0;
-  // Level 1 is multiple choice when the lesson offers at least two groups to choose from
-  const useChoice = smartWord && level === 1 && focusGroups.length >= 2;
+  // Level 1 is "pick the missing letters". With lesson letters (two or more groups to choose
+  // from) the choices are the lesson's groups; any other word gets one or two blanks with
+  // believable wrong letters (plainChoice.js).
+  const lessonPick = smartWord && level === 1 && focusGroups.length >= 2 && !focusTry;
+  const plainPick = useMemo(
+    () => (current && level === 1 && !lessonPick && !focusTry ? buildPlainPick(current.word) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current?.word, level, lessonPick, focusTry]
+  );
+  const useChoice = lessonPick || plainPick.length > 0;
+  // Level 5 is the audio quiz: nothing shown, the student types what they hear
+  const audioQuiz = level === 5 && !focusTry;
+  const pickTargets = lessonPick ? targets : plainPick;
+  const hiddenIndices = useMemo(
+    () => {
+      if (!current) return new Set();
+      if (focusTry) return new Set(focus.positions);
+      if (plainPick.length) return new Set(plainPick.flatMap(t => Array.from({ length: t.end - t.start }, (_, i) => t.start + i)));
+      return hiddenIndicesForLevel(current.letterCount, level,
+        focusGroups.length ? { word: current.word, groups: focusGroups, struggle } : null);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current, level, focusTry, plainPick, (focus?.positions || []).join(','), focusGroups.join(','), (struggle || []).join(',')]
+  );
 
   useEffect(() => { if (result) backRef.current?.focus(); }, [result]);
 
@@ -138,9 +161,11 @@ export default function WordCardDeck({
   if (!words.length) return null;
 
   const handleResult = ({ pct, results, typed }) => {
-    const res = commit(current.word, pct);
-    setSession(sess => recordResult(sess, pct));
-    setResult({ pct, results, typed, res });
+    const missed = Object.keys(results).filter(i => results[i] !== 'correct').map(Number);
+    // A focus try only checks the tricky letters, so it never moves the word's level
+    const res = focusTry ? null : commit(current.word, pct);
+    setSession(sess => recordResult(sess, pct, missed));
+    setResult({ pct, results, typed, res, focusTry });
   };
 
   const move = (fn) => {
@@ -166,12 +191,23 @@ export default function WordCardDeck({
   const tabs = (
     <>
     <div className="deck-bar">
-      <div className="deck-tabs" role="group" aria-label="Mode" data-tutorial="modes">
-        <button type="button" className="deck-tab" aria-pressed={mode === 'practice'} onClick={() => setMode('practice')}>Practice</button>
-        <button type="button" className="deck-tab" aria-pressed={mode === 'quiz'} onClick={() => setMode('quiz')}>Quiz</button>
+      {settingsOpen ? listActions : (
+        <div className="deck-tabs" role="group" aria-label="Mode" data-tutorial="modes">
+          <button type="button" className="deck-tab" aria-pressed={mode === 'practice'} onClick={() => setMode('practice')}>Practice</button>
+          <button type="button" className="deck-tab" aria-pressed={mode === 'quiz'} onClick={() => setMode('quiz')}>Quiz</button>
+        </div>
+      )}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {!settingsOpen && (
+          <button type="button" className="btn-secondary-sm" onClick={startTour} aria-label="Restart the guided tour"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+            <TourIcon size="1.1em" />Tour
+          </button>
+        )}
+        {settingsToggle}
       </div>
-      <button type="button" className="btn-secondary-sm" style={{ marginLeft: 'auto' }} onClick={startTour} aria-label="Restart the guided tour">❓ Tour</button>
     </div>
+    {settingsPanel}
     <div className="deck-test-line">{testLine}</div>
     </>
   );
@@ -184,6 +220,8 @@ export default function WordCardDeck({
           words={words}
           isMastered={(w) => !!progress.words[w]?.mastered}
           onSpeak={onSpeak}
+          onSpeakSyllables={onSpeakSyllables}
+          onSpeakBoth={onSpeakBoth}
           onAttempts={onAttempts}
           commitQuiz={commitQuiz}
           onExit={() => { refreshQueue(); restartSession(); setMode('practice'); }}
@@ -193,13 +231,13 @@ export default function WordCardDeck({
     );
   }
 
-  const statusLabel = { ok: 'scored 100%', miss: 'missed', skip: 'skipped' };
-  const dotIcon = { ok: <CheckIcon />, miss: <CloseIcon />, skip: <QuestionIcon /> };
+  const statusLabel = { ok: 'scored 100%', assisted: 'finished with a focus retry', miss: 'missed', skip: 'skipped' };
+  const dotIcon = { ok: <CheckIcon />, assisted: <CheckIcon />, miss: <CloseIcon />, skip: <QuestionIcon /> };
   const strip = (
     <div data-tutorial="strip">
       <div className="deck-strip session" role="list" aria-label="Session cards">
         {session.order.map((word, i) => {
-          const st = session.status[word];
+          const st = session.status[word] === 'ok' && session.assisted?.[word] ? 'assisted' : session.status[word];
           const isCurrent = !session.ended && i === session.idx;
           return (
             <button
@@ -256,6 +294,7 @@ export default function WordCardDeck({
       {tabs}
       <TutorialPrompt onAccept={() => tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, { isAvailable: targetExists })} />
       {strip}
+      <p className="deck-focus-note" role="status">{focusTry && !result ? '🎯 Focus on the tricky letter' : ''}</p>
       <div className={`deck-flip ${result ? 'flipped' : ''}`}>
         <div className="deck-flip-inner">
           <div
@@ -271,15 +310,41 @@ export default function WordCardDeck({
               <ChoicePicker
                 key={`${current.id}-${cardKey}`}
                 word={current}
-                targets={targets}
+                targets={pickTargets}
                 groups={focusGroups}
                 onSpeak={userSpeak}
                 onSpeakSyllables={userSpeakSyllables}
+                onSpeakBoth={onSpeakBoth ? userSpeakBoth : undefined}
+                autoPlay={schedule.prefs.autoSpeak !== false}
+                defaultSpeed={speed}
+                onAutoPlayChange={(v) => schedule.setPrefs({ autoSpeak: v })}
+                onBack={goBack}
+                onSkip={skipCard}
+                canBack={session.idx > 0}
                 activePlayback={activePlayback}
                 onAttempts={onAttempts}
-                defaultSpeed={speed}
                 autoFocus
                 onResult={handleResult}
+              />
+            ) : audioQuiz ? (
+              <AudioCard
+                key={`${current.id}-${cardKey}`}
+                word={current}
+                onSpeak={userSpeak}
+                onSpeakSyllables={userSpeakSyllables}
+                onSpeakBoth={onSpeakBoth ? userSpeakBoth : undefined}
+                activePlayback={activePlayback}
+                onAttempts={onAttempts}
+                autoFocus
+                keyboardRef={kbRef}
+                onCanCheck={setCanCheck}
+                onResult={handleResult}
+                onBack={goBack}
+                onSkip={skipCard}
+                canBack={session.idx > 0}
+                autoPlay={schedule.prefs.autoSpeak !== false}
+                onAutoPlayChange={(v) => schedule.setPrefs({ autoSpeak: v })}
+                touchKeyboard={coarse}
               />
             ) : (
             <WordCard
@@ -290,6 +355,7 @@ export default function WordCardDeck({
               onShow={() => {}}
               onSpeak={userSpeak}
               onSpeakSyllables={userSpeakSyllables}
+              onSpeakBoth={onSpeakBoth ? userSpeakBoth : undefined}
               activePlayback={activePlayback}
               onAttempts={onAttempts}
               friction={frictionByWord[current.word] || 0}
@@ -317,11 +383,16 @@ export default function WordCardDeck({
               >
                 <div className="word-card-header" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button type="button" className={`speaker-btn${speed === 'normal' ? ' is-default' : ''}`} onClick={() => userSpeak(current.id, current.word)}
+                      aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
                     <button type="button" className={`speaker-btn${speed === 'slow' ? ' is-default' : ''}`}
                       onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
                       aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
-                    <button type="button" className={`speaker-btn${speed === 'normal' ? ' is-default' : ''}`} onClick={() => userSpeak(current.id, current.word)}
-                      aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
+                    {onSpeakBoth && (
+                      <button type="button" className="speaker-btn speaker-btn-both"
+                        onClick={() => userSpeakBoth(current.id, current.word, buildPronunciationSyllables(current))}
+                        aria-label={`Hear ${current.word} at normal speed, then slowly`}><BothSpeedIcon size="1em" /></button>
+                    )}
                   </div>
                   <AutoplayToggle checked={schedule.prefs.autoSpeak !== false}
                     onChange={(v) => schedule.setPrefs({ autoSpeak: v })} />
@@ -339,6 +410,11 @@ export default function WordCardDeck({
                     );
                   })}
                 </div>
+                {result.focusTry ? (
+                  <p className="deck-message">{result.pct >= 100 ? 'Nice! Now try the whole word again.' : 'Almost! Try the tricky letter again.'}</p>
+                ) : result.pct < 100 && focusFor(session, current.word)?.phase === 'focus' && (
+                  <p className="deck-message">Next time, just the tricky letter.</p>
+                )}
                 {result.pct < 100 && hintsForWord(current.word, focusGroups, hints).slice(0, 1).map(h => (
                   <p key={h} className="deck-hint">💡 {h}</p>
                 ))}
@@ -367,9 +443,10 @@ export default function WordCardDeck({
             prevDisabled={session.idx === 0}
             onNext={result ? goNext : skipCard}
             nextLabel={result ? 'Next card' : 'Skip this card for now'}
-            onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
             onPlay={() => userSpeak(current.id, current.word)}
             defaultSpeed={speed}
+            onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
+            onPlayBoth={onSpeakBoth ? () => userSpeakBoth(current.id, current.word, buildPronunciationSyllables(current)) : undefined}
           />
         </div>
       )}

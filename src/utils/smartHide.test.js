@@ -48,8 +48,8 @@ describe('smartHiddenIndices — worked example "thousand"', () => {
   it('L3 struggle override replaces the alternating letters', () => {
     expect(mask('thousand', smartHiddenIndices('thousand', 3, GROUPS, [6, 7]))).toBe('th__sa__');
   });
-  it('L4 shows 1 in 5 letters', () => {
-    expect(mask('thousand', smartHiddenIndices('thousand', 4, GROUPS))).toBe('t____a__');
+  it('L4 shows 1 in 4 letters', () => {
+    expect(mask('thousand', smartHiddenIndices('thousand', 4, GROUPS))).toBe('t___s___');
   });
   it('L5 hides everything', () => {
     expect(mask('thousand', smartHiddenIndices('thousand', 5, GROUPS))).toBe('________');

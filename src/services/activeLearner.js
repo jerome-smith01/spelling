@@ -1,5 +1,5 @@
 /**
- * Which learner is practising on this device (family accounts).
+ * Which learner is practicing on this device (family accounts).
  *
  *   { id: null }              -> the logged-in user themselves (the default; nothing changes)
  *   { id: '<uuid>', kid }     -> a child profile; `kid` = kid mode (adult screens locked)

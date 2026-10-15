@@ -1,23 +1,48 @@
 /**
  * Progressive flashcard scheduling (pure functions, no storage or React).
  *
- * Levels: 1 = show 1 in 2 letters, 2 = 1 in 3, 3 = 1 in 4, 4 = 1 in 5,
- * 5 = all hidden (the last level; passing it masters the word).
+ * Levels: 1 = pick the missing letters from choices, 2 = 1 in 2 letters visible, 3 = 1 in 3,
+ * 4 = 1 in 4, 5 = quiz from audio (nothing shown; the last level, passing it masters the word).
+ * Saved progress from the earlier ladder (1 in 2 ... 1 in 5, none) moves up one level (see migrateProgress).
  * Dates are local 'YYYY-MM-DD' strings so day math never shifts with timezones.
  */
 import { smartHiddenIndices } from './smartHide';
 
 export const LEVELS = [
-  { level: 1, step: 2, label: '1 in 2 letters shown' },
-  { level: 2, step: 3, label: '1 in 3 letters shown' },
-  { level: 3, step: 4, label: '1 in 4 letters shown' },
-  { level: 4, step: 5, label: '1 in 5 letters shown' },
-  { level: 5, step: null, label: 'No letters shown' }
+  { level: 1, step: 2, kind: 'pick', label: 'Select the missing letters' },
+  { level: 2, step: 2, label: '1 in 2 letters visible' },
+  { level: 3, step: 3, label: '1 in 3 letters visible' },
+  { level: 4, step: 4, label: '1 in 4 letters visible' },
+  { level: 5, step: null, kind: 'quiz', label: 'Quiz from audio' }
 ];
 export const MAX_LEVEL = LEVELS.length;
 // Most recent graded attempts kept per word (for the card's Progress bars)
 export const HISTORY_LIMIT = 10;
-export const DEFAULT_PREFS = { startLevel: 1, advancePct: 100, dropPct: 60, autoSpeak: true };
+export const LEVEL_SCHEME = 2; // 1 = the old ladder (1 in 2 ... none); 2 = pick, 1 in 2/3/4, audio quiz
+export const DEFAULT_PREFS = { startLevel: 1, advancePct: 100, dropPct: 60, autoSpeak: true, levelScheme: LEVEL_SCHEME };
+
+// Old level n is new level n + 1; the old "no letters" level (5) stays the last one
+const shiftLevel = (lv) => Math.min(5, Math.max(1, Math.round(Number(lv) || 1)) + 1);
+
+/** Saved deck progress from the old ladder, moved up one level. Anything already migrated is returned as is. */
+export function migrateProgress(progress) {
+  if (!progress || progress.levelScheme === LEVEL_SCHEME) return progress;
+  const words = {};
+  for (const [w, st] of Object.entries(progress.words || {})) {
+    words[w] = {
+      ...st,
+      level: shiftLevel(st.level),
+      ...(st.history ? { history: st.history.map(h => ({ ...h, level: shiftLevel(h.level) })) } : {})
+    };
+  }
+  return { ...progress, words, levelScheme: LEVEL_SCHEME };
+}
+
+/** Saved prefs from the old ladder: the starting level moves up one too. */
+export function migratePrefs(prefs) {
+  if (!prefs || prefs.levelScheme === LEVEL_SCHEME) return prefs;
+  return { ...prefs, startLevel: shiftLevel(prefs.startLevel), levelScheme: LEVEL_SCHEME };
+}
 // Gap in days after passing level 1..4 when no test date is set
 const NO_DATE_GAPS = [1, 2, 4, 7];
 const REQUEUE_AFTER = 3;
@@ -186,7 +211,7 @@ export function applyQuizResult(progress, word, pct, { prefs = DEFAULT_PREFS, to
 
 /**
  * Each word's stage as the server stores it for an assigned list: { word: { level, mastered } }.
- * Only words that have been practised have a stage.
+ * Only words that have been practiced have a stage.
  */
 export function stagesOf(progress) {
   const out = {};
@@ -197,9 +222,9 @@ export function stagesOf(progress) {
 }
 
 /**
- * Carry on from stages stored on the server (another device): a word this device has never practised starts
+ * Carry on from stages stored on the server (another device): a word this device has never practiced starts
  * where the server has it. A word this device already has keeps its own stage, which may be lower than the
- * server's (progress can go down, and the device that last practised is the one that counts).
+ * server's (progress can go down, and the device that last practiced is the one that counts).
  * Returns the same object when nothing changed.
  */
 export function seedRemoteStages(progress, remote, { prefs = DEFAULT_PREFS, today } = {}) {

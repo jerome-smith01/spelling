@@ -7,11 +7,11 @@ import { buildLoginUrl } from '../services/apiService';
 import PinPad from '../components/PinPad';
 
 /**
- * Route: /who — "Who's practising?". Choosing a child starts kid mode (adult screens locked).
+ * Route: /who — "Who's practicing?". Choosing a child starts kid mode (adult screens locked).
  * Leaving kid mode, or switching to a sibling, needs the grown-up PIN when one is set.
  */
 export default function WhoPage() {
-  usePageTitle("Who's practising?");
+  usePageTitle("Who's practicing?");
   const { status } = useAuth();
   const { learners, activeId, kidMode, pinSet, switchTo, unlock } = useLearner();
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ export default function WhoPage() {
   if (status !== 'authenticated' && kids.length === 0) {
     return (
       <section style={{ maxWidth: '680px', margin: '0 auto' }}>
-        <h2 tabIndex={-1} style={{ color: 'var(--foreground)' }}>Who&apos;s practising?</h2>
+        <h2 tabIndex={-1} style={{ color: 'var(--foreground)' }}>Who&apos;s practicing?</h2>
         <p style={{ color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
           Log in to add your children and follow how each one is doing.
         </p>
@@ -51,13 +51,13 @@ export default function WhoPage() {
 
   return (
     <section style={{ maxWidth: '860px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <h2 tabIndex={-1} style={{ margin: 0, color: 'var(--foreground)' }}>Who&apos;s practising?</h2>
+      <h2 tabIndex={-1} style={{ margin: 0, color: 'var(--foreground)' }}>Who&apos;s practicing?</h2>
       {kids.length === 0 && (
         <p style={{ margin: 0, color: 'var(--muted-foreground)' }}>
           No children yet. <Link to="/family">Add a child</Link> to give each one their own progress.
         </p>
       )}
-      <ul className="who-grid" aria-label="Choose who is practising">
+      <ul className="who-grid" aria-label="Choose who is practicing">
         {kids.map(k => (
           <li key={k.id}>
             <button type="button" className="who-tile" onClick={() => choose(k.id)} aria-current={k.id === activeId ? 'true' : undefined}>

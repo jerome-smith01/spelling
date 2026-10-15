@@ -25,7 +25,7 @@ export const PRACTICE_STEPS = [
   {
     stepKey: 'practice_levels', target: 'level', position: 'below',
     title: 'Levels',
-    body: 'Words get harder as you learn them: 1 in 2 letters shown, then 1 in 3, then 1 in 4, then no letters. 100% moves a word up; under 60% moves it back.'
+    body: 'Words get harder as you learn them: pick the missing letters, then 1 in 2 letters visible, then 1 in 3, then 1 in 4, then spell it from the audio alone. 100% moves a word up; under 60% moves it back.'
   },
   {
     stepKey: 'practice_progress', target: 'strip', position: 'below',

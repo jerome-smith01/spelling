@@ -5,7 +5,7 @@ import AITipModal from './AITipModal';
 import AutoplayToggle from './AutoplayToggle';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import useCoarsePointer from '../hooks/useCoarsePointer';
-import { PlayIcon, SlowPlayIcon } from './AudioIcons';
+import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { ChevronLeftIcon, ChevronRightIcon, TaskAltIcon } from './ActionIcons';
 
 export default function WordCard({
@@ -15,6 +15,7 @@ export default function WordCard({
   onShow,
   onSpeak,
   onSpeakSyllables,
+  onSpeakBoth,
   activePlayback,
   onAttempts,
   friction = 0,
@@ -170,6 +171,15 @@ export default function WordCard({
         <div data-tutorial="audio" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <button
             type="button"
+            onClick={() => onSpeak(word.id, word.word)}
+            className={`speaker-btn ${isCardSpeakingNormal ? 'active' : ''}${defaultSpeed === 'normal' ? ' is-default' : ''}`}
+            aria-label={isCardSpeakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}
+            title={isCardSpeakingNormal ? 'Stop audio' : `Hear ${word.word} (normal speed)`}
+          >
+            {isCardSpeakingNormal ? '⏹️' : <PlayIcon />}
+          </button>
+          <button
+            type="button"
             onClick={() => {
               const syllableTexts = buildPronunciationSyllables(word);
               if (onSpeakSyllables) {
@@ -182,15 +192,17 @@ export default function WordCard({
           >
             {isCardSpeakingSlow ? '⏹️' : <SlowPlayIcon />}
           </button>
-          <button
-            type="button"
-            onClick={() => onSpeak(word.id, word.word)}
-            className={`speaker-btn ${isCardSpeakingNormal ? 'active' : ''}${defaultSpeed === 'normal' ? ' is-default' : ''}`}
-            aria-label={isCardSpeakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}
-            title={isCardSpeakingNormal ? 'Stop audio' : `Hear ${word.word} (normal speed)`}
-          >
-            {isCardSpeakingNormal ? '⏹️' : <PlayIcon />}
-          </button>
+          {onSpeakBoth && (
+            <button
+              type="button"
+              onClick={() => onSpeakBoth(word.id, word.word, buildPronunciationSyllables(word))}
+              className="speaker-btn speaker-btn-both"
+              aria-label={`Hear ${word.word} at normal speed, then slowly`}
+              title={`Hear ${word.word} normal, then slow`}
+            >
+              <BothSpeedIcon size="1em" />
+            </button>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

@@ -17,6 +17,16 @@ registerSW({
   }
 });
 
+// Date fields draw their own calendar icon in the input's right padding (see spelling.css), which
+// sits outside the browser's own picker trigger. Open the picker when that icon area is clicked.
+document.addEventListener('click', (e) => {
+  const el = e.target;
+  if (!(el instanceof HTMLInputElement) || el.type !== 'date' || el.disabled || el.readOnly) return;
+  const rect = el.getBoundingClientRect();
+  if (e.clientX < rect.right - 40) return; // segments (mm/dd/yyyy) stay editable by typing
+  try { el.showPicker(); } catch { /* unsupported or already open */ }
+});
+
 // Vite serves the app under /spelling/app/, so routes are relative to that base
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

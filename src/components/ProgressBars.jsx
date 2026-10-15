@@ -7,7 +7,7 @@ const MAX_H = 38;
 /**
  * Attempt history for one word: a bar per attempt, oldest to newest (the newest is
  * outlined). Height = the score; the stage ball below each bar is the stage it was made at,
- * so a change between neighbours shows where the word advanced.
+ * so a change between neighbors shows where the word advanced.
  */
 export default function ProgressBars({ attempts = [] }) {
   if (!attempts.length) return null;
