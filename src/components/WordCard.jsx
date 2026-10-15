@@ -27,6 +27,7 @@ export default function WordCard({
   onSkip,
   canBack = false,
   autoPlay,
+  defaultSpeed,
   onAutoPlayChange
 }) {
   const [userInputs, setUserInputs] = useState({});
@@ -175,7 +176,7 @@ export default function WordCard({
                 onSpeakSyllables(word.id, syllableTexts);
               }
             }}
-            className={`speaker-btn ${isCardSpeakingSlow ? 'active' : ''}`}
+            className={`speaker-btn ${isCardSpeakingSlow ? 'active' : ''}${defaultSpeed === 'slow' ? ' is-default' : ''}`}
             aria-label={isCardSpeakingSlow ? `Stop audio for ${word.word}` : `Hear ${word.word} syllable by syllable`}
             title={isCardSpeakingSlow ? 'Stop audio' : `Hear ${word.word} syllable by syllable`}
           >
@@ -184,7 +185,7 @@ export default function WordCard({
           <button
             type="button"
             onClick={() => onSpeak(word.id, word.word)}
-            className={`speaker-btn ${isCardSpeakingNormal ? 'active' : ''}`}
+            className={`speaker-btn ${isCardSpeakingNormal ? 'active' : ''}${defaultSpeed === 'normal' ? ' is-default' : ''}`}
             aria-label={isCardSpeakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}
             title={isCardSpeakingNormal ? 'Stop audio' : `Hear ${word.word} (normal speed)`}
           >

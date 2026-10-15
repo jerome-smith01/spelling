@@ -9,7 +9,7 @@ import { PlayIcon, SlowPlayIcon } from './AudioIcons';
  * each position so friction and pattern stats keep working.
  */
 export default function ChoicePicker({
-  word, targets, groups, onSpeak, onSpeakSyllables, activePlayback, onAttempts, onResult, autoFocus = false
+  word, targets, groups, onSpeak, onSpeakSyllables, activePlayback, onAttempts, onResult, autoFocus = false, defaultSpeed
 }) {
   const [picks, setPicks] = useState({}); // target index -> chosen group
   const firstRef = useRef(null);
@@ -50,12 +50,12 @@ export default function ChoicePicker({
     <article className="word-card" aria-label={`Spelling card for ${word.word}`}>
       <div className="word-card-header">
         <div data-tutorial="audio" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <button type="button" className={`speaker-btn ${speakingNormal ? 'active' : ''}`}
+          <button type="button" className={`speaker-btn ${speakingNormal ? 'active' : ''}${defaultSpeed === 'normal' ? ' is-default' : ''}`}
             onClick={() => onSpeak(word.id, word.word)}
             aria-label={speakingNormal ? `Stop audio for ${word.word}` : `Hear ${word.word} at normal speed`}>
             {speakingNormal ? '⏹️' : <PlayIcon />}
           </button>
-          <button type="button" className={`speaker-btn ${speakingSlow ? 'active' : ''}`}
+          <button type="button" className={`speaker-btn ${speakingSlow ? 'active' : ''}${defaultSpeed === 'slow' ? ' is-default' : ''}`}
             onClick={() => onSpeakSyllables?.(word.id, buildPronunciationSyllables(word))}
             aria-label={speakingSlow ? `Stop audio for ${word.word}` : `Hear ${word.word} syllable by syllable`}>
             {speakingSlow ? '⏹️' : <SlowPlayIcon />}

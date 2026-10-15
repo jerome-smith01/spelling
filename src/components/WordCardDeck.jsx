@@ -78,8 +78,10 @@ export default function WordCardDeck({
     tutorial.restart(quiz ? TUTORIAL_KEYS.quiz : TUTORIAL_KEYS.practice, quiz ? QUIZ_STEPS : PRACTICE_STEPS, { isAvailable: targetExists });
   };
 
-  const userSpeak = (id, text) => { setLastSpeed('normal'); onSpeak(id, text); };
-  const userSpeakSyllables = (id, syl) => { setLastSpeed('slow'); onSpeakSyllables?.(id, syl); };
+  // The speed the student tapped last: auto-play repeats it on the next word and its button is outlined
+  const [speed, setSpeed] = useState(lastSpeed);
+  const userSpeak = (id, text) => { setLastSpeed('normal'); setSpeed('normal'); onSpeak(id, text); };
+  const userSpeakSyllables = (id, syl) => { setLastSpeed('slow'); setSpeed('slow'); onSpeakSyllables?.(id, syl); };
 
   const byText = useMemo(() => Object.fromEntries(words.map(w => [w.word, w])), [words]);
   const curWord = currentWord(session);
@@ -275,6 +277,7 @@ export default function WordCardDeck({
                 onSpeakSyllables={userSpeakSyllables}
                 activePlayback={activePlayback}
                 onAttempts={onAttempts}
+                defaultSpeed={speed}
                 autoFocus
                 onResult={handleResult}
               />
@@ -292,6 +295,7 @@ export default function WordCardDeck({
               friction={frictionByWord[current.word] || 0}
               deckMode
               autoPlay={schedule.prefs.autoSpeak !== false}
+              defaultSpeed={speed}
               onAutoPlayChange={(v) => schedule.setPrefs({ autoSpeak: v })}
               autoFocus
               keyboardRef={kbRef}
@@ -313,10 +317,10 @@ export default function WordCardDeck({
               >
                 <div className="word-card-header" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <button type="button" className="speaker-btn"
+                    <button type="button" className={`speaker-btn${speed === 'slow' ? ' is-default' : ''}`}
                       onClick={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
                       aria-label={`Hear ${current.word} syllable by syllable`}><SlowPlayIcon /></button>
-                    <button type="button" className="speaker-btn" onClick={() => userSpeak(current.id, current.word)}
+                    <button type="button" className={`speaker-btn${speed === 'normal' ? ' is-default' : ''}`} onClick={() => userSpeak(current.id, current.word)}
                       aria-label={`Hear ${current.word} at normal speed`}><PlayIcon /></button>
                   </div>
                   <AutoplayToggle checked={schedule.prefs.autoSpeak !== false}
@@ -365,6 +369,7 @@ export default function WordCardDeck({
             nextLabel={result ? 'Next card' : 'Skip this card for now'}
             onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
             onPlay={() => userSpeak(current.id, current.word)}
+            defaultSpeed={speed}
           />
         </div>
       )}
