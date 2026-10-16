@@ -10,19 +10,20 @@ import { recordReviewEvent } from '../services/reviewEvents';
  *   gate.finish({ tries })               the popup calls this when the child has done what it asked
  *   gate.reset()                         a new round or session starts clean
  *
- * `modal` is { level, word, cells, dwellMs } while the popup is open. Strikes live only in memory.
+ * Strikes count rushed misses across the whole round or session (not per word): the 1st gets the
+ * level-1 popup, the 2nd level 2, the 3rd and later level 3. A new round or session starts at 0
+ * (gate.reset). `modal` is { level, word, cells, dwellMs } while the popup is open. Kept in memory only.
  */
 export default function useReviewGate({ context, listId }) {
   const [modal, setModal] = useState(null);
   const modalRef = useRef(null);
-  const strikes = useRef({});
+  const strikes = useRef(0);
   const shown = useRef(null);
   const finishedAt = useRef(0);
   const keyRef = useRef(null); // the level-3 popup registers { press } here for the on-screen keyboard
 
   const show = useCallback(({ word, correct, cells }) => {
     shown.current = { word, correct, cells, shownAt: Date.now(), reviewed: false };
-    if (correct) strikes.current[word] = 0;
   }, []);
 
   const guard = useCallback((proceed) => {
@@ -31,14 +32,8 @@ export default function useReviewGate({ context, listId }) {
     const r = shown.current;
     if (!r || r.correct || r.reviewed) { shown.current = null; proceed(); return; }
     const dwell = Date.now() - r.shownAt;
-    if (!isRushed(dwell)) {
-      strikes.current[r.word] = 0;
-      shown.current = null;
-      proceed();
-      return;
-    }
-    const next = (strikes.current[r.word] || 0) + 1;
-    strikes.current[r.word] = next;
+    if (!isRushed(dwell)) { shown.current = null; proceed(); return; }
+    const next = ++strikes.current;
     const m = { level: levelFor(next), word: r.word, cells: r.cells, dwellMs: dwell };
     modalRef.current = m;
     setModal(m);
@@ -55,7 +50,7 @@ export default function useReviewGate({ context, listId }) {
   }, [context, listId]);
 
   const reset = useCallback(() => {
-    strikes.current = {};
+    strikes.current = 0;
     shown.current = null;
     modalRef.current = null;
     setModal(null);

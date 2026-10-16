@@ -784,3 +784,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (prefers-reduced-motion: reduce) { .review-shake { animation: none; } }
 .vkb-inline { position: relative; z-index: 950; }
 .quiz-immersive > .review-backdrop { max-width: none; width: auto; }
+
+/* The end-of-round summary is shared by the quiz and practice sessions */
+.round-summary { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; }
+.round-summary .btn-verify, .round-summary .btn-secondary-sm { min-height: 3.5rem; padding: 0.8rem 1.5rem; font-size: 1.15rem; border-radius: var(--radius-lg); width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; }
+.round-summary .btn-verify { font-weight: 800; }
+.round-summary .btn-verify-alt { background-color: var(--muted); border-color: var(--card-border); color: var(--foreground); box-shadow: none; }
+.round-summary .quiz-choice { justify-content: flex-start; text-align: left; padding-left: 1.25rem; }
+.round-summary > .btn-verify, .round-summary > .btn-secondary-sm { max-width: 30rem; }
+.round-summary .quiz-review { max-width: 36rem; }
+.deck-card-center .round-summary .quiz-letters, .deck-back .quiz-letters { max-width: 100%; }

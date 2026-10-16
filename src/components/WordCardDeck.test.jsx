@@ -89,6 +89,25 @@ describe('WordCardDeck', () => {
     vi.restoreAllMocks();
   });
 
+  it('practice: a card result and the session summary use the quiz result format', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const user = userEvent.setup();
+    render(<Harness />);
+    await fill(user, ['x', 'x', 'x']);
+    await user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
+    expect(await screen.findByText('Your spelling')).toBeInTheDocument();
+    expect(screen.getByText('Correct spelling')).toBeInTheDocument();
+    expect(screen.getByLabelText('The word is kitten')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'End session' }));
+    // the session summary: grade, a review of every word, and what to focus on
+    expect(screen.getByRole('status', { name: /Session grade/ })).toBeInTheDocument();
+    expect(screen.getByLabelText('Every word, with your spelling')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Not tested out' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retake missed word (1)' }));
+    expect(screen.getByLabelText('Spelling card for kitten')).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
   it('Back, clicking a dot, and End session move around the session', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);
     const user = userEvent.setup();

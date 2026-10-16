@@ -2,9 +2,8 @@
  * When a child rushes past a mistake, and how firmly the app asks them to look at it.
  * (Behavior and the rules behind it: docs/architecture/07_quiz_and_keyboard.md §9.)
  *
- * A strike is "missed a word, then left its result in under RUSH_MS". Strikes are counted per
- * word within a round or session (a retake starts clean, to stay gentle), and go back to 0 when
- * the word is spelled right or its result is looked at properly.
+ * A strike is "missed a word, then left its result in under RUSH_MS". Strikes are counted across the
+ * whole round or session (not per word); a new round or session starts clean, to stay gentle.
  */
 export const RUSH_MS = 1000;
 export const MAX_LEVEL = 3;

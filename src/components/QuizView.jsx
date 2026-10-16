@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { alignSpelling, alignCells, recentPct } from '../utils/schedule';
+import { alignSpelling, alignCells } from '../utils/schedule';
 import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import useCoarsePointer from '../hooks/useCoarsePointer';
@@ -8,7 +8,10 @@ import KeyboardFrame from './KeyboardFrame';
 import ReviewModal from './ReviewModal';
 import useReviewGate from '../hooks/useReviewGate';
 import { cellsFromSpelling } from '../utils/reviewCells';
-import { TaskAltIcon, ChevronLeftIcon, ChevronRightIcon, RefreshIcon, CloseIcon, FlagIcon, CheckIcon, ListIcon } from './ActionIcons';
+import SpellingResult, { cellsOf } from './SpellingResult';
+import RoundSummary from './RoundSummary';
+import useDrill from '../hooks/useDrill';
+import { TaskAltIcon, ChevronRightIcon, CloseIcon, CheckIcon } from './ActionIcons';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { letterFor } from '../utils/session';
@@ -21,17 +24,6 @@ const shuffle = (arr) => {
   }
   return a;
 };
-
-const GROUPED = ['open', 'hardest', 'nextHardest']; // shown together, set apart from the other choices
-
-// A word's letters as boxes: green where the letter is right, red where it is wrong
-const LetterBoxes = ({ cells, label }) => (
-  <div className="quiz-letters" role="img" aria-label={label}>
-    {cells.map((c, i) => (
-      <span key={i} className={`quiz-letter ${c.kind === 'ok' ? 'quiz-letter-ok' : c.kind === 'missing' ? 'quiz-letter-bad quiz-letter-missing' : 'quiz-letter-bad'}`}>{c.kind === 'missing' ? '' : c.ch}</span>
-    ))}
-  </div>
-);
 
 // Quiz progress survives a refresh: saved per list (and learner) under `storageKey`
 const loadSaved = (storageKey, words) => {
@@ -67,10 +59,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   const [result, setResult] = useState(saved?.result ?? null);
   const [outcomes, setOutcomes] = useState(saved?.outcomes ?? []);
   // The original round's scores, and the words already drilled from it (hardest 3, next 3, ...)
-  const [base, setBase] = useState(saved?.base ?? null);
-  const [drilled, setDrilled] = useState(saved?.drilled ?? []);
-  const [openN, setOpenN] = useState(null); // how many not-yet-learned words (null = all of them)
-  const [hardN, setHardN] = useState(3); // how many of the hardest words the slider picks
+  const { base, drilled, apply: applyDrill } = useDrill({ base: saved?.base, drilled: saved?.drilled });
   const inputRef = useRef(null);
   const [speed, setSpeedState] = useState(loadSpeed);
   const speedRef = useRef(speed);
@@ -161,13 +150,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   // mode: 'drill' picks from the original round (kept), 'keep' retakes within a drill, 'reset' starts afresh
   const start = (list, mode = 'reset') => {
     gate.reset();
-    if (mode === 'drill') {
-      setBase(b => b ?? outcomes.map(o => ({ word: o.word, testedOut: o.testedOut, pct: o.pct })));
-      setDrilled(d => [...new Set([...d, ...list.map(w => w.word)])]);
-    } else if (mode === 'reset' || !base) {
-      setBase(null);
-      setDrilled([]);
-    }
+    applyDrill(list, mode, outcomes.map(o => ({ word: o.word, ok: o.testedOut, pct: o.pct })));
     setOrder(shuffle(list));
     setIdx(0);
     setOutcomes([]);
@@ -179,101 +162,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   if (!word) {
     const done = outcomes.length > 0;
     const out = outcomes.filter(o => o.testedOut).length;
-    const missed = outcomes.filter(o => !o.testedOut);
-    const missedSet = new Set(missed.map(o => o.word));
     const avg = done ? Math.round(outcomes.reduce((a, o) => a + o.pct, 0) / outcomes.length) : 0;
-    const letter = letterFor(avg);
-    // Hardest = lowest average over each word's last five attempts (this quiz's included)
-    const form = outcomes.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
-      .filter(f => f.pct < 100) // a word at 100% over its last five is not hard
-      .sort((a, b) => a.pct - b.pct);
-    // Once a drill has been done, what is left of the original round (minus the words already drilled)
-    const drilledSet = new Set(drilled);
-    const left = (base || []).filter(o => !drilledSet.has(o.word));
-    const leftForm = left.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
-      .filter(f => f.pct < 100)
-      .sort((a, b) => a.pct - b.pct);
-    const leftMissedSet = new Set(left.filter(o => !o.testedOut).map(o => o.word));
-    // The slider picks how many of the hardest words to drill (default 3); the chips below show them
-    const rank = base ? leftForm : form;
-    const n = Math.max(1, Math.min(hardN, rank.length || 1));
-    const hardList = rank.slice(0, n);
-    const hardSet = new Set(hardList.map(f => f.word));
-    const hardLabel = `${base ? 'Next' : 'Test the'} ${n} hardest ${n === 1 ? 'word' : 'words'}`;
-    // Not-yet-learned words, weakest first; the slider picks how many to quiz on
-    const openAll = words.filter(w => !isMastered(w.word))
-      .map(w => ({ word: w.word, pct: recentPct(historyFor(w.word), outcomes.find(o => o.word === w.word)?.pct) }))
-      .sort((a, b) => a.pct - b.pct);
-    const openCount = Math.max(1, Math.min(openN ?? openAll.length, openAll.length));
-    const openList = openAll.slice(0, openCount);
-    const openSet = new Set(openList.map(f => f.word));
-    const choices = [
-      { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
-      { key: 'remaining', label: 'Practice remaining missed words', list: base ? words.filter(w => leftMissedSet.has(w.word)) : [] },
-      { key: 'all', label: 'All words, including learned', list: words },
-      { key: 'open', label: 'Not yet learned', list: words.filter(w => openSet.has(w.word)) },
-      { key: 'hardest', label: hardLabel, list: !base && rank.length > 0 ? words.filter(w => hardSet.has(w.word)) : [] },
-      { key: 'nextHardest', label: hardLabel, list: base && rank.length > 0 ? words.filter(w => hardSet.has(w.word)) : [] }
-    ].filter(c => c.list.length > 0);
-    // Missed words get the main button; with none missed, the main button finishes
-    const allClear = done && missed.length === 0;
-    const primaryKey = missed.length > 0 ? 'missed' : null;
-    const ICONS = { missed: <RefreshIcon />, hardest: <FlagIcon />, nextHardest: <FlagIcon />, remaining: <RefreshIcon />, open: <ListIcon />, all: <RefreshIcon /> };
-    const renderChoice = (c) => {
-    const Wrap = GROUPED.includes(c.key) ? 'div' : React.Fragment; // grouped choices each sit in a tinted box
-    return (
-            <Wrap key={c.key} {...(GROUPED.includes(c.key) ? { className: 'quiz-block' } : {})}>
-            <button type="button" className={`quiz-choice ${c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'}`} onClick={() => start(c.list, c.key === 'hardest' || c.key === 'nextHardest' || c.key === 'remaining' ? 'drill' : c.key === 'missed' ? 'keep' : 'reset')}>
-              {ICONS[c.key]}
-              {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
-                : c.key === 'hardest' || c.key === 'nextHardest' ? c.label
-                : c.key === 'remaining' ? `${c.label} (${c.list.length})`
-                : c.key === 'all' && missed.length === 0 && done ? `Retake all words (${c.list.length})`
-                : `${c.label} (${c.list.length})`}
-            </button>
-            {c.key === 'open' && (
-              <div className="quiz-hard">
-                {openAll.length > 1 && (
-                  <input
-                    type="range"
-                    className="quiz-slider"
-                    min="1"
-                    max={openAll.length}
-                    value={openCount}
-                    onChange={(e) => setOpenN(Number(e.target.value))}
-                    aria-label="How many not yet learned words"
-                    aria-valuetext={`${openCount} ${openCount === 1 ? 'word' : 'words'}`}
-                  />
-                )}
-                <p className="quiz-note">Words you haven't tested out of yet</p>
-                <ul className="quiz-chips" aria-label="Not yet learned words">
-                  {openList.map(f => <li key={f.word} className="quiz-chip">{f.word}</li>)}
-                </ul>
-              </div>
-            )}
-            {(c.key === 'hardest' || c.key === 'nextHardest') && (
-              <div className="quiz-hard">
-                {rank.length > 1 && (
-                  <input
-                    type="range"
-                    className="quiz-slider"
-                    min="1"
-                    max={rank.length}
-                    value={n}
-                    onChange={(e) => setHardN(Number(e.target.value))}
-                    aria-label="How many of the hardest words"
-                    aria-valuetext={`${n} ${n === 1 ? 'word' : 'words'}`}
-                  />
-                )}
-                <p className="quiz-note">Hardest (last 5 attempts)</p>
-                <ul className="quiz-chips" aria-label="Hardest words">
-                  {hardList.map(f => <li key={f.word} className="quiz-chip">{f.word} {f.pct}%</li>)}
-                </ul>
-              </div>
-            )}
-            </Wrap>
-    );
-    };
     return (
       <div className="quiz-immersive quiz-summary">
         <div className="quiz-top">
@@ -281,44 +170,21 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz"><CloseIcon /> Exit</button>
         </div>
         <div className="quiz-stage">
-          {done ? (
-            <>
-              <div className="session-grade" role="status" aria-label={`Quiz grade ${letter}, ${avg}%`}>
-                <div className="deck-section-label">Quiz grade</div>
-                <div className="session-grade-letter">{letter}</div>
-                <div className="deck-score">{avg}%</div>
-              </div>
-              <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>
-                Tested out of {out} of {outcomes.length} {outcomes.length === 1 ? 'word' : 'words'}
-              </p>
-              <ul className="quiz-review" aria-label="Every word, with your spelling">
-                {outcomes.map((o, n) => (
-                  <li key={n} className="quiz-review-item">
-                    <span className={`quiz-status ${o.testedOut ? 'quiz-status-ok' : 'quiz-status-miss'}`} role="img" aria-label={o.testedOut ? 'Tested out' : 'Not tested out'}>
-                      {o.testedOut ? '✓' : '✕'}
-                    </span>
-                    <div className="quiz-review-label">Your spelling</div>
-                    {o.typed
-                      ? <LetterBoxes cells={o.cells || alignCells(o.typed, o.word)} label={`You spelled ${o.typed}`} />
-                      : <div className="quiz-review-empty">(nothing typed)</div>}
-                    <div className="quiz-review-label">Correct spelling</div>
-                    <div className="quiz-wordbox" aria-label={`The word is ${o.word}`}>{o.word}</div>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p style={{ fontWeight: 700, margin: 0 }}>Every word is already learned. 🎉</p>
-          )}
-          <p className="quiz-label" style={{ margin: 0 }}>{done ? 'Quiz again' : 'Quiz anyway'}: what to focus on?</p>
-          {allClear && (
-            <button type="button" className="btn-verify quiz-choice" onClick={exit}><CheckIcon /> Finish</button>
-          )}
-          {choices.filter(c => !GROUPED.includes(c.key)).map(renderChoice)}
-          <div className="quiz-group">
-            {choices.filter(c => GROUPED.includes(c.key)).map(renderChoice)}
-          </div>
-          {!allClear && <button type="button" className="btn-secondary-sm quiz-choice" onClick={exit}><ChevronLeftIcon /> Back to practice</button>}
+          <RoundSummary
+            subject="Quiz"
+            gradeTitle="Quiz grade"
+            grade={{ letter: letterFor(avg), pct: avg }}
+            headline={`Tested out of ${out} of ${outcomes.length} ${outcomes.length === 1 ? 'word' : 'words'}`}
+            outcomes={outcomes.map(o => ({ word: o.word, ok: o.testedOut, pct: o.pct, typed: o.typed, cells: o.cells }))}
+            words={words}
+            isMastered={isMastered}
+            historyFor={historyFor}
+            base={base}
+            drilled={drilled}
+            onStart={start}
+            onFinish={exit}
+            onBack={exit}
+          />
         </div>
       </div>
     );
@@ -421,21 +287,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
             />
           </>
         ) : (
-          <div className="quiz-result" aria-live="polite">
-            <fieldset className={`quiz-box ${result.pct === 100 ? 'quiz-box-right' : 'quiz-box-wrong'}`}>
-              <legend>
-                <span className={`quiz-icon ${result.pct === 100 ? 'quiz-icon-right' : 'quiz-icon-wrong'}`} aria-hidden="true">{result.pct === 100 ? '✓' : '✕'}</span>
-                Your spelling
-              </legend>
-              {typedWord
-                ? <LetterBoxes cells={result.cells || alignCells(typedWord, word.word)} label={`You spelled ${typedWord}`} />
-                : <div className="quiz-review-empty">(nothing typed)</div>}
-            </fieldset>
-            <fieldset className="quiz-box quiz-box-right">
-              <legend><span className="quiz-icon quiz-icon-right" aria-hidden="true">✓</span>Correct spelling</legend>
-              <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
-            </fieldset>
-          </div>
+          <SpellingResult cells={cellsOf(result.cells, typedWord, word.word)} word={word.word} typed={typedWord} correct={result.pct === 100} />
         )}
       </div>
       {mobile && keyboardHidden ? null : mobile ? (

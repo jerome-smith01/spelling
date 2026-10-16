@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import QuizView from './QuizView';
@@ -91,6 +91,24 @@ describe('QuizView', () => {
     await new Promise(r => setTimeout(r, 350)); // the same click must not also count as "next"
     await user.click(screen.getByRole('button', { name: 'Next word' }));
     expect(screen.getByLabelText('Word 2 of 5: current')).toBeInTheDocument();
+    mockGate.rushed = false;
+  });
+
+  it('levels follow the session, not the word: 1st rushed miss is level 1, 2nd is level 2, a new round starts over', async () => {
+    mockGate.rushed = true;
+    const user = userEvent.setup();
+    setup();
+    const rushPast = async () => {
+      await user.type(screen.getByLabelText('Type the word you heard'), 'x');
+      await user.click(screen.getByRole('button', { name: 'Check' }));
+      await user.click(screen.getByRole('button', { name: 'Next word' }));
+    };
+    const finishPopup = async (btn) => { await user.click(btn); await new Promise(r => setTimeout(r, 350)); await user.click(screen.getByRole('button', { name: 'Next word' })); };
+    await rushPast();                                   // word 1: level 1
+    expect(within(screen.getByRole('alertdialog')).queryByRole('group', { name: 'Your spelling' })).toBeNull();
+    await finishPopup(screen.getByRole('button', { name: /OK/ }));
+    await rushPast();                                   // word 2 (a different word): level 2
+    expect(screen.getByText('Tap the wrong letter.')).toBeInTheDocument();
     mockGate.rushed = false;
   });
 

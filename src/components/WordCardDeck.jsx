@@ -6,6 +6,9 @@ import KeyboardFrame from './KeyboardFrame';
 import ReviewModal from './ReviewModal';
 import useReviewGate from '../hooks/useReviewGate';
 import { cellsFromPractice } from '../utils/reviewCells';
+import SpellingResult from './SpellingResult';
+import RoundSummary from './RoundSummary';
+import useDrill from '../hooks/useDrill';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
@@ -17,7 +20,7 @@ import ProgressBars from './ProgressBars';
 import DeckLegend from './DeckLegend';
 import { CheckIcon, CloseIcon, QuestionIcon } from './SessionIcons';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
-import { TourIcon } from './ActionIcons';
+import { TourIcon, RefreshIcon, TaskAltIcon } from './ActionIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { useTutorial } from '../hooks/useTutorial';
 import { PRACTICE_STEPS, QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
@@ -63,6 +66,9 @@ export default function WordCardDeck({
   const backRef = useRef(null);
   const kbRef = useRef(null);
   const coarse = useCoarsePointer();
+  const [cardLog, setCardLog] = useState({}); // each card's first try this session: { pct, cells } (for the end-of-session review)
+  const drill = useDrill();
+  const restartListRef = useRef(null); // a restart on just these words (drilling), instead of the whole queue
   const gate = useReviewGate({ context: 'practice', listId: quizStorageKey ? quizStorageKey.split(':').pop() : null });
   const [canCheck, setCanCheck] = useState(false);
   const tutorial = useTutorial();
@@ -103,7 +109,9 @@ export default function WordCardDeck({
     if (!restartRef.current && sessionKeyRef.current === queueKey) return;
     restartRef.current = false;
     sessionKeyRef.current = queueKey;
-    setSession(makeSession(queue));
+    setSession(makeSession(restartListRef.current ?? queue));
+    restartListRef.current = null;
+    setCardLog({});
     setResult(null);
     setCardKey(k => k + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,8 +175,7 @@ export default function WordCardDeck({
   // Tell the review gate when a result is on screen (see useReviewGate)
   useEffect(() => {
     if (!result || !current) return;
-    const wrong = Object.keys(result.results).filter(i => result.results[i] !== 'correct').map(Number);
-    gate.show({ word: current.word, correct: result.pct >= 100, cells: cellsFromPractice(current.word, result.typed, wrong) });
+    gate.show({ word: current.word, correct: result.pct >= 100, cells: result.cells });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result]);
 
@@ -179,7 +186,9 @@ export default function WordCardDeck({
     // A focus try only checks the tricky letters, so it never moves the word's level
     const res = focusTry ? null : commit(current.word, pct);
     setSession(sess => recordResult(sess, pct, missed));
-    setResult({ pct, results, typed, res, focusTry });
+    const cells = cellsFromPractice(current.word, typed, missed);
+    setCardLog(l => (l[current.word] ? l : { ...l, [current.word]: { pct, cells } }));
+    setResult({ pct, results, typed, res, focusTry, cells });
   };
 
   const move = (fn) => {
@@ -278,28 +287,49 @@ export default function WordCardDeck({
   if (!current) {
     const grade = sessionGrade(session);
     const upcoming = Object.values(progress.words).filter(s => !s.mastered && s.due).map(s => s.due).sort()[0];
+    const outcomes = session.order.filter(w => cardLog[w]).map(w => ({ word: w, ok: cardLog[w].pct >= 100, pct: cardLog[w].pct, cells: cardLog[w].cells }));
+    // Drill on a subset (missed, hardest, ...): a new session on just those words
+    const startRound = (list, mode) => {
+      drill.apply(list, mode, outcomes);
+      restartListRef.current = list.map(w => w.word);
+      restartSession();
+    };
     return (
       <div className="deck">
         {tabs}
         {strip}
         <div className="deck-card-center">
-          <div style={{ fontSize: '2.5rem' }}>🎉</div>
-          <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>All done for today!</p>
-          {grade && (
-            <div className="session-grade" role="status" aria-label={`Session grade ${grade.letter}, ${grade.pct}%`}>
-              <div className="deck-section-label">Session grade</div>
-              <div className="session-grade-letter">{grade.letter}</div>
-              <div className="deck-score">{grade.pct}%</div>
-              <p className="deck-message" style={{ margin: 0 }}>
-                {grade.perfect} of {grade.cards} {grade.cards === 1 ? 'card' : 'cards'} right on the first try
-              </p>
-            </div>
+          {grade ? (
+            <RoundSummary
+              subject="Practice"
+              gradeTitle="Session grade"
+              grade={grade}
+              headline={`${grade.perfect} of ${grade.cards} ${grade.cards === 1 ? 'card' : 'cards'} right on the first try`}
+              outcomes={outcomes}
+              words={words}
+              isMastered={(w) => !!progress.words[w]?.mastered}
+              historyFor={(w) => progress.words[w]?.history || []}
+              base={drill.base}
+              drilled={drill.drilled}
+              onStart={startRound}
+              extra={(
+                <>
+                  {upcoming && <p className="quiz-note" style={{ margin: 0, textAlign: 'center' }}>Next words come back {fmtDay(upcoming, today)}.</p>}
+                  <button type="button" className="btn-verify btn-verify-alt quiz-choice" onClick={() => { practiceAnyway(); restartSession(); }}><RefreshIcon /> Keep practicing</button>
+                  <button type="button" className="btn-secondary-sm quiz-choice" onClick={() => setMode('quiz')}><TaskAltIcon /> Take a quiz</button>
+                </>
+              )}
+            />
+          ) : (
+            <>
+              <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>All done for today!</p>
+              {upcoming && <p className="deck-message" style={{ margin: 0 }}>Next words come back {fmtDay(upcoming, today)}.</p>}
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button type="button" className="btn-verify" onClick={() => { practiceAnyway(); restartSession(); }}>Keep practicing</button>
+                <button type="button" className="btn-secondary-sm" onClick={() => setMode('quiz')}>Take a quiz</button>
+              </div>
+            </>
           )}
-          {upcoming && <p className="deck-message" style={{ margin: 0 }}>Next words come back {fmtDay(upcoming, today)}.</p>}
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <button type="button" className="btn-verify" onClick={() => { practiceAnyway(); restartSession(); }}>Keep practicing</button>
-            <button type="button" className="btn-secondary-sm" onClick={() => setMode('quiz')}>Take a quiz</button>
-          </div>
         </div>
       </div>
     );
@@ -415,19 +445,7 @@ export default function WordCardDeck({
                   <AutoplayToggle checked={schedule.prefs.autoSpeak !== false}
                     onChange={(v) => schedule.setPrefs({ autoSpeak: v })} />
                 </div>
-                <div className="deck-back-word" aria-label={`The word is ${current.word}`} style={{ marginTop: '1rem' }}>
-                  {letters.map(l => {
-                    const hidden = hiddenIndices.has(l.index);
-                    const ok = !hidden || result.results[l.index] === 'correct';
-                    const typed = (result.typed[l.index] || '').toLowerCase();
-                    return (
-                      <div key={l.index} className="deck-back-letter">
-                        {hidden && !ok && typed && <span className="deck-back-typed">{typed}</span>}
-                        <div className={`letter-box ${hidden ? (ok ? 'correct' : 'incorrect') : ''}`}>{l.char}</div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <SpellingResult cells={result.cells} word={current.word} correct={result.pct >= 100} />
                 {result.focusTry ? (
                   <p className="deck-message">{result.pct >= 100 ? 'Nice! Now try the whole word again.' : 'Almost! Try the tricky letter again.'}</p>
                 ) : result.pct < 100 && focusFor(session, current.word)?.phase === 'focus' && (
