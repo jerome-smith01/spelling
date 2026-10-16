@@ -4,6 +4,7 @@ import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import VirtualKeyboard from './VirtualKeyboard';
+import KeyboardFrame from './KeyboardFrame';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { letterFor } from '../utils/session';
@@ -272,6 +273,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
         )}
       </div>
       {mobile && keyboardHidden ? null : mobile ? (
+        <KeyboardFrame>
         <VirtualKeyboard
           onChar={(c) => { if (!result) setText(t => t + c); }}
           onBackspace={() => { if (!result) setText(t => t.slice(0, -1)); }}
@@ -282,6 +284,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           onPlaySlow={result || !onSpeakSyllables ? undefined : () => onSpeakSyllables(word.id, buildPronunciationSyllables(word))}
           onPlayBoth={result || !onSpeakBoth ? undefined : () => onSpeakBoth(word.id, word.word, buildPronunciationSyllables(word))}
         />
+        </KeyboardFrame>
       ) : (
         <div className="quiz-actions">
           {result ? (

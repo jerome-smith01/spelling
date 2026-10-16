@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import WordCard from './WordCard';
 import QuizView from './QuizView';
 import VirtualKeyboard from './VirtualKeyboard';
+import KeyboardFrame from './KeyboardFrame';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
@@ -434,7 +435,7 @@ export default function WordCardDeck({
       </div>
       {legendOpen && <DeckLegend onClose={() => setLegendOpen(false)} />}
       {dock && (
-        <div className="vkb-dock">
+        <KeyboardFrame dock>
           <VirtualKeyboard
             onChar={(c) => { if (!result) kbRef.current?.press(c); }}
             onBackspace={() => { if (!result) kbRef.current?.backspace(); }}
@@ -450,7 +451,7 @@ export default function WordCardDeck({
             onPlaySlow={() => userSpeakSyllables(current.id, buildPronunciationSyllables(current))}
             onPlayBoth={onSpeakBoth ? () => userSpeakBoth(current.id, current.word, buildPronunciationSyllables(current)) : undefined}
           />
-        </div>
+        </KeyboardFrame>
       )}
     </div>
   );

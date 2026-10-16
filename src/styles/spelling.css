@@ -413,7 +413,7 @@
 .deck-message { color: var(--muted-foreground); font-weight: 600; }
 .deck-card-center { text-align: center; padding: 2.5rem 1rem; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
 .quiz-input { font-size: 1.5rem; font-weight: 700; text-align: center; padding: 0.6rem 1rem; width: 100%; max-width: 22rem; border-radius: var(--radius-md); border: 2px solid var(--card-border); background: var(--card-bg); color: var(--foreground); }
-.quiz-immersive { position: fixed; inset: 0; height: 100dvh; z-index: 1000; display: flex; flex-direction: column; gap: 0.75rem; padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem calc(0.75rem + env(safe-area-inset-bottom)); background: var(--background, var(--card-bg)); color: var(--foreground); overflow: hidden; align-items: center; }
+.quiz-immersive { position: fixed; inset: 0; height: 100dvh; z-index: 1000; display: flex; flex-direction: column; gap: 0.75rem; padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem calc(0.75rem + env(safe-area-inset-bottom) + var(--kb-h, 0px)); background: var(--background, var(--card-bg)); color: var(--foreground); overflow: hidden; align-items: center; }
 .quiz-immersive > * { width: 100%; max-width: 30rem; }
 .quiz-top { display: flex; align-items: center; justify-content: space-between; }
 .quiz-stage { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; overflow-y: auto; }
@@ -530,9 +530,9 @@
 .tut-prompt { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.9rem 1.1rem; border-radius: var(--radius-xl); border: 1px solid var(--selected-color-border); background: var(--selected-color-bg); }
 
 /* Virtual keyboard (quiz mode, touch devices only) */
-.vkb { width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem 0.25rem; background: var(--muted); border-radius: var(--radius-lg); }
+.vkb { container-type: inline-size; width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem 0.25rem; background: var(--muted); border-radius: var(--radius-lg); }
 .vkb-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 950; display: flex; justify-content: center; padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom)); background: var(--background); border-top: 1px solid var(--card-border); }
-.deck-has-dock { padding-bottom: calc(17rem + env(safe-area-inset-bottom)); }
+.deck-has-dock { padding-bottom: calc(var(--kb-h, 17rem) + env(safe-area-inset-bottom)); }
 /* One complete dashed border around the focused square (no outline/shadow ring on top of it) */
 .letter-box.input-mode:focus-within { border: 2px dashed var(--color-primary); box-shadow: none; }
 .letter-input:focus, .letter-input:focus-visible { outline: none; }.vkb-row { display: flex; gap: 0.35rem; justify-content: center; }
@@ -547,6 +547,28 @@
 .vkb-enter { display: flex; align-items: center; justify-content: center; flex: 1.4 1 0; background: var(--color-primary); color: var(--primary-foreground); font-size: 1.05rem; font-weight: 700; }
 .vkb-enter-icon { flex: 1 1 0; }
 .vkb-enter:disabled { opacity: 0.5; cursor: default; }
+
+/* Tablet keyboard: stretches with the screen, pin to the bottom or float, resize from the corners */
+@media (min-width: 600px) { .vkb { max-width: none; } }
+.kb-frame { position: fixed; z-index: 950; box-sizing: border-box; padding: 0.3rem; background: var(--background); border: 1px solid var(--card-border); border-radius: var(--radius-lg); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25); touch-action: manipulation; }
+.quiz-immersive > .kb-frame { max-width: none; }
+.kb-pinned { left: 50%; bottom: 0; transform: translateX(-50%); border-bottom: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding-bottom: calc(0.3rem + env(safe-area-inset-bottom)); }
+.kb-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 2.5rem; }
+.kb-btn { width: 2.75rem; height: 2.5rem; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--radius-md); background: var(--muted); color: var(--foreground); cursor: pointer; }
+.kb-btn[aria-pressed="true"] { background: var(--selected-color); color: var(--on-selected-color, #fff); }
+.kb-grip { flex: 1; align-self: stretch; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); background: var(--card-border); color: var(--muted-foreground); font-size: 0.85rem; font-weight: 700; cursor: grab; touch-action: none; user-select: none; }
+.kb-adjust { outline: 3px dashed var(--selected-color); outline-offset: -3px; }
+.kb-handle { position: absolute; width: 2.75rem; height: 2.75rem; padding: 0; border: 3px solid var(--selected-color); border-radius: 50%; background: var(--background); touch-action: none; cursor: nwse-resize; z-index: 1; }
+.kb-handle-nw { top: -0.9rem; left: -0.9rem; }
+.kb-handle-ne { top: -0.9rem; right: -0.9rem; cursor: nesw-resize; }
+.kb-handle-sw { bottom: -0.9rem; left: -0.9rem; cursor: nesw-resize; }
+.kb-handle-se { bottom: -0.9rem; right: -0.9rem; }
+.kb-handle:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+.kb-frame .vkb { padding: 0.3rem 0.25rem; }
+/* Everything inside scales with the keyboard's width, so resizing keeps its proportions */
+.kb-frame .vkb-row { gap: clamp(0.2rem, 1cqw, 0.9rem); }
+.kb-frame .vkb { gap: clamp(0.3rem, 1.2cqw, 1rem); }
+.kb-frame .vkb-key, .quiz-immersive .kb-frame .vkb-key { height: clamp(2.2rem, 6.2cqw, 6.5rem); font-size: clamp(1rem, 3cqw, 2.6rem); }
 
 /* ---------- Smart hiding ---------- */
 .harvey-ball { flex: none; display: inline-block; vertical-align: middle; }
