@@ -34,6 +34,19 @@ describe('QuizView', () => {
     expect(screen.getByLabelText('Type the word you heard')).toHaveValue('');
   });
 
+  it('after drilling the hardest 3, offers the next 3 and the remaining missed words', async () => {
+    const user = userEvent.setup();
+    const names = ['apple', 'berry', 'cherry', 'damson', 'elder', 'figs', 'grape', 'honey'];
+    const words = names.map((w, i) => ({ id: i, word: w, syllables: [w.split('')] }));
+    setup({ words });
+    for (const w of names) await answer(user, names.indexOf(w) < 5 ? 'x' : w); // first five wrong
+    await user.click(screen.getByRole('button', { name: 'Test the 3 hardest words' }));
+    for (const w of ['apple', 'berry', 'cherry']) await answer(user, w);
+    expect(screen.getByRole('button', { name: 'Practice remaining missed words (2)' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Next 3 hardest words' }));
+    expect(screen.getByLabelText('Word 1 of 3: current')).toBeInTheDocument();
+  });
+
   it('shows a left-out letter as a missing box', async () => {
     const user = userEvent.setup();
     setup({ words: [{ id: 1, word: 'annoy', syllables: [['a', 'n', 'n', 'o', 'y']] }] });

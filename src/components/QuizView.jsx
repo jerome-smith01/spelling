@@ -37,7 +37,8 @@ const loadSaved = (storageKey, words) => {
     const byWord = new Map(words.map(w => [w.word, w]));
     const order = v.order.map(w => byWord.get(w));
     if (order.some(w => !w) || v.idx > order.length) return null;
-    return { order, idx: v.idx | 0, text: typeof v.text === 'string' ? v.text : '', result: v.result || null, outcomes: v.outcomes };
+    return { order, idx: v.idx | 0, text: typeof v.text === 'string' ? v.text : '', result: v.result || null, outcomes: v.outcomes,
+      base: Array.isArray(v.base) ? v.base : null, drilled: Array.isArray(v.drilled) ? v.drilled : [] };
   } catch {
     return null; // storage unavailable or corrupt: start fresh
   }
@@ -60,6 +61,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   const [text, setText] = useState(saved?.text ?? '');
   const [result, setResult] = useState(saved?.result ?? null);
   const [outcomes, setOutcomes] = useState(saved?.outcomes ?? []);
+  // The original round's scores, and the words already drilled from it (hardest 3, next 3, ...)
+  const [base, setBase] = useState(saved?.base ?? null);
+  const [drilled, setDrilled] = useState(saved?.drilled ?? []);
   const inputRef = useRef(null);
   const [speed, setSpeedState] = useState(loadSpeed);
   const speedRef = useRef(speed);
@@ -75,9 +79,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   useEffect(() => {
     if (!storageKey) return;
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ order: order.map(w => w.word), idx, text, result, outcomes }));
+      localStorage.setItem(storageKey, JSON.stringify({ order: order.map(w => w.word), idx, text, result, outcomes, base, drilled }));
     } catch { /* storage unavailable */ }
-  }, [storageKey, order, idx, text, result, outcomes]);
+  }, [storageKey, order, idx, text, result, outcomes, base, drilled]);
 
   const exit = () => {
     if (storageKey) { try { localStorage.removeItem(storageKey); } catch { /* storage unavailable */ } }
@@ -134,7 +138,15 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, idx]);
 
-  const start = (list) => {
+  // mode: 'drill' picks from the original round (kept), 'keep' retakes within a drill, 'reset' starts afresh
+  const start = (list, mode = 'reset') => {
+    if (mode === 'drill') {
+      setBase(b => b ?? outcomes.map(o => ({ word: o.word, testedOut: o.testedOut, pct: o.pct })));
+      setDrilled(d => [...new Set([...d, ...list.map(w => w.word)])]);
+    } else if (mode === 'reset' || !base) {
+      setBase(null);
+      setDrilled([]);
+    }
     setOrder(shuffle(list));
     setIdx(0);
     setOutcomes([]);
@@ -153,17 +165,26 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     // Hardest = lowest average over each word's last five attempts (this quiz's included)
     const form = outcomes.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
       .sort((a, b) => a.pct - b.pct).slice(0, 3);
-    const hardSet = new Set(form.map(f => f.word));
+    // Once a drill has been done, what is left of the original round (minus the words already drilled)
+    const drilledSet = new Set(drilled);
+    const left = (base || []).filter(o => !drilledSet.has(o.word));
+    const leftForm = left.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
+      .sort((a, b) => a.pct - b.pct);
+    const nextForm = leftForm.slice(0, 3);
+    const leftMissedSet = new Set(left.filter(o => !o.testedOut).map(o => o.word));
+    const hardSet = new Set((base ? nextForm : form).map(f => f.word));
     const choices = [
       { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
-      { key: 'hardest', label: 'Test the 3 hardest words', list: outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
+      { key: 'hardest', label: 'Test the 3 hardest words', list: !base && outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
+      { key: 'nextHardest', label: 'Next 3 hardest words', list: base && left.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
+      { key: 'remaining', label: 'Practice remaining missed words', list: base ? words.filter(w => leftMissedSet.has(w.word)) : [] },
       { key: 'open', label: 'Not yet learned', list: words.filter(w => !isMastered(w.word)) },
       { key: 'all', label: 'All words, including learned', list: words }
     ].filter(c => c.list.length > 0);
     // Missed words get the main button; with none missed, the main button finishes
     const allClear = done && missed.length === 0;
     const primaryKey = missed.length > 0 ? 'missed' : null;
-    const ICONS = { missed: <RefreshIcon />, hardest: <FlagIcon />, open: <ListIcon />, all: <RefreshIcon /> };
+    const ICONS = { missed: <RefreshIcon />, hardest: <FlagIcon />, nextHardest: <FlagIcon />, remaining: <RefreshIcon />, open: <ListIcon />, all: <RefreshIcon /> };
     return (
       <div className="quiz-immersive quiz-summary">
         <div className="quiz-top">
@@ -187,12 +208,12 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
                     <span className={`quiz-status ${o.testedOut ? 'quiz-status-ok' : 'quiz-status-miss'}`} role="img" aria-label={o.testedOut ? 'Tested out' : 'Not tested out'}>
                       {o.testedOut ? '✓' : '✕'}
                     </span>
-                    <div className="quiz-review-label">Correct spelling</div>
-                    <div className="quiz-wordbox" aria-label={`The word is ${o.word}`}>{o.word}</div>
                     <div className="quiz-review-label">Your spelling</div>
                     {o.typed
                       ? <LetterBoxes cells={o.cells || alignCells(o.typed, o.word)} label={`You spelled ${o.typed}`} />
                       : <div className="quiz-review-empty">(nothing typed)</div>}
+                    <div className="quiz-review-label">Correct spelling</div>
+                    <div className="quiz-wordbox" aria-label={`The word is ${o.word}`}>{o.word}</div>
                   </li>
                 ))}
               </ul>
@@ -205,17 +226,18 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
             <button type="button" className="btn-verify" onClick={exit}><CheckIcon /> Finish</button>
           )}
           {choices.map(c => (
-            <button key={c.key} type="button" className={c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'} onClick={() => start(c.list)}>
+            <button key={c.key} type="button" className={c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'} onClick={() => start(c.list, c.key === 'hardest' || c.key === 'nextHardest' || c.key === 'remaining' ? 'drill' : c.key === 'missed' ? 'keep' : 'reset')}>
               {ICONS[c.key]}
               {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
-                : c.key === 'hardest' ? c.label
+                : c.key === 'hardest' || c.key === 'nextHardest' ? c.label
+                : c.key === 'remaining' ? `${c.label} (${c.list.length})`
                 : c.key === 'all' && missed.length === 0 && done ? `Retake all words (${c.list.length})`
                 : `${c.label} (${c.list.length})`}
             </button>
           ))}
-          {form.length > 0 && choices.some(c => c.key === 'hardest') && (
+          {(base ? nextForm : form).length > 0 && choices.some(c => c.key === 'hardest' || c.key === 'nextHardest') && (
             <p className="deck-message" style={{ margin: 0 }}>
-              Hardest (last 5 attempts): {form.map(f => `${f.word} ${f.pct}%`).join(', ')}
+              Hardest (last 5 attempts): {(base ? nextForm : form).map(f => `${f.word} ${f.pct}%`).join(', ')}
             </p>
           )}
           {!allClear && <button type="button" className="btn-secondary-sm" onClick={exit}><ChevronLeftIcon /> Back to practice</button>}

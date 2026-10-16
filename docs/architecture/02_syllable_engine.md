@@ -43,6 +43,7 @@ Implemented across [`LetterInput.jsx`](../../src/components/LetterInput.jsx) and
 * **Auto-Advance:** When a valid alphabetical character is typed, the component immediately shifts focus to the next hidden letter in the word's linear hidden sequence.
 * **Smart Backspace:** When backspace is pressed inside an empty input box, focus immediately jumps to the previous hidden input *and* deletes its character.
 * **Mobile Keyboard Protection:** Enforces `autoCapitalize="none"`, `autoCorrect="off"`, `spellCheck="false"`.
+* **Touch devices:** typing uses the app's own on-screen keyboard, never the device keyboard; on tablets it stretches with the screen up to a maximum width. See [`07_quiz_and_keyboard.md`](./07_quiz_and_keyboard.md) §7.
 
 ---
 

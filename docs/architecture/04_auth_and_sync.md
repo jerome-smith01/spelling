@@ -37,7 +37,7 @@ Login links go to `/login?redirect=<current path+query+hash>`. The main site val
 | `/` | Redirects to the last-used list |
 | `/lists` | All lists |
 | `/lists/default` | Built-in default list (virtual, never synced until edited) |
-| `/lists/:listId` | Practice one list — `listId` is a client-generated UUID that is also the server primary key |
+| `/lists/:listId` | Practice one list — `listId` is a client-generated UUID that is also the server primary key; `?mode=quiz` opens the quiz, and the Practice/Quiz tabs keep it in sync (see [`07_quiz_and_keyboard.md`](./07_quiz_and_keyboard.md)) |
 | `/progress` | Progress dashboard (`?list=<id>` filters). A child in kid mode sees their own, without the weekly summary, email setting or pattern reports |
 | `/progress/words/:word` | One word: letter-by-letter results and its tip (Phase 5c) |
 | `/who` | "Who's practicing?": children plus a Grown-up tile; choosing a child starts kid mode (family accounts F2) |

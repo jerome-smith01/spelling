@@ -10,6 +10,8 @@ An interactive, web-based educational tool designed to help elementary school st
 ## Architecture & Documentation
 * Architecture Overview: [`docs/architecture/00_overview.md`](./docs/architecture/00_overview.md)
 * Platform, Routing & PWA: [`docs/architecture/01_platform_and_pwa.md`](./docs/architecture/01_platform_and_pwa.md)
+* Quiz mode & on-screen keyboard (and UI principles): [`docs/architecture/07_quiz_and_keyboard.md`](./docs/architecture/07_quiz_and_keyboard.md)
+* Guidance for AI coding tools: [`AGENTS.md`](./AGENTS.md)
 * Launch Plan: [`docs/spelling_tutor_launch_plan.md`](./docs/spelling_tutor_launch_plan.md)
 * Original Product Spec: [`docs/spelling_app_product_spec.md`](./docs/spelling_app_product_spec.md)
 
