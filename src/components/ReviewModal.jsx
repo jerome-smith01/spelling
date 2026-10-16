@@ -7,7 +7,7 @@ const WRONG_TRIES_BEFORE_REVEAL = 2;
 
 /**
  * "Take time to review your work": shown when a child rushes past a mistake (useReviewGate).
- * Sits at the top of the screen, below the on-screen keyboard's layer, so the keyboard is never covered.
+ * Centered on screen (above the keyboard when there is one), below the keyboard's layer, so the keyboard is never covered.
  *   level 1  informational, one OK button
  *   level 2  tap each wrong letter in their spelling
  *   level 3  type the right letter into each wrong spot
@@ -103,7 +103,7 @@ function ReviewDialog({ modal, gate, hasKeyboard }) {
   const needsNativeInput = level === 3 && coarse && !hasKeyboard;
 
   return (
-    <div className="review-backdrop">
+    <div className={`review-backdrop${hasKeyboard ? ' review-has-kb' : ''}`}>
       <div ref={dialogRef} className="review-dialog" role="alertdialog" aria-modal="true" aria-labelledby="review-msg" tabIndex={-1}>
         <div className="review-head">
           <SearchCheckIcon size="2.4rem" />

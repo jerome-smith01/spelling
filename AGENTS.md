@@ -13,7 +13,7 @@ Read `docs/architecture/00_overview.md` first (hard invariants and a topic index
 * "Your spelling" is always shown before "Correct spelling". Correct word = one green box; student's letters = per-letter boxes (green right, red wrong, empty dashed red for a left-out letter).
 * Large buttons, each with an icon, one clear primary action per screen.
 * Enter moves forward (check, then next word).
-* A child who rushes past a mistake gets the escalating "take time to review your work" popup (informational, then tap the wrong letter, then fix it); it sits at the top of the screen and never covers the keyboard. Rules in `07_quiz_and_keyboard.md` §9.
+* A child who rushes past a mistake gets the escalating "take time to review your work" popup (informational, then tap the wrong letter, then fix it); it is centered on screen and never covers the keyboard. Rules in `07_quiz_and_keyboard.md` §9.
 * Never lose in-progress work: persist it to `localStorage` per learner (try/catch) and restore it on refresh; keep the URL in sync with the screen (`?mode=quiz`).
 * Remember the student's choices (e.g. last play speed).
 * Screens that scale with the viewport have a maximum width; do not add drag/resize/pin layout controls.
