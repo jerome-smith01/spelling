@@ -19,7 +19,8 @@ export default function DeckLegend({ onClose }) {
       </ul>
       <h3 className="legend-heading">Session progress</h3>
       <ul className="legend-list">
-        <li><span className="sess-dot ok"><CheckIcon /></span><span>Scored 100%</span></li>
+        <li><span className="sess-dot ok"><CheckIcon /></span><span>Right on the first try</span></li>
+        <li><span className="sess-dot retry"><CheckIcon /></span><span>Right on a later try</span></li>
         <li><span className="sess-dot assisted"><CheckIcon /></span><span>Finished with a focus retry</span></li>
         <li><span className="sess-dot miss"><CloseIcon /></span><span>Missed</span></li>
         <li><span className="sess-dot skip"><QuestionIcon /></span><span>Skipped</span></li>

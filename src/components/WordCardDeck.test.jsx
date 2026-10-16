@@ -212,6 +212,24 @@ describe('WordCardDeck', () => {
     }
   });
 
+  it('right on the first try is a green check; right only on a later try is a gray check', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99); // [kitten, puppy]
+    localStorage.setItem('spelling_tutor_deck_prefs_v1', JSON.stringify({ startLevel: 2, levelScheme: 2, dropPct: 0 }));
+    const user = userEvent.setup();
+    render(<Harness />);
+    const check = () => user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
+    await fill(user, ['x', 'x', 'x']);               // kitten: wrong first
+    await check();
+    await user.click(screen.getByRole('button', { name: 'Next card' }));
+    await user.click(screen.getByRole('button', { name: 'Skip this card for now' }));
+    await fill(user, ['i', 't', 'n']);               // kitten again: right on the second try
+    await check();
+    expect(dots()[0]).toHaveAccessibleName(/right on a later try/);
+    expect(dots()[0]).toHaveClass('retry');
+    expect(dots()[0]).not.toHaveClass('ok');
+    vi.restoreAllMocks();
+  });
+
   it('a letter missed twice gets a focus retry, then one normal try, then a gray check dot', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99); // [kitten, puppy]
     // never drop a level on a miss, so all four tries stay at level 2 (typed letters)

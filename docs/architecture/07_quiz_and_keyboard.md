@@ -82,3 +82,7 @@ Children sometimes fly past a mistake without looking. The app notices and asks 
 * `hooks/useDrill.js` holds the drill state (`base`, `drilled`) for both. Practice drills restart the session on just the chosen words (`restartListRef`); each card's first try is recorded in `cardLog` for the review.
 * "OK" in the review means **100% on the first try** in practice and **tested out** in the quiz; the grade is the average first-try score (practice) or quiz score.
 
+## 11. Practice progress dots
+
+One dot per card: **green check** = 100% on the first try; **gray check** = right, but only on a later try (or after a focus retry); gray ✕ = missed; `?` = skipped; ring = current. The first try is what the session grade counts (`session.firstPct`). The Legend (`DeckLegend.jsx`) lists every state and must be updated whenever a dot state is added. The quiz's dots are the same strip but a word is only attempted once, so they are green or gray ✕ only.
+

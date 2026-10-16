@@ -652,7 +652,7 @@
 }
 button.sess-dot { cursor: pointer; }
 .sess-dot.ok { background: var(--sess-ok); border-color: var(--sess-ok); color: var(--sess-ok-fg); }
-.sess-dot.miss, .sess-dot.skip, .sess-dot.assisted { background: var(--sess-grey-bg); border-color: var(--sess-grey-border); color: var(--sess-grey-fg); }
+.sess-dot.miss, .sess-dot.skip, .sess-dot.assisted, .sess-dot.retry { background: var(--sess-grey-bg); border-color: var(--sess-grey-border); color: var(--sess-grey-fg); }
 .sess-dot.current { box-shadow: 0 0 0 2px var(--card-bg, var(--background)), 0 0 0 4px var(--foreground); }
 .deck-strip.session { gap: 0.6rem; }
 .deck-focus-note { margin: 0; text-align: center; font-weight: 600; }

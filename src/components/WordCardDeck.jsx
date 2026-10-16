@@ -258,13 +258,17 @@ export default function WordCardDeck({
     );
   }
 
-  const statusLabel = { ok: 'scored 100%', assisted: 'finished with a focus retry', miss: 'missed', skip: 'skipped' };
-  const dotIcon = { ok: <CheckIcon />, assisted: <CheckIcon />, miss: <CloseIcon />, skip: <QuestionIcon /> };
+  const statusLabel = { ok: 'scored 100% on the first try', retry: 'right on a later try', assisted: 'finished with a focus retry', miss: 'missed', skip: 'skipped' };
+  const dotIcon = { ok: <CheckIcon />, retry: <CheckIcon />, assisted: <CheckIcon />, miss: <CloseIcon />, skip: <QuestionIcon /> };
   const strip = (
     <div data-tutorial="strip">
       <div className="deck-strip session" role="list" aria-label="Session cards">
         {session.order.map((word, i) => {
-          const st = session.status[word] === 'ok' && session.assisted?.[word] ? 'assisted' : session.status[word];
+          const done = session.status[word] === 'ok';
+          // Green check = right on the first try; gray check = right only on a later try (or after a focus retry)
+          const st = done && session.assisted?.[word] ? 'assisted'
+            : done && (session.firstPct?.[word] ?? 100) < 100 ? 'retry'
+            : session.status[word];
           const isCurrent = !session.ended && i === session.idx;
           return (
             <button
