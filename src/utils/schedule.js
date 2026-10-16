@@ -103,15 +103,16 @@ export function alignSpelling(typed, answer) {
     }
   }
   const matched = new Array(a.length).fill(false);
+  const typedMatched = new Array(t.length).fill(false);
   let i = a.length;
   let j = t.length;
   while (i > 0 && j > 0) {
-    if (a[i - 1] === t[j - 1]) { matched[i - 1] = true; i--; j--; }
+    if (a[i - 1] === t[j - 1]) { matched[i - 1] = true; typedMatched[j - 1] = true; i--; j--; }
     else if (dp[i - 1][j] >= dp[i][j - 1]) i--;
     else j--;
   }
   const denom = Math.max(a.length, t.length);
-  return { matched, pct: denom > 0 ? Math.round((dp[a.length][t.length] / denom) * 100) : 0 };
+  return { matched, typedMatched, pct: denom > 0 ? Math.round((dp[a.length][t.length] / denom) * 100) : 0 };
 }
 
 /** Last day a word can be practiced (the day before the test), or null with no test date. */

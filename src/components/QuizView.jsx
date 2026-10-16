@@ -6,6 +6,7 @@ import useCoarsePointer from '../hooks/useCoarsePointer';
 import VirtualKeyboard from './VirtualKeyboard';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
+import { letterFor } from '../utils/session';
 
 const shuffle = (arr) => {
   const a = [...arr];
@@ -15,6 +16,15 @@ const shuffle = (arr) => {
   }
   return a;
 };
+
+// A word's letters as boxes: green where the letter is right, red where it is wrong
+const LetterBoxes = ({ text, ok, label }) => (
+  <div className="quiz-letters" role="img" aria-label={label}>
+    {text.split('').map((c, i) => (
+      <span key={i} className={`quiz-letter ${ok[i] ? 'quiz-letter-ok' : 'quiz-letter-bad'}`}>{c}</span>
+    ))}
+  </div>
+);
 
 /**
  * Quiz mode: the word is spoken, nothing is shown, the student types it.
@@ -65,13 +75,15 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const out = outcomes.filter(o => o.testedOut).length;
     const missed = outcomes.filter(o => !o.testedOut);
     const missedSet = new Set(missed.map(o => o.word));
+    const avg = done ? Math.round(outcomes.reduce((a, o) => a + o.pct, 0) / outcomes.length) : 0;
+    const letter = letterFor(avg);
     const choices = [
       { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
       { key: 'open', label: 'Not yet learned', list: words.filter(w => !isMastered(w.word)) },
       { key: 'all', label: 'All words, including learned', list: words }
     ].filter(c => c.list.length > 0);
     return (
-      <div className="quiz-immersive">
+      <div className="quiz-immersive quiz-summary">
         <div className="quiz-top">
           <span />
           <button type="button" className="btn-secondary-sm" onClick={onExit} aria-label="Exit quiz">✕ Exit</button>
@@ -79,23 +91,34 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
         <div className="quiz-stage">
           {done ? (
             <>
-              <div style={{ fontSize: '2.5rem' }}>📝</div>
+              <div className="session-grade" role="status" aria-label={`Quiz grade ${letter}, ${avg}%`}>
+                <div className="deck-section-label">Quiz grade</div>
+                <div className="session-grade-letter">{letter}</div>
+                <div className="deck-score">{avg}%</div>
+              </div>
               <p style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>
                 Tested out of {out} of {outcomes.length} {outcomes.length === 1 ? 'word' : 'words'}
               </p>
-              {missed.length > 0 && (
-                <p className="deck-message" style={{ margin: 0 }}>
-                  Still to practice: {missed.map(o => o.word).join(', ')}
-                </p>
-              )}
+              <ul className="quiz-review" aria-label="Every word, with your spelling">
+                {outcomes.map((o, n) => (
+                  <li key={n} className="quiz-review-item">
+                    <div className="quiz-review-label">Correct spelling</div>
+                    <LetterBoxes text={o.word} ok={o.matched} label={`The word is ${o.word}`} />
+                    <div className="quiz-review-label">Your spelling</div>
+                    {o.typed
+                      ? <LetterBoxes text={o.typed} ok={o.typedMatched} label={`You spelled ${o.typed}`} />
+                      : <div className="quiz-review-empty">(nothing typed)</div>}
+                  </li>
+                ))}
+              </ul>
             </>
           ) : (
             <p style={{ fontWeight: 700, margin: 0 }}>Every word is already learned. 🎉</p>
           )}
           <p className="quiz-label" style={{ margin: 0 }}>{done ? 'Quiz again' : 'Quiz anyway'}: what to focus on?</p>
           {choices.map(c => (
-            <button key={c.key} type="button" className="btn-verify" onClick={() => start(c.list)}>
-              {c.key === 'missed' && c.list.length === 1 ? 'Missed word (1)' : `${c.label} (${c.list.length})`}
+            <button key={c.key} type="button" className={c.key === 'missed' ? 'btn-verify' : 'btn-verify btn-verify-alt'} onClick={() => start(c.list)}>
+              {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})` : `${c.label} (${c.list.length})`}
             </button>
           ))}
           <button type="button" className="btn-secondary-sm" onClick={onExit}>Back to practice</button>
@@ -106,14 +129,14 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
 
   const submit = () => {
     if (!text.trim() || result) return;
-    const { matched, pct } = alignSpelling(text, word.word);
+    const { matched, typedMatched, pct } = alignSpelling(text, word.word);
     const typed = text.trim().toLowerCase();
     onAttempts?.(word.word, matched.map((ok, i) => ({
       letter: word.word[i], position: i, correct: ok ? 1 : 0, typed: ok ? word.word[i] : (typed[i] || '')
     })));
     const r = commitQuiz(word.word, pct);
-    setResult({ pct, testedOut: r.testedOut, unlearned: !!r.unlearned, matched, typed: text.trim() });
-    setOutcomes(o => [...o, { word: word.word, testedOut: r.testedOut }]);
+    setResult({ pct, testedOut: r.testedOut, unlearned: !!r.unlearned, matched, typedMatched, typed: text.trim() });
+    setOutcomes(o => [...o, { word: word.word, testedOut: r.testedOut, pct, matched, typedMatched, typed: text.trim() }]);
   };
 
   const next = () => {
@@ -190,15 +213,18 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           </>
         ) : (
           <div className="quiz-result" aria-live="polite">
-            {result.pct !== 100 && (
-              <fieldset className="quiz-box quiz-box-wrong">
-                <legend><span className="quiz-icon quiz-icon-wrong" aria-hidden="true">✕</span>Incorrect</legend>
-                <div className="quiz-answer quiz-wrong" aria-label={`You spelled ${typedWord}`}>{typedWord}</div>
-              </fieldset>
-            )}
+            <fieldset className={`quiz-box ${result.pct === 100 ? 'quiz-box-right' : 'quiz-box-wrong'}`}>
+              <legend>
+                <span className={`quiz-icon ${result.pct === 100 ? 'quiz-icon-right' : 'quiz-icon-wrong'}`} aria-hidden="true">{result.pct === 100 ? '✓' : '✕'}</span>
+                Your spelling
+              </legend>
+              {typedWord
+                ? <LetterBoxes text={typedWord} ok={result.typedMatched} label={`You spelled ${typedWord}`} />
+                : <div className="quiz-review-empty">(nothing typed)</div>}
+            </fieldset>
             <fieldset className="quiz-box quiz-box-right">
-              <legend><span className="quiz-icon quiz-icon-right" aria-hidden="true">✓</span>Correct</legend>
-              <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
+              <legend><span className="quiz-icon quiz-icon-right" aria-hidden="true">✓</span>Correct spelling</legend>
+              <LetterBoxes text={word.word} ok={result.matched} label={`The word is ${word.word}`} />
             </fieldset>
             <p className="deck-message" style={{ margin: 0 }}>
               {result.testedOut

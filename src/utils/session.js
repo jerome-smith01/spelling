@@ -60,12 +60,14 @@ export function recordResult(s, pct, missed = []) {
   };
 }
 
+export const letterFor = (pct) => (pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F');
+
 /** End-of-session grade: the average first-try score over the cards attempted, or null if none. */
 export function sessionGrade(s) {
   const scores = Object.values(s.firstPct || {});
   if (!scores.length) return null;
   const pct = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-  const letter = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
+  const letter = letterFor(pct);
   return { pct, letter, cards: scores.length, perfect: scores.filter(p => p >= PASS_PCT).length };
 }
 
