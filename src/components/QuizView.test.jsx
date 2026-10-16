@@ -24,6 +24,16 @@ beforeEach(() => { vi.spyOn(Math, 'random').mockReturnValue(0.99); localStorage.
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('QuizView', () => {
+  it('Enter checks the word, then Enter again moves to the next word', async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.type(screen.getByLabelText('Type the word you heard'), 'alpha{Enter}');
+    expect(screen.getByLabelText('You spelled alpha')).toBeInTheDocument();
+    await user.keyboard('{Enter}');
+    expect(screen.getByLabelText('Word 2 of 5: current')).toBeInTheDocument();
+    expect(screen.getByLabelText('Type the word you heard')).toHaveValue('');
+  });
+
   it('shows a left-out letter as a missing box', async () => {
     const user = userEvent.setup();
     setup({ words: [{ id: 1, word: 'annoy', syllables: [['a', 'n', 'n', 'o', 'y']] }] });

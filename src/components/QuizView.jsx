@@ -115,6 +115,25 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, order]);
 
+  const next = () => {
+    setResult(null);
+    setText('');
+    setIdx(i => i + 1);
+  };
+
+  // Once a word is checked, Enter means "next word", wherever focus happens to be
+  useEffect(() => {
+    if (!result) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Enter' || e.repeat) return;
+      e.preventDefault();
+      next();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, idx]);
+
   const start = (list) => {
     setOrder(shuffle(list));
     setIdx(0);
@@ -218,16 +237,10 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     setOutcomes(o => [...o, { word: word.word, testedOut: r.testedOut, pct, matched, typedMatched, cells, typed: text.trim() }]);
   };
 
-  const next = () => {
-    setResult(null);
-    setText('');
-    setIdx(i => i + 1);
-  };
-
   const onKeyDown = (e) => {
-    if (e.key !== 'Enter') return;
+    if (e.key !== 'Enter' || result) return; // with a result showing, the window handler below moves on
     e.preventDefault();
-    if (result) next(); else submit();
+    submit();
   };
 
   const typedWord = result?.typed || '';
