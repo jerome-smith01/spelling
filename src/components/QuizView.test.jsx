@@ -66,6 +66,25 @@ describe('QuizView', () => {
     expect(onExit).toHaveBeenCalled();
   });
 
+  it('plays each new word at the speed the student last chose', async () => {
+    const user = userEvent.setup();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const onSpeak = vi.fn(); const onSpeakSyllables = vi.fn(); const onSpeakBoth = vi.fn();
+    setup({ onSpeak, onSpeakSyllables, onSpeakBoth });
+    await user.click(screen.getByRole('button', { name: 'Hear the word syllable by syllable' }));
+    await vi.advanceTimersByTimeAsync(400); // the first word's own auto-play
+    onSpeak.mockClear(); onSpeakSyllables.mockClear();
+    await user.type(screen.getByLabelText('Type the word you heard'), 'alpha');
+    await user.click(screen.getByRole('button', { name: 'Check' }));
+    await user.click(screen.getByRole('button', { name: 'Next word' }));
+    await vi.advanceTimersByTimeAsync(400);
+    expect(onSpeakSyllables).toHaveBeenCalledTimes(1);
+    expect(onSpeak).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Hear the word at normal speed, then slowly' }));
+    expect(localStorage.getItem('spelling_tutor_quiz_speed_v1')).toBe('both');
+    vi.useRealTimers();
+  });
+
   it('offers to retake everything when nothing was missed', async () => {
     const user = userEvent.setup();
     setup();

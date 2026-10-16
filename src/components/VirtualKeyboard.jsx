@@ -47,7 +47,7 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
           <button type="button" className={`vkb-key vkb-audio${defaultSpeed === 'slow' ? ' is-default' : ''}`} onClick={onPlaySlow} aria-label="Hear the word syllable by syllable"><SlowPlayIcon /></button>
         )}
         {onPlayBoth && (
-          <button type="button" className="vkb-key vkb-audio" onClick={onPlayBoth} aria-label="Hear the word at normal speed, then slowly"><BothSpeedIcon size="1em" /></button>
+          <button type="button" className={`vkb-key vkb-audio${defaultSpeed === 'both' ? ' is-default' : ''}`} onClick={onPlayBoth} aria-label="Hear the word at normal speed, then slowly"><BothSpeedIcon size="1em" /></button>
         )}
         <button type="button" className={`vkb-key vkb-enter${enterLabel === 'Check' ? ' vkb-enter-icon' : ''}`} onClick={onEnter} disabled={enterDisabled}
           aria-label={enterLabel}>{enterLabel === 'Check' ? <TaskAltIcon size="1.5rem" /> : enterLabel}</button>

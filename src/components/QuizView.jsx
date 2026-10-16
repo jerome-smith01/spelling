@@ -43,6 +43,12 @@ const loadSaved = (storageKey, words) => {
   }
 };
 
+// The last speed the student chose (normal, slow, or both) is what plays automatically on each new word
+const SPEED_KEY = 'spelling_tutor_quiz_speed_v1';
+const loadSpeed = () => {
+  try { const v = localStorage.getItem(SPEED_KEY); return v === 'slow' || v === 'both' ? v : 'normal'; } catch { return 'normal'; }
+};
+
 /**
  * Quiz mode: the word is spoken, nothing is shown, the student types it.
  * 100% tests the word out (mastered). A miss changes nothing.
@@ -55,6 +61,13 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   const [result, setResult] = useState(saved?.result ?? null);
   const [outcomes, setOutcomes] = useState(saved?.outcomes ?? []);
   const inputRef = useRef(null);
+  const [speed, setSpeedState] = useState(loadSpeed);
+  const speedRef = useRef(speed);
+  const chooseSpeed = (v) => {
+    speedRef.current = v;
+    setSpeedState(v);
+    try { localStorage.setItem(SPEED_KEY, v); } catch { /* storage unavailable */ }
+  };
   const mobile = useCoarsePointer();
   const word = order[idx];
   const tutorial = useTutorial();
@@ -82,10 +95,21 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorial.decided, tutorial.enabled]);
 
+  const syl = () => buildPronunciationSyllables(word);
+  const playNormal = () => { chooseSpeed('normal'); onSpeak(word.id, word.word); };
+  const playSlow = () => { chooseSpeed('slow'); onSpeakSyllables(word.id, syl()); };
+  const playBoth = () => { chooseSpeed('both'); onSpeakBoth(word.id, word.word, syl()); };
+  const autoSpeak = () => {
+    const v = speedRef.current;
+    if (v === 'slow' && onSpeakSyllables) onSpeakSyllables(word.id, syl());
+    else if (v === 'both' && onSpeakBoth) onSpeakBoth(word.id, word.word, syl());
+    else onSpeak(word.id, word.word);
+  };
+
   // Speak each new word (small delay so the previous utterance is canceled cleanly)
   useEffect(() => {
     if (!word) return undefined;
-    const t = setTimeout(() => onSpeak(word.id, word.word), 350);
+    const t = setTimeout(() => autoSpeak(), 350);
     if (!mobile) inputRef.current?.focus();
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,9 +241,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
             <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }} data-tutorial="quiz-audio">
               <button
                 type="button"
-                className="speaker-btn"
+                className={`speaker-btn${speed === 'normal' ? ' is-default' : ''}`}
                 style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
-                onClick={() => onSpeak(word.id, word.word)}
+                onClick={playNormal}
                 aria-label="Hear the word again"
               >
                 <PlayIcon size="1.5em" />
@@ -227,9 +251,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
               {onSpeakSyllables && (
                 <button
                   type="button"
-                  className="speaker-btn"
+                  className={`speaker-btn${speed === 'slow' ? ' is-default' : ''}`}
                   style={{ width: '4rem', height: '4rem', fontSize: '1.8rem' }}
-                  onClick={() => onSpeakSyllables(word.id, buildPronunciationSyllables(word))}
+                  onClick={playSlow}
                   aria-label="Hear the word syllable by syllable"
                 >
                   <SlowPlayIcon size="1.5em" />
@@ -238,9 +262,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
               {onSpeakBoth && (
                 <button
                   type="button"
-                  className="speaker-btn speaker-btn-both"
+                  className={`speaker-btn speaker-btn-both${speed === 'both' ? ' is-default' : ''}`}
                   style={{ height: '4rem', fontSize: '1.8rem' }}
-                  onClick={() => onSpeakBoth(word.id, word.word, buildPronunciationSyllables(word))}
+                  onClick={playBoth}
                   aria-label="Hear the word at normal speed, then slowly"
                 >
                   <BothSpeedIcon size="1em" />
@@ -295,9 +319,10 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           onEnter={keyboardEnter}
           enterDisabled={!result && !text.trim()}
           enterLabel={result ? (idx + 1 < order.length ? 'Next word' : 'See results') : 'Check'}
-          onPlay={result ? undefined : () => onSpeak(word.id, word.word)}
-          onPlaySlow={result || !onSpeakSyllables ? undefined : () => onSpeakSyllables(word.id, buildPronunciationSyllables(word))}
-          onPlayBoth={result || !onSpeakBoth ? undefined : () => onSpeakBoth(word.id, word.word, buildPronunciationSyllables(word))}
+          defaultSpeed={speed}
+          onPlay={result ? undefined : playNormal}
+          onPlaySlow={result || !onSpeakSyllables ? undefined : playSlow}
+          onPlayBoth={result || !onSpeakBoth ? undefined : playBoth}
         />
         </KeyboardFrame>
       ) : (
