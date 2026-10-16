@@ -53,11 +53,24 @@ describe('QuizView', () => {
     const names = ['apple', 'berry', 'cherry', 'damson', 'elder'];
     setup({ words: names.map((w, i) => ({ id: i, word: w, syllables: [w.split('')] })) });
     for (const w of names) await answer(user, 'x');
-    expect(screen.getAllByRole('listitem').filter(li => li.className === 'quiz-chip')).toHaveLength(3);
+    expect(screen.getByLabelText('Hardest words').children).toHaveLength(3);
     fireEvent.change(screen.getByRole('slider', { name: 'How many of the hardest words' }), { target: { value: '5' } });
-    expect(screen.getAllByRole('listitem').filter(li => li.className === 'quiz-chip')).toHaveLength(5);
+    expect(screen.getByLabelText('Hardest words').children).toHaveLength(5);
     await user.click(screen.getByRole('button', { name: 'Test the 5 hardest words' }));
     expect(screen.getByLabelText('Word 1 of 5: current')).toBeInTheDocument();
+  });
+
+  it('the not-yet-learned slider picks how many words and shows them', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const user = userEvent.setup();
+    const names = ['apple', 'berry', 'cherry', 'damson', 'elder'];
+    setup({ words: names.map((w, i) => ({ id: i, word: w, syllables: [w.split('')] })) });
+    for (const w of names) await answer(user, 'x');
+    expect(screen.getByLabelText('Not yet learned words').children).toHaveLength(5);
+    fireEvent.change(screen.getByRole('slider', { name: 'How many not yet learned words' }), { target: { value: '2' } });
+    expect(screen.getByLabelText('Not yet learned words').children).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: 'Not yet learned (2)' }));
+    expect(screen.getByLabelText('Word 1 of 2: current')).toBeInTheDocument();
   });
 
   it('shows a left-out letter as a missing box', async () => {

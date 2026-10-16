@@ -759,3 +759,4 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .quiz-hard .quiz-note { margin: 0; }
 .quiz-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .quiz-chip { padding: 0.25rem 0.7rem; border-radius: 9999px; background: var(--muted); border: 1px solid var(--card-border); color: var(--foreground); font-size: 0.9rem; font-weight: 700; }
+.quiz-group { width: 100%; max-width: 30rem; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; margin: 1.1rem 0; }

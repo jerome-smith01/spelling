@@ -19,6 +19,8 @@ const shuffle = (arr) => {
   return a;
 };
 
+const GROUPED = ['open', 'hardest', 'nextHardest']; // shown together, set apart from the other choices
+
 // A word's letters as boxes: green where the letter is right, red where it is wrong
 const LetterBoxes = ({ cells, label }) => (
   <div className="quiz-letters" role="img" aria-label={label}>
@@ -64,6 +66,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   // The original round's scores, and the words already drilled from it (hardest 3, next 3, ...)
   const [base, setBase] = useState(saved?.base ?? null);
   const [drilled, setDrilled] = useState(saved?.drilled ?? []);
+  const [openN, setOpenN] = useState(null); // how many not-yet-learned words (null = all of them)
   const [hardN, setHardN] = useState(3); // how many of the hardest words the slider picks
   const inputRef = useRef(null);
   const [speed, setSpeedState] = useState(loadSpeed);
@@ -178,11 +181,18 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const hardList = rank.slice(0, n);
     const hardSet = new Set(hardList.map(f => f.word));
     const hardLabel = `${base ? 'Next' : 'Test the'} ${n} hardest ${n === 1 ? 'word' : 'words'}`;
+    // Not-yet-learned words, weakest first; the slider picks how many to quiz on
+    const openAll = words.filter(w => !isMastered(w.word))
+      .map(w => ({ word: w.word, pct: recentPct(historyFor(w.word), outcomes.find(o => o.word === w.word)?.pct) }))
+      .sort((a, b) => a.pct - b.pct);
+    const openCount = Math.max(1, Math.min(openN ?? openAll.length, openAll.length));
+    const openList = openAll.slice(0, openCount);
+    const openSet = new Set(openList.map(f => f.word));
     const choices = [
       { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
       { key: 'remaining', label: 'Practice remaining missed words', list: base ? words.filter(w => leftMissedSet.has(w.word)) : [] },
-      { key: 'open', label: 'Not yet learned', list: words.filter(w => !isMastered(w.word)) },
       { key: 'all', label: 'All words, including learned', list: words },
+      { key: 'open', label: 'Not yet learned', list: words.filter(w => openSet.has(w.word)) },
       { key: 'hardest', label: hardLabel, list: !base && outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
       { key: 'nextHardest', label: hardLabel, list: base && left.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] }
     ].filter(c => c.list.length > 0);
@@ -190,6 +200,56 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const allClear = done && missed.length === 0;
     const primaryKey = missed.length > 0 ? 'missed' : null;
     const ICONS = { missed: <RefreshIcon />, hardest: <FlagIcon />, nextHardest: <FlagIcon />, remaining: <RefreshIcon />, open: <ListIcon />, all: <RefreshIcon /> };
+    const renderChoice = (c) => (
+            <React.Fragment key={c.key}>
+            <button type="button" className={`quiz-choice ${c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'}`} onClick={() => start(c.list, c.key === 'hardest' || c.key === 'nextHardest' || c.key === 'remaining' ? 'drill' : c.key === 'missed' ? 'keep' : 'reset')}>
+              {ICONS[c.key]}
+              {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
+                : c.key === 'hardest' || c.key === 'nextHardest' ? c.label
+                : c.key === 'remaining' ? `${c.label} (${c.list.length})`
+                : c.key === 'all' && missed.length === 0 && done ? `Retake all words (${c.list.length})`
+                : `${c.label} (${c.list.length})`}
+            </button>
+            {c.key === 'open' && (
+              <div className="quiz-hard">
+                {openAll.length > 1 && (
+                  <input
+                    type="range"
+                    className="quiz-slider"
+                    min="1"
+                    max={openAll.length}
+                    value={openCount}
+                    onChange={(e) => setOpenN(Number(e.target.value))}
+                    aria-label="How many not yet learned words"
+                    aria-valuetext={`${openCount} ${openCount === 1 ? 'word' : 'words'}`}
+                  />
+                )}
+                <p className="quiz-note">Words you haven't tested out of yet</p>
+                <ul className="quiz-chips" aria-label="Not yet learned words">
+                  {openList.map(f => <li key={f.word} className="quiz-chip">{f.word}</li>)}
+                </ul>
+              </div>
+            )}
+            {(c.key === 'hardest' || c.key === 'nextHardest') && (
+              <div className="quiz-hard">
+                <input
+                  type="range"
+                  className="quiz-slider"
+                  min="1"
+                  max={rank.length}
+                  value={n}
+                  onChange={(e) => setHardN(Number(e.target.value))}
+                  aria-label="How many of the hardest words"
+                  aria-valuetext={`${n} ${n === 1 ? 'word' : 'words'}`}
+                />
+                <p className="quiz-note">Hardest (last 5 attempts)</p>
+                <ul className="quiz-chips" aria-label="Hardest words">
+                  {hardList.map(f => <li key={f.word} className="quiz-chip">{f.word} {f.pct}%</li>)}
+                </ul>
+              </div>
+            )}
+            </React.Fragment>
+    );
     return (
       <div className="quiz-immersive quiz-summary">
         <div className="quiz-top">
@@ -230,37 +290,10 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           {allClear && (
             <button type="button" className="btn-verify quiz-choice" onClick={exit}><CheckIcon /> Finish</button>
           )}
-          {choices.map(c => (
-            <React.Fragment key={c.key}>
-            <button type="button" className={`quiz-choice ${c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'}`} onClick={() => start(c.list, c.key === 'hardest' || c.key === 'nextHardest' || c.key === 'remaining' ? 'drill' : c.key === 'missed' ? 'keep' : 'reset')}>
-              {ICONS[c.key]}
-              {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
-                : c.key === 'hardest' || c.key === 'nextHardest' ? c.label
-                : c.key === 'remaining' ? `${c.label} (${c.list.length})`
-                : c.key === 'all' && missed.length === 0 && done ? `Retake all words (${c.list.length})`
-                : `${c.label} (${c.list.length})`}
-            </button>
-            {c.key === 'open' && <p className="quiz-note">Words you haven't tested out of yet.</p>}
-            {(c.key === 'hardest' || c.key === 'nextHardest') && (
-              <div className="quiz-hard">
-                <input
-                  type="range"
-                  className="quiz-slider"
-                  min="1"
-                  max={rank.length}
-                  value={n}
-                  onChange={(e) => setHardN(Number(e.target.value))}
-                  aria-label="How many of the hardest words"
-                  aria-valuetext={`${n} ${n === 1 ? 'word' : 'words'}`}
-                />
-                <p className="quiz-note">Hardest (last 5 attempts)</p>
-                <ul className="quiz-chips" aria-label="Hardest words">
-                  {hardList.map(f => <li key={f.word} className="quiz-chip">{f.word} {f.pct}%</li>)}
-                </ul>
-              </div>
-            )}
-            </React.Fragment>
-          ))}
+          {choices.filter(c => !GROUPED.includes(c.key)).map(renderChoice)}
+          <div className="quiz-group">
+            {choices.filter(c => GROUPED.includes(c.key)).map(renderChoice)}
+          </div>
           {!allClear && <button type="button" className="btn-secondary-sm quiz-choice" onClick={exit}><ChevronLeftIcon /> Back to practice</button>}
         </div>
       </div>
