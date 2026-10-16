@@ -64,6 +64,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   // The original round's scores, and the words already drilled from it (hardest 3, next 3, ...)
   const [base, setBase] = useState(saved?.base ?? null);
   const [drilled, setDrilled] = useState(saved?.drilled ?? []);
+  const [hardN, setHardN] = useState(3); // how many of the hardest words the slider picks
   const inputRef = useRef(null);
   const [speed, setSpeedState] = useState(loadSpeed);
   const speedRef = useRef(speed);
@@ -164,22 +165,26 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const letter = letterFor(avg);
     // Hardest = lowest average over each word's last five attempts (this quiz's included)
     const form = outcomes.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
-      .sort((a, b) => a.pct - b.pct).slice(0, 3);
+      .sort((a, b) => a.pct - b.pct);
     // Once a drill has been done, what is left of the original round (minus the words already drilled)
     const drilledSet = new Set(drilled);
     const left = (base || []).filter(o => !drilledSet.has(o.word));
     const leftForm = left.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
       .sort((a, b) => a.pct - b.pct);
-    const nextForm = leftForm.slice(0, 3);
     const leftMissedSet = new Set(left.filter(o => !o.testedOut).map(o => o.word));
-    const hardSet = new Set((base ? nextForm : form).map(f => f.word));
+    // The slider picks how many of the hardest words to drill (default 3); the chips below show them
+    const rank = base ? leftForm : form;
+    const n = Math.max(1, Math.min(hardN, rank.length));
+    const hardList = rank.slice(0, n);
+    const hardSet = new Set(hardList.map(f => f.word));
+    const hardLabel = `${base ? 'Next' : 'Test the'} ${n} hardest ${n === 1 ? 'word' : 'words'}`;
     const choices = [
       { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
-      { key: 'hardest', label: 'Test the 3 hardest words', list: !base && outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
-      { key: 'nextHardest', label: 'Next 3 hardest words', list: base && left.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
       { key: 'remaining', label: 'Practice remaining missed words', list: base ? words.filter(w => leftMissedSet.has(w.word)) : [] },
       { key: 'open', label: 'Not yet learned', list: words.filter(w => !isMastered(w.word)) },
-      { key: 'all', label: 'All words, including learned', list: words }
+      { key: 'all', label: 'All words, including learned', list: words },
+      { key: 'hardest', label: hardLabel, list: !base && outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
+      { key: 'nextHardest', label: hardLabel, list: base && left.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] }
     ].filter(c => c.list.length > 0);
     // Missed words get the main button; with none missed, the main button finishes
     const allClear = done && missed.length === 0;
@@ -223,10 +228,11 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           )}
           <p className="quiz-label" style={{ margin: 0 }}>{done ? 'Quiz again' : 'Quiz anyway'}: what to focus on?</p>
           {allClear && (
-            <button type="button" className="btn-verify" onClick={exit}><CheckIcon /> Finish</button>
+            <button type="button" className="btn-verify quiz-choice" onClick={exit}><CheckIcon /> Finish</button>
           )}
           {choices.map(c => (
-            <button key={c.key} type="button" className={c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'} onClick={() => start(c.list, c.key === 'hardest' || c.key === 'nextHardest' || c.key === 'remaining' ? 'drill' : c.key === 'missed' ? 'keep' : 'reset')}>
+            <React.Fragment key={c.key}>
+            <button type="button" className={`quiz-choice ${c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'}`} onClick={() => start(c.list, c.key === 'hardest' || c.key === 'nextHardest' || c.key === 'remaining' ? 'drill' : c.key === 'missed' ? 'keep' : 'reset')}>
               {ICONS[c.key]}
               {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
                 : c.key === 'hardest' || c.key === 'nextHardest' ? c.label
@@ -234,13 +240,28 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
                 : c.key === 'all' && missed.length === 0 && done ? `Retake all words (${c.list.length})`
                 : `${c.label} (${c.list.length})`}
             </button>
+            {c.key === 'open' && <p className="quiz-note">Words you haven't tested out of yet.</p>}
+            {(c.key === 'hardest' || c.key === 'nextHardest') && (
+              <div className="quiz-hard">
+                <input
+                  type="range"
+                  className="quiz-slider"
+                  min="1"
+                  max={rank.length}
+                  value={n}
+                  onChange={(e) => setHardN(Number(e.target.value))}
+                  aria-label="How many of the hardest words"
+                  aria-valuetext={`${n} ${n === 1 ? 'word' : 'words'}`}
+                />
+                <p className="quiz-note">Hardest (last 5 attempts)</p>
+                <ul className="quiz-chips" aria-label="Hardest words">
+                  {hardList.map(f => <li key={f.word} className="quiz-chip">{f.word} {f.pct}%</li>)}
+                </ul>
+              </div>
+            )}
+            </React.Fragment>
           ))}
-          {(base ? nextForm : form).length > 0 && choices.some(c => c.key === 'hardest' || c.key === 'nextHardest') && (
-            <p className="deck-message" style={{ margin: 0 }}>
-              Hardest (last 5 attempts): {(base ? nextForm : form).map(f => `${f.word} ${f.pct}%`).join(', ')}
-            </p>
-          )}
-          {!allClear && <button type="button" className="btn-secondary-sm" onClick={exit}><ChevronLeftIcon /> Back to practice</button>}
+          {!allClear && <button type="button" className="btn-secondary-sm quiz-choice" onClick={exit}><ChevronLeftIcon /> Back to practice</button>}
         </div>
       </div>
     );

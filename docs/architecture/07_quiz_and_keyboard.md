@@ -43,9 +43,10 @@ How the listen-and-spell quiz and the touch keyboard work, and the rules to foll
 * **Buttons, in order of importance:**
   * Words missed → primary **Retake missed words (N)**.
   * Nothing missed → primary **Finish** (exits). Retaking everything is secondary.
-  * **Test the 3 hardest words** (only for rounds of more than 3 words). *Hardest* = lowest `recentPct`: the average of the word's last five attempts, i.e. its practice `history` plus the score just made. The hardest words and their percentages are listed under the buttons.
+  * **Test the 3 hardest words** (only for rounds of more than 3 words). *Hardest* = lowest `recentPct`: the average of the word's last five attempts, i.e. its practice `history` plus the score just made. A slider under the button picks how many (default 3) and shows those words as chips with their percentages, updating as it moves.
   * After a drill, **Next 3 hardest words** and **Practice remaining missed words (N)** work from the **original** round minus the words already drilled (`base` and `drilled` in state, persisted). Starting a fresh round (all words / not yet learned) clears them; retaking missed words inside a drill keeps them.
   * Not yet learned / Retake all words / Back to practice are secondary.
+* **Layout of the choices:** labels are left-aligned; the order is retake missed, remaining missed, not yet learned (with a one-line footnote), all words, then the hardest-words button directly above its slider, chips and note. Footnotes sit directly under their button.
 
 ## 6. Play speed
 

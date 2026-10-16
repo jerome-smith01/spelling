@@ -47,6 +47,19 @@ describe('QuizView', () => {
     expect(screen.getByLabelText('Word 1 of 3: current')).toBeInTheDocument();
   });
 
+  it('the slider changes how many hardest words are tested, and shows them', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const user = userEvent.setup();
+    const names = ['apple', 'berry', 'cherry', 'damson', 'elder'];
+    setup({ words: names.map((w, i) => ({ id: i, word: w, syllables: [w.split('')] })) });
+    for (const w of names) await answer(user, 'x');
+    expect(screen.getAllByRole('listitem').filter(li => li.className === 'quiz-chip')).toHaveLength(3);
+    fireEvent.change(screen.getByRole('slider', { name: 'How many of the hardest words' }), { target: { value: '5' } });
+    expect(screen.getAllByRole('listitem').filter(li => li.className === 'quiz-chip')).toHaveLength(5);
+    await user.click(screen.getByRole('button', { name: 'Test the 5 hardest words' }));
+    expect(screen.getByLabelText('Word 1 of 5: current')).toBeInTheDocument();
+  });
+
   it('shows a left-out letter as a missing box', async () => {
     const user = userEvent.setup();
     setup({ words: [{ id: 1, word: 'annoy', syllables: [['a', 'n', 'n', 'o', 'y']] }] });
@@ -92,7 +105,7 @@ describe('QuizView', () => {
     const hist = { alpha: [0, 0, 0, 0], bravo: [100, 100, 100, 100] }; // alpha struggles over time
     setup({ historyFor: (w) => (hist[w] || []).map(pct => ({ pct })) });
     for (const w of ['alpha', 'bravo', 'candy', 'delta', 'eagle']) await answer(user, w); // all right today
-    expect(screen.getByText(/Hardest \(last 5 attempts\): alpha 20%/)).toBeInTheDocument();
+    expect(screen.getByText('alpha 20%')).toBeInTheDocument();
   });
 
   it('with nothing missed, Finish is the main button and exits', async () => {
