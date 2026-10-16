@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  alignCells,
   hiddenIndicesForLevel, outcomeFor, alignSpelling, gapAfterPass, applyResult, applyQuizResult,
   buildQueue, requeueFront, shuffleQueue, addDays, DEFAULT_PREFS, migrateProgress, migratePrefs, LEVEL_SCHEME } from './schedule';
 
@@ -212,5 +213,21 @@ describe('past test date', () => {
     const past = '2026-10-01';
     const r = applyResult(empty, 'a', 100, { prefs: DEFAULT_PREFS, today: MON, testDate: past });
     expect(r.progress.words.a.due >= MON).toBe(true);
+  });
+});
+
+describe('alignCells', () => {
+  const kinds = (typed, answer) => alignCells(typed, answer).map(c => (c.kind === 'missing' ? '_' : c.kind === 'ok' ? c.ch : c.ch.toUpperCase())).join('');
+  it('a short spelling leaves the blank at the end: bi -> bi_', () => {
+    expect(kinds('bi', 'boy')).toBe('bI_');
+  });
+  it('a skipped letter leaves a blank in place: anoy -> a_noy', () => {
+    expect(kinds('anoy', 'annoy')).toBe('a_noy');
+  });
+  it('a wrong letter is a swap, not a gap', () => {
+    expect(kinds('cot', 'cat')).toBe('cOt');
+  });
+  it('a spelling that is too long marks the extra letters', () => {
+    expect(kinds('catss', 'cat')).toBe('catSS');
   });
 });
