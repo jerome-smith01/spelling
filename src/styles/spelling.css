@@ -689,6 +689,8 @@ button.sess-dot { cursor: pointer; }
 .speaker-btn:hover, .speaker-btn.active { background-color: var(--audio-purple-hover); border-color: var(--audio-purple-hover); color: var(--on-audio-purple); box-shadow: none; }
 /* The speed that auto-play uses next: white ring */
 .speaker-btn.is-default, .speaker-btn.is-default:hover, .vkb-audio.is-default { box-shadow: inset 0 0 0 2.5px #fff, 0 0 0 1.5px var(--audio-purple); }
+/* The selected speed stays the normal purple (no lighter hover/tap color); only the white outline marks it */
+.speaker-btn.is-default, .speaker-btn.is-default:hover, .speaker-btn.is-default:focus, .vkb-audio.is-default, .vkb-audio.is-default:hover { background-color: var(--audio-purple); border-color: var(--audio-purple); color: var(--on-audio-purple); }
 .btn-check, .vkb-enter { background-color: var(--selected-color); border: 1px solid var(--selected-color); color: var(--on-selected-color, #ffffff); }
 
 /* Autoplay switch on the card header (knob on the right when on) */
