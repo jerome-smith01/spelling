@@ -71,6 +71,8 @@ describe('QuizView', () => {
     const names = ['apple', 'berry', 'cherry', 'damson', 'elder'];
     setup({ words: names.map((w, i) => ({ id: i, word: w, syllables: [w.split('')] })) });
     for (const w of names) await answer(user, 'x');
+    expect(screen.getByLabelText('Not yet learned words').children).toHaveLength(3); // starts at 3 at most
+    fireEvent.change(screen.getByRole('slider', { name: 'How many not yet learned words' }), { target: { value: '5' } });
     expect(screen.getByLabelText('Not yet learned words').children).toHaveLength(5);
     fireEvent.change(screen.getByRole('slider', { name: 'How many not yet learned words' }), { target: { value: '2' } });
     expect(screen.getByLabelText('Not yet learned words').children).toHaveLength(2);

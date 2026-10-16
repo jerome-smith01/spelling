@@ -23,7 +23,7 @@ export default function RoundSummary({
   gradeTitle, grade, headline, outcomes, words, isMastered = () => false, historyFor = () => [],
   base, drilled, onStart, onFinish, onBack, backLabel = 'Back to practice', extra = null, subject = 'Quiz'
 }) {
-  const [openN, setOpenN] = useState(null); // how many not-yet-learned words (null = all of them)
+  const [openN, setOpenN] = useState(3); // how many not-yet-learned words (starts at 3, at most)
   const [hardN, setHardN] = useState(3);   // how many of the hardest words
 
   const done = outcomes.length > 0;
@@ -48,7 +48,7 @@ export default function RoundSummary({
   const openAll = words.filter(w => !isMastered(w.word))
     .map(w => ({ word: w.word, pct: recentPct(historyFor(w.word), outcomes.find(o => o.word === w.word)?.pct) }))
     .sort((a, b) => a.pct - b.pct);
-  const openCount = Math.max(1, Math.min(openN ?? openAll.length, openAll.length));
+  const openCount = Math.max(1, Math.min(openN, openAll.length));
   const openList = openAll.slice(0, openCount);
   const openSet = new Set(openList.map(f => f.word));
 
