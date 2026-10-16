@@ -229,6 +229,7 @@ export default function WordCardDeck({
           onExit={() => { refreshQueue(); restartSession(); setMode('practice'); }}
           keyboardHidden={keyboardHidden}
           storageKey={quizStorageKey}
+          historyFor={(w) => progress.words[w]?.history || []}
         />
       </div>
     );

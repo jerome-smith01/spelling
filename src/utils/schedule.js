@@ -115,6 +115,15 @@ export function alignSpelling(typed, answer) {
   return { matched, typedMatched, pct: denom > 0 ? Math.round((dp[a.length][t.length] / denom) * 100) : 0 };
 }
 
+/**
+ * A word's recent form: the average of its last `n` attempts (earlier practice history plus
+ * the attempt just made), as a whole percent.
+ */
+export function recentPct(history = [], latest, n = 5) {
+  const scores = [...history.map(h => h.pct), latest].filter(p => typeof p === 'number').slice(-n);
+  return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+}
+
 /** Last day a word can be practiced (the day before the test), or null with no test date. */
 export const lastPracticeDay = (testDate) => (testDate ? addDays(testDate, -1) : null);
 

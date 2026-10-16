@@ -49,6 +49,23 @@ describe('QuizView', () => {
     expect(screen.getByText('Word 1 of 3')).toBeInTheDocument();
   });
 
+  it('ranks the hardest words by their last five attempts', async () => {
+    const user = userEvent.setup();
+    const hist = { alpha: [0, 0, 0, 0], bravo: [100, 100, 100, 100] }; // alpha struggles over time
+    setup({ historyFor: (w) => (hist[w] || []).map(pct => ({ pct })) });
+    for (const w of ['alpha', 'bravo', 'candy', 'delta', 'eagle']) await answer(user, w); // all right today
+    expect(screen.getByText(/Hardest \(last 5 attempts\): alpha 20%/)).toBeInTheDocument();
+  });
+
+  it('with nothing missed, Finish is the main button and exits', async () => {
+    const user = userEvent.setup();
+    const onExit = vi.fn();
+    setup({ onExit });
+    for (const w of ['alpha', 'bravo', 'candy', 'delta', 'eagle']) await answer(user, w);
+    await user.click(screen.getByRole('button', { name: 'Finish' }));
+    expect(onExit).toHaveBeenCalled();
+  });
+
   it('offers to retake everything when nothing was missed', async () => {
     const user = userEvent.setup();
     setup();

@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { alignSpelling } from '../utils/schedule';
+import { alignSpelling, recentPct } from '../utils/schedule';
 import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import VirtualKeyboard from './VirtualKeyboard';
 import KeyboardFrame from './KeyboardFrame';
+import { TaskAltIcon, ChevronLeftIcon, ChevronRightIcon, RefreshIcon, CloseIcon, FlagIcon, CheckIcon, ListIcon } from './ActionIcons';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { letterFor } from '../utils/session';
@@ -46,7 +47,7 @@ const loadSaved = (storageKey, words) => {
  * Quiz mode: the word is spoken, nothing is shown, the student types it.
  * 100% tests the word out (mastered). A miss changes nothing.
  */
-export default function QuizView({ words, isMastered = () => false, onSpeak, onSpeakSyllables, onSpeakBoth, onAttempts, commitQuiz, onExit, keyboardHidden = false, storageKey = null }) {
+export default function QuizView({ words, isMastered = () => false, onSpeak, onSpeakSyllables, onSpeakBoth, onAttempts, commitQuiz, onExit, keyboardHidden = false, storageKey = null, historyFor = () => [] }) {
   const [saved] = useState(() => loadSaved(storageKey, words));
   const [order, setOrder] = useState(() => saved?.order ?? shuffle(words.filter(w => !isMastered(w.word)))); // fixed for each round
   const [idx, setIdx] = useState(saved?.idx ?? 0);
@@ -106,20 +107,25 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const missedSet = new Set(missed.map(o => o.word));
     const avg = done ? Math.round(outcomes.reduce((a, o) => a + o.pct, 0) / outcomes.length) : 0;
     const letter = letterFor(avg);
-    const hardSet = new Set([...outcomes].sort((a, b) => a.pct - b.pct).slice(0, 3).map(o => o.word));
+    // Hardest = lowest average over each word's last five attempts (this quiz's included)
+    const form = outcomes.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
+      .sort((a, b) => a.pct - b.pct).slice(0, 3);
+    const hardSet = new Set(form.map(f => f.word));
     const choices = [
       { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
       { key: 'hardest', label: 'Test the 3 hardest words', list: outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
       { key: 'open', label: 'Not yet learned', list: words.filter(w => !isMastered(w.word)) },
       { key: 'all', label: 'All words, including learned', list: words }
     ].filter(c => c.list.length > 0);
-    // With nothing missed, retaking everything is the main action
-    const primaryKey = missed.length > 0 ? 'missed' : 'all';
+    // Missed words get the main button; with none missed, the main button finishes
+    const allClear = done && missed.length === 0;
+    const primaryKey = missed.length > 0 ? 'missed' : null;
+    const ICONS = { missed: <RefreshIcon />, hardest: <FlagIcon />, open: <ListIcon />, all: <RefreshIcon /> };
     return (
       <div className="quiz-immersive quiz-summary">
         <div className="quiz-top">
           <span />
-          <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz">✕ Exit</button>
+          <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz"><CloseIcon /> Exit</button>
         </div>
         <div className="quiz-stage">
           {done ? (
@@ -149,15 +155,24 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
             <p style={{ fontWeight: 700, margin: 0 }}>Every word is already learned. 🎉</p>
           )}
           <p className="quiz-label" style={{ margin: 0 }}>{done ? 'Quiz again' : 'Quiz anyway'}: what to focus on?</p>
+          {allClear && (
+            <button type="button" className="btn-verify" onClick={exit}><CheckIcon /> Finish</button>
+          )}
           {choices.map(c => (
             <button key={c.key} type="button" className={c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'} onClick={() => start(c.list)}>
+              {ICONS[c.key]}
               {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
                 : c.key === 'hardest' ? c.label
                 : c.key === 'all' && missed.length === 0 && done ? `Retake all words (${c.list.length})`
                 : `${c.label} (${c.list.length})`}
             </button>
           ))}
-          <button type="button" className="btn-secondary-sm" onClick={exit}>Back to practice</button>
+          {form.length > 0 && choices.some(c => c.key === 'hardest') && (
+            <p className="deck-message" style={{ margin: 0 }}>
+              Hardest (last 5 attempts): {form.map(f => `${f.word} ${f.pct}%`).join(', ')}
+            </p>
+          )}
+          {!allClear && <button type="button" className="btn-secondary-sm" onClick={exit}><ChevronLeftIcon /> Back to practice</button>}
         </div>
       </div>
     );
@@ -194,7 +209,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     <div className="quiz-immersive" onKeyDown={onKeyDown}>
       <div className="quiz-top">
         <div className="deck-badge">Word {idx + 1} of {order.length}</div>
-        <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz">✕ Exit</button>
+        <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz"><CloseIcon /> Exit</button>
       </div>
       <div className="quiz-stage">
         {!result ? (
@@ -289,10 +304,10 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
         <div className="quiz-actions">
           {result ? (
             <button type="button" className="btn-verify" onClick={next} autoFocus>
-              {idx + 1 < order.length ? 'Next word' : 'See results'}
+              {idx + 1 < order.length ? 'Next word' : 'See results'} <ChevronRightIcon />
             </button>
           ) : (
-            <button type="button" className="btn-verify" onClick={submit} disabled={!text.trim()}>Check</button>
+            <button type="button" className="btn-verify" onClick={submit} disabled={!text.trim()}><TaskAltIcon /> Check</button>
           )}
         </div>
       )}
