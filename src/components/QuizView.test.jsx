@@ -32,7 +32,8 @@ describe('QuizView', () => {
     const row = screen.getByLabelText('You spelled anoy');
     expect(row.children).toHaveLength(5);
     expect(row.querySelectorAll('.quiz-letter-missing')).toHaveLength(1);
-    expect(row.querySelector('.quiz-letter-missing')).toHaveTextContent('n');
+    expect(row.querySelector('.quiz-letter-missing')).toBeEmptyDOMElement();
+    expect(row).toHaveTextContent('anoy');
   });
 
   it('restores progress after a refresh', async () => {

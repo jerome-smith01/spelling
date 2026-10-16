@@ -23,7 +23,7 @@ const shuffle = (arr) => {
 const LetterBoxes = ({ cells, label }) => (
   <div className="quiz-letters" role="img" aria-label={label}>
     {cells.map((c, i) => (
-      <span key={i} className={`quiz-letter ${c.kind === 'ok' ? 'quiz-letter-ok' : c.kind === 'missing' ? 'quiz-letter-bad quiz-letter-missing' : 'quiz-letter-bad'}`}>{c.ch}</span>
+      <span key={i} className={`quiz-letter ${c.kind === 'ok' ? 'quiz-letter-ok' : c.kind === 'missing' ? 'quiz-letter-bad quiz-letter-missing' : 'quiz-letter-bad'}`}>{c.kind === 'missing' ? '' : c.ch}</span>
     ))}
   </div>
 );
