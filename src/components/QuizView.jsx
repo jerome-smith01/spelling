@@ -185,16 +185,18 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const letter = letterFor(avg);
     // Hardest = lowest average over each word's last five attempts (this quiz's included)
     const form = outcomes.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
+      .filter(f => f.pct < 100) // a word at 100% over its last five is not hard
       .sort((a, b) => a.pct - b.pct);
     // Once a drill has been done, what is left of the original round (minus the words already drilled)
     const drilledSet = new Set(drilled);
     const left = (base || []).filter(o => !drilledSet.has(o.word));
     const leftForm = left.map(o => ({ word: o.word, pct: recentPct(historyFor(o.word), o.pct) }))
+      .filter(f => f.pct < 100)
       .sort((a, b) => a.pct - b.pct);
     const leftMissedSet = new Set(left.filter(o => !o.testedOut).map(o => o.word));
     // The slider picks how many of the hardest words to drill (default 3); the chips below show them
     const rank = base ? leftForm : form;
-    const n = Math.max(1, Math.min(hardN, rank.length));
+    const n = Math.max(1, Math.min(hardN, rank.length || 1));
     const hardList = rank.slice(0, n);
     const hardSet = new Set(hardList.map(f => f.word));
     const hardLabel = `${base ? 'Next' : 'Test the'} ${n} hardest ${n === 1 ? 'word' : 'words'}`;
@@ -210,8 +212,8 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
       { key: 'remaining', label: 'Practice remaining missed words', list: base ? words.filter(w => leftMissedSet.has(w.word)) : [] },
       { key: 'all', label: 'All words, including learned', list: words },
       { key: 'open', label: 'Not yet learned', list: words.filter(w => openSet.has(w.word)) },
-      { key: 'hardest', label: hardLabel, list: !base && outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
-      { key: 'nextHardest', label: hardLabel, list: base && left.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] }
+      { key: 'hardest', label: hardLabel, list: !base && rank.length > 0 ? words.filter(w => hardSet.has(w.word)) : [] },
+      { key: 'nextHardest', label: hardLabel, list: base && rank.length > 0 ? words.filter(w => hardSet.has(w.word)) : [] }
     ].filter(c => c.list.length > 0);
     // Missed words get the main button; with none missed, the main button finishes
     const allClear = done && missed.length === 0;
@@ -251,16 +253,18 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
             )}
             {(c.key === 'hardest' || c.key === 'nextHardest') && (
               <div className="quiz-hard">
-                <input
-                  type="range"
-                  className="quiz-slider"
-                  min="1"
-                  max={rank.length}
-                  value={n}
-                  onChange={(e) => setHardN(Number(e.target.value))}
-                  aria-label="How many of the hardest words"
-                  aria-valuetext={`${n} ${n === 1 ? 'word' : 'words'}`}
-                />
+                {rank.length > 1 && (
+                  <input
+                    type="range"
+                    className="quiz-slider"
+                    min="1"
+                    max={rank.length}
+                    value={n}
+                    onChange={(e) => setHardN(Number(e.target.value))}
+                    aria-label="How many of the hardest words"
+                    aria-valuetext={`${n} ${n === 1 ? 'word' : 'words'}`}
+                  />
+                )}
                 <p className="quiz-note">Hardest (last 5 attempts)</p>
                 <ul className="quiz-chips" aria-label="Hardest words">
                   {hardList.map(f => <li key={f.word} className="quiz-chip">{f.word} {f.pct}%</li>)}

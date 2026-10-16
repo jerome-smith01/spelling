@@ -47,8 +47,9 @@ describe('QuizView', () => {
     await user.click(screen.getByRole('button', { name: 'Test the 3 hardest words' }));
     for (const w of ['apple', 'berry', 'cherry']) await answer(user, w);
     expect(screen.getByRole('button', { name: 'Practice remaining missed words (2)' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Next 3 hardest words' }));
-    expect(screen.getByLabelText('Word 1 of 3: current')).toBeInTheDocument();
+    // left: damson and elder (missed) and three right words, which are not hard
+    await user.click(screen.getByRole('button', { name: 'Next 2 hardest words' }));
+    expect(screen.getByLabelText('Word 1 of 2: current')).toBeInTheDocument();
   });
 
   it('the slider changes how many hardest words are tested, and shows them', async () => {
@@ -139,8 +140,10 @@ describe('QuizView', () => {
     expect(screen.getAllByRole('img', { name: 'Not tested out' })).toHaveLength(2);
     expect(screen.queryByText(/Tested out! This word|back in practice/)).toBeNull();
     expect(screen.getByLabelText('The word is delta')).toHaveClass('quiz-wordbox');
-    await user.click(screen.getByRole('button', { name: 'Test the 3 hardest words' }));
-    expect(screen.getByLabelText('Word 1 of 3: current')).toBeInTheDocument();
+    // only the two missed words are hard; the three right ones (100%) are left out
+    expect(screen.getByLabelText('Hardest words').children).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: 'Test the 2 hardest words' }));
+    expect(screen.getByLabelText('Word 1 of 2: current')).toBeInTheDocument();
   });
 
   it('ranks the hardest words by their last five attempts', async () => {
