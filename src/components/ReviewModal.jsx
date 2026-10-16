@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import useCoarsePointer from '../hooks/useCoarsePointer';
-import { SearchCheckIcon, CheckIcon } from './ActionIcons';
+import { SearchCheckIcon, CheckIcon, TaskAltIcon } from './ActionIcons';
 
 const MESSAGE = 'Take time to review your work.';
 const WRONG_TRIES_BEFORE_REVEAL = 2;
@@ -10,7 +10,7 @@ const WRONG_TRIES_BEFORE_REVEAL = 2;
  * Centered on screen (above the keyboard when there is one), below the keyboard's layer, so the keyboard is never covered.
  *   level 1  informational, one OK button
  *   level 2  tap each wrong letter in their spelling
- *   level 3  type the right letter into each wrong spot
+ *   level 3  type the right letter into each wrong spot, then press Enter or Check
  * `hasKeyboard` says whether the app's own keyboard is on screen to type with.
  */
 export default function ReviewModal({ gate, hasKeyboard = false }) {
@@ -35,12 +35,12 @@ function ReviewDialog({ modal, gate, hasKeyboard }) {
   const triesRef = useRef(0);
   triesRef.current = wrongTries;
 
-  // Show the finished row for a moment, then close
+  // Level 2 shows the finished row for a moment, then closes. Level 3 waits for Enter or Check.
   useEffect(() => {
-    if (!complete) return undefined;
+    if (!complete || level !== 2) return undefined;
     const t = setTimeout(() => finishRef.current({ tries: triesRef.current }), 900);
     return () => clearTimeout(t);
-  }, [complete]);
+  }, [complete, level]);
 
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
@@ -76,10 +76,13 @@ function ReviewDialog({ modal, gate, hasKeyboard }) {
   // The app's on-screen keyboard and a physical keyboard both type into the slots
   const pressRef = useRef(press);
   pressRef.current = press;
+  const checkRef = useRef(null);
+  checkRef.current = () => { if (complete) finishRef.current({ tries: triesRef.current }); };
   useEffect(() => {
     if (level !== 3) return undefined;
-    gate.keyRef.current = { press: (c) => pressRef.current(c) };
+    gate.keyRef.current = { press: (c) => pressRef.current(c), enter: () => checkRef.current() };
     const onKey = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); checkRef.current(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
       e.preventDefault();
       pressRef.current(e.key);
@@ -149,6 +152,12 @@ function ReviewDialog({ modal, gate, hasKeyboard }) {
             aria-label="Type the right letter"
             onInput={(e) => { press(e.target.value.slice(-1)); e.target.value = ''; }}
           />
+        )}
+
+        {level === 3 && complete && (
+          <button type="button" className="btn-verify review-ok" onClick={() => checkRef.current()} autoFocus>
+            <TaskAltIcon /> Check
+          </button>
         )}
 
         {level === 1 && (

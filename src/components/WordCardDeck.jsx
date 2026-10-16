@@ -473,7 +473,7 @@ export default function WordCardDeck({
           <VirtualKeyboard
             onChar={(c) => { if (gate.modal) gate.keyRef.current?.press(c); else if (!result) kbRef.current?.press(c); }}
             onBackspace={() => { if (!gate.modal && !result) kbRef.current?.backspace(); }}
-            onEnter={() => kbRef.current?.check()}
+            onEnter={() => { if (gate.modal) gate.keyRef.current?.enter?.(); else kbRef.current?.check(); }}
             enterDisabled={!!result || !canCheck}
             enterLabel="Check"
             onPrev={goBack}

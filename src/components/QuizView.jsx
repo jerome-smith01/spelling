@@ -210,7 +210,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   };
 
   const typedWord = result?.typed || '';
-  const keyboardEnter = result ? nextWord : submit;
+  const keyboardEnter = () => { if (gate.modal) gate.keyRef.current?.enter?.(); else if (result) nextWord(); else submit(); };
 
   return (
     <div className="quiz-immersive" onKeyDown={onKeyDown}>

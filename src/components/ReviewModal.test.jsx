@@ -44,22 +44,35 @@ describe('ReviewModal', () => {
     expect(gate.finish).toHaveBeenCalledWith({ tries: 1 });
   });
 
-  it('level 3: type the right letters; two wrong tries fill the answer in', () => {
+  it('level 3: type the right letters, then Check closes it; two wrong tries fill the answer in', () => {
     const gate = gateFor(3);
     render(<ReviewModal gate={gate} />);
     act(() => gate.keyRef.current.press('o'));  // fixes the i
     act(() => gate.keyRef.current.press('x'));  // wrong for the last spot
     act(() => gate.keyRef.current.press('q'));  // wrong again: revealed
-    act(() => { vi.advanceTimersByTime(1500); });
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(gate.finish).not.toHaveBeenCalled(); // does not close by itself
+    fireEvent.click(screen.getByRole('button', { name: /Check/ }));
     expect(gate.finish).toHaveBeenCalledWith({ tries: 2 });
   });
 
-  it('level 3 also takes a physical keyboard', () => {
+  it('level 3 also takes a physical keyboard, and Enter closes it once the letters are right', () => {
     const gate = gateFor(3);
     render(<ReviewModal gate={gate} />);
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(gate.finish).not.toHaveBeenCalled(); // not before the letters are right
     fireEvent.keyDown(window, { key: 'o' });
     fireEvent.keyDown(window, { key: 'y' });
-    act(() => { vi.advanceTimersByTime(1500); });
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(gate.finish).toHaveBeenCalledWith({ tries: 0 });
+  });
+
+  it('level 3: the on-screen keyboard\'s Enter closes it too', () => {
+    const gate = gateFor(3);
+    render(<ReviewModal gate={gate} />);
+    act(() => gate.keyRef.current.press('o'));
+    act(() => gate.keyRef.current.press('y'));
+    act(() => gate.keyRef.current.enter());
     expect(gate.finish).toHaveBeenCalledWith({ tries: 0 });
   });
 });
