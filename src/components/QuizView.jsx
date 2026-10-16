@@ -137,8 +137,10 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
       e.preventDefault();
       next();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Registered a tick late: the Enter that just checked the word is still travelling to the window,
+    // and must not also count as "next word"
+    const t = setTimeout(() => window.addEventListener('keydown', onKey), 0);
+    return () => { clearTimeout(t); window.removeEventListener('keydown', onKey); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, idx]);
 
