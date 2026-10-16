@@ -277,13 +277,13 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
               <legend><span className="quiz-icon quiz-icon-right" aria-hidden="true">✓</span>Correct spelling</legend>
               <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
             </fieldset>
-            <p className="deck-message" style={{ margin: 0 }}>
-              {result.testedOut
-                ? '✓ Tested out! This word is learned.'
-                : result.unlearned
-                  ? 'Not quite. This word is no longer learned, so it is back in practice.'
-                  : 'Not quite. No penalty, it stays at its current level.'}
-            </p>
+            {(result.testedOut || result.unlearned) && (
+              <p className="deck-message" style={{ margin: 0 }}>
+                {result.testedOut
+                  ? '✓ Tested out! This word is learned.'
+                  : 'Not quite. This word is no longer learned, so it is back in practice.'}
+              </p>
+            )}
           </div>
         )}
       </div>
