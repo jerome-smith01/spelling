@@ -24,18 +24,19 @@ export default function KeyboardFrame({ children, dock = false }) {
   // The page leaves room for the keyboard's real height
   useLayoutEffect(() => {
     const el = frameRef.current;
-    if (!tablet || !el) return undefined;
+    if (!(tablet || dock) || !el) return undefined; // only fixed keyboards take room from the page
     const measure = () => document.documentElement.style.setProperty('--kb-h', `${el.offsetHeight}px`);
     measure();
     if (typeof ResizeObserver === 'undefined') return undefined;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [tablet]);
+  }, [tablet, dock]);
   useEffect(() => () => document.documentElement.style.removeProperty('--kb-h'), []);
 
   if (!tablet) {
-    return dock ? <div className="vkb-dock">{children}</div> : children;
+    // Inline keyboards (quiz on phones) still sit above the review popup's layer
+    return dock ? <div ref={frameRef} className="vkb-dock">{children}</div> : <div className="vkb-inline">{children}</div>;
   }
   return <div ref={frameRef} className="kb-frame">{children}</div>;
 }

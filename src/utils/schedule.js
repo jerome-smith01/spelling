@@ -140,8 +140,8 @@ export function alignCells(typed, answer) {
   let j = t.length;
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && al[i - 1] === tl[j - 1] && dp[i][j] === dp[i - 1][j - 1]) { cells.push({ ch: t[j - 1], kind: 'ok' }); i--; j--; }
-    else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) { cells.push({ ch: a[i - 1], kind: 'missing' }); i--; }
-    else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) { cells.push({ ch: t[j - 1], kind: 'extra' }); i--; j--; }
+    else if (i > 0 && dp[i][j] === dp[i - 1][j] + 1) { cells.push({ ch: a[i - 1], kind: 'missing', ans: a[i - 1] }); i--; }
+    else if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) { cells.push({ ch: t[j - 1], kind: 'extra', ans: a[i - 1] }); i--; j--; }
     else { cells.push({ ch: t[j - 1], kind: 'extra' }); j--; }
   }
   return cells.reverse();

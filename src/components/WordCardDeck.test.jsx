@@ -12,6 +12,10 @@ import WordCardDeck from './WordCardDeck';
 import { useDeckSchedule } from '../hooks/useDeckSchedule';
 import { parseWordList } from '../utils/wordParser';
 
+// These tests move through results instantly; the review gate (which treats that as rushing) is off unless a test turns it on
+const mockGate = vi.hoisted(() => ({ rushed: false }));
+vi.mock('../utils/reviewPolicy', async (importOriginal) => ({ ...(await importOriginal()), isRushed: () => mockGate.rushed }));
+
 const words = parseWordList('kit-ten\npup-py');
 const noop = () => {};
 
@@ -68,6 +72,20 @@ describe('WordCardDeck', () => {
     expect(dots()[1]).toHaveAccessibleName(/skipped/);
     // loops back to the first card that isn't 100% yet
     expect(screen.getByLabelText('Spelling card for kitten')).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it('practice: leaving a missed card too fast opens the review popup', async () => {
+    mockGate.rushed = true;
+    vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    const user = userEvent.setup();
+    render(<Harness />);
+    await fill(user, ['x', 'x', 'x']);
+    await user.click(screen.getByRole('button', { name: /Check your spelling for kitten/ }));
+    await user.click(screen.getByRole('button', { name: 'Next card' }));
+    expect(screen.getByRole('alertdialog', { name: 'Take time to review your work.' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Spelling card for kitten')).toBeInTheDocument(); // still on the card
+    mockGate.rushed = false;
     vi.restoreAllMocks();
   });
 

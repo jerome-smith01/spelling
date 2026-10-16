@@ -5,6 +5,9 @@ import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import VirtualKeyboard from './VirtualKeyboard';
 import KeyboardFrame from './KeyboardFrame';
+import ReviewModal from './ReviewModal';
+import useReviewGate from '../hooks/useReviewGate';
+import { cellsFromSpelling } from '../utils/reviewCells';
 import { TaskAltIcon, ChevronLeftIcon, ChevronRightIcon, RefreshIcon, CloseIcon, FlagIcon, CheckIcon, ListIcon } from './ActionIcons';
 import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
@@ -78,6 +81,8 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   };
   const mobile = useCoarsePointer();
   const word = order[idx];
+  const listId = storageKey ? storageKey.split(':').pop() : null;
+  const gate = useReviewGate({ context: 'quiz', listId });
   const tutorial = useTutorial();
 
   useEffect(() => {
@@ -129,13 +134,22 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     setIdx(i => i + 1);
   };
 
+  // Leaving a missed word too fast opens the review popup instead (useReviewGate)
+  const nextWord = () => gate.guard(next);
+
+  // Tell the gate when a result is on screen (also when one is restored after a refresh)
+  useEffect(() => {
+    if (result && word) gate.show({ word: word.word, correct: result.pct >= 100, cells: cellsFromSpelling(result.typed, word.word) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
   // Once a word is checked, Enter means "next word", wherever focus happens to be
   useEffect(() => {
     if (!result) return undefined;
     const onKey = (e) => {
       if (e.key !== 'Enter' || e.repeat) return;
       e.preventDefault();
-      next();
+      nextWord();
     };
     // Registered a tick late: the Enter that just checked the word is still travelling to the window,
     // and must not also count as "next word"
@@ -146,6 +160,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
 
   // mode: 'drill' picks from the original round (kept), 'keep' retakes within a drill, 'reset' starts afresh
   const start = (list, mode = 'reset') => {
+    gate.reset();
     if (mode === 'drill') {
       setBase(b => b ?? outcomes.map(o => ({ word: o.word, testedOut: o.testedOut, pct: o.pct })));
       setDrilled(d => [...new Set([...d, ...list.map(w => w.word)])]);
@@ -325,7 +340,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   };
 
   const typedWord = result?.typed || '';
-  const keyboardEnter = result ? next : submit;
+  const keyboardEnter = result ? nextWord : submit;
 
   return (
     <div className="quiz-immersive" onKeyDown={onKeyDown}>
@@ -422,8 +437,8 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
       {mobile && keyboardHidden ? null : mobile ? (
         <KeyboardFrame>
         <VirtualKeyboard
-          onChar={(c) => { if (!result) setText(t => t + c); }}
-          onBackspace={() => { if (!result) setText(t => t.slice(0, -1)); }}
+          onChar={(c) => { if (gate.modal) gate.keyRef.current?.press(c); else if (!result) setText(t => t + c); }}
+          onBackspace={() => { if (!gate.modal && !result) setText(t => t.slice(0, -1)); }}
           onEnter={keyboardEnter}
           enterDisabled={!result && !text.trim()}
           enterLabel={result ? (idx + 1 < order.length ? 'Next word' : 'See results') : 'Check'}
@@ -436,7 +451,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
       ) : (
         <div className="quiz-actions">
           {result ? (
-            <button type="button" className="btn-verify" onClick={next} autoFocus>
+            <button type="button" className="btn-verify" onClick={nextWord} autoFocus>
               {idx + 1 < order.length ? 'Next word' : 'See results'} <ChevronRightIcon />
             </button>
           ) : (
@@ -444,6 +459,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           )}
         </div>
       )}
+      <ReviewModal gate={gate} hasKeyboard={mobile && !keyboardHidden} />
     </div>
   );
 }

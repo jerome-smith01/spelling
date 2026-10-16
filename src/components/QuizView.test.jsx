@@ -6,6 +6,10 @@ import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import QuizView from './QuizView';
 
+// These tests move through results instantly; the review gate (which treats that as rushing) is off unless a test turns it on
+const mockGate = vi.hoisted(() => ({ rushed: false }));
+vi.mock('../utils/reviewPolicy', async (importOriginal) => ({ ...(await importOriginal()), isRushed: () => mockGate.rushed }));
+
 const WORDS = ['alpha', 'bravo', 'candy', 'delta', 'eagle'].map((w, i) => ({ id: i, word: w, syllables: [w.split('')] }));
 const KEY = 'quiz_test_key';
 
@@ -71,6 +75,32 @@ describe('QuizView', () => {
     expect(screen.getByLabelText('Not yet learned words').children).toHaveLength(2);
     await user.click(screen.getByRole('button', { name: 'Not yet learned (2)' }));
     expect(screen.getByLabelText('Word 1 of 2: current')).toBeInTheDocument();
+  });
+
+  it('leaving a missed word too fast opens the review popup first; after it, Next goes through', async () => {
+    mockGate.rushed = true;
+    const user = userEvent.setup();
+    setup();
+    await user.type(screen.getByLabelText('Type the word you heard'), 'x');
+    await user.click(screen.getByRole('button', { name: 'Check' }));
+    await user.click(screen.getByRole('button', { name: 'Next word' }));
+    expect(screen.getByRole('alertdialog', { name: 'Take time to review your work.' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Word 1 of 5: current')).toBeInTheDocument(); // did not advance
+    await user.click(screen.getByRole('button', { name: /OK/ }));
+    await new Promise(r => setTimeout(r, 350)); // the same click must not also count as "next"
+    await user.click(screen.getByRole('button', { name: 'Next word' }));
+    expect(screen.getByLabelText('Word 2 of 5: current')).toBeInTheDocument();
+    mockGate.rushed = false;
+  });
+
+  it('a right answer is never gated', async () => {
+    mockGate.rushed = true;
+    const user = userEvent.setup();
+    setup();
+    await answer(user, 'alpha');
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(screen.getByLabelText('Word 2 of 5: current')).toBeInTheDocument();
+    mockGate.rushed = false;
   });
 
   it('shows a left-out letter as a missing box', async () => {

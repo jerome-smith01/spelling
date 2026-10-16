@@ -13,6 +13,10 @@ import { useDeckSchedule } from '../hooks/useDeckSchedule';
 import { parseWordList } from '../utils/wordParser';
 import { toDateStr } from '../utils/schedule';
 
+// These tests move through results instantly; the review gate (which treats that as rushing) is off unless a test turns it on
+const mockGate = vi.hoisted(() => ({ rushed: false }));
+vi.mock('../utils/reviewPolicy', async (importOriginal) => ({ ...(await importOriginal()), isRushed: () => mockGate.rushed }));
+
 const GROUPS = ['ou', 'ow', 'oi', 'oy'];
 const HINTS = ['ou says "ow" as in out'];
 const noop = () => {};

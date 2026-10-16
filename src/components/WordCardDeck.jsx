@@ -3,6 +3,9 @@ import WordCard from './WordCard';
 import QuizView from './QuizView';
 import VirtualKeyboard from './VirtualKeyboard';
 import KeyboardFrame from './KeyboardFrame';
+import ReviewModal from './ReviewModal';
+import useReviewGate from '../hooks/useReviewGate';
+import { cellsFromPractice } from '../utils/reviewCells';
 import useCoarsePointer from '../hooks/useCoarsePointer';
 import TutorialPrompt from './TutorialPrompt';
 import ChoicePicker from './ChoicePicker';
@@ -55,11 +58,12 @@ export default function WordCardDeck({
   const sessionKeyRef = useRef(queueKey);
   const [restartTick, setRestartTick] = useState(0);
   const restartRef = useRef(false);
-  const restartSession = () => { restartRef.current = true; setRestartTick(t => t + 1); };
+  const restartSession = () => { restartRef.current = true; setRestartTick(t => t + 1); gate.reset(); };
   const [legendOpen, setLegendOpen] = useState(false);
   const backRef = useRef(null);
   const kbRef = useRef(null);
   const coarse = useCoarsePointer();
+  const gate = useReviewGate({ context: 'practice', listId: quizStorageKey ? quizStorageKey.split(':').pop() : null });
   const [canCheck, setCanCheck] = useState(false);
   const tutorial = useTutorial();
   const hasCard = words.length > 0;
@@ -160,6 +164,14 @@ export default function WordCardDeck({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schedule.prefs.autoSpeak, mode, current?.word, cardKey]);
 
+  // Tell the review gate when a result is on screen (see useReviewGate)
+  useEffect(() => {
+    if (!result || !current) return;
+    const wrong = Object.keys(result.results).filter(i => result.results[i] !== 'correct').map(Number);
+    gate.show({ word: current.word, correct: result.pct >= 100, cells: cellsFromPractice(current.word, result.typed, wrong) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
   if (!words.length) return null;
 
   const handleResult = ({ pct, results, typed }) => {
@@ -176,6 +188,8 @@ export default function WordCardDeck({
     setCardKey(k => k + 1);
   };
   const goNext = () => move(advanceSession);
+  // Leaving a missed card too fast opens the review popup instead
+  const nextCard = () => gate.guard(goNext);
   const skipCard = () => move(sess => advanceSession(recordSkip(sess)));
   const goBack = () => move(sess => goTo(sess, sess.idx - 1));
   const goToCard = (i) => move(sess => goTo(sess, i));
@@ -383,7 +397,7 @@ export default function WordCardDeck({
                 className="deck-back"
                 ref={backRef}
                 tabIndex={-1}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); goNext(); } }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); nextCard(); } }}
               >
                 <div className="word-card-header" style={{ width: '100%' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -424,7 +438,7 @@ export default function WordCardDeck({
                 ))}
                 <div className="deck-section-label">Progress History</div>
                 <ProgressBars attempts={progress.words[current.word]?.history || []} />
-                <button type="button" className="btn-verify" onClick={goNext}>Next card</button>
+                <button type="button" className="btn-verify" onClick={nextCard}>Next card</button>
               </div>
             )}
           </div>
@@ -435,17 +449,18 @@ export default function WordCardDeck({
         <button type="button" className="btn-secondary-sm" onClick={endSession}>End session</button>
       </div>
       {legendOpen && <DeckLegend onClose={() => setLegendOpen(false)} />}
+      <ReviewModal gate={gate} hasKeyboard={dock} />
       {dock && (
         <KeyboardFrame dock>
           <VirtualKeyboard
-            onChar={(c) => { if (!result) kbRef.current?.press(c); }}
-            onBackspace={() => { if (!result) kbRef.current?.backspace(); }}
+            onChar={(c) => { if (gate.modal) gate.keyRef.current?.press(c); else if (!result) kbRef.current?.press(c); }}
+            onBackspace={() => { if (!gate.modal && !result) kbRef.current?.backspace(); }}
             onEnter={() => kbRef.current?.check()}
             enterDisabled={!!result || !canCheck}
             enterLabel="Check"
             onPrev={goBack}
             prevDisabled={session.idx === 0}
-            onNext={result ? goNext : skipCard}
+            onNext={result ? nextCard : skipCard}
             nextLabel={result ? 'Next card' : 'Skip this card for now'}
             onPlay={() => userSpeak(current.id, current.word)}
             defaultSpeed={speed}
