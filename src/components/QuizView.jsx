@@ -200,8 +200,10 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const allClear = done && missed.length === 0;
     const primaryKey = missed.length > 0 ? 'missed' : null;
     const ICONS = { missed: <RefreshIcon />, hardest: <FlagIcon />, nextHardest: <FlagIcon />, remaining: <RefreshIcon />, open: <ListIcon />, all: <RefreshIcon /> };
-    const renderChoice = (c) => (
-            <React.Fragment key={c.key}>
+    const renderChoice = (c) => {
+    const Wrap = GROUPED.includes(c.key) ? 'div' : React.Fragment; // grouped choices each sit in a tinted box
+    return (
+            <Wrap key={c.key} {...(GROUPED.includes(c.key) ? { className: 'quiz-block' } : {})}>
             <button type="button" className={`quiz-choice ${c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'}`} onClick={() => start(c.list, c.key === 'hardest' || c.key === 'nextHardest' || c.key === 'remaining' ? 'drill' : c.key === 'missed' ? 'keep' : 'reset')}>
               {ICONS[c.key]}
               {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
@@ -248,8 +250,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
                 </ul>
               </div>
             )}
-            </React.Fragment>
+            </Wrap>
     );
+    };
     return (
       <div className="quiz-immersive quiz-summary">
         <div className="quiz-top">
