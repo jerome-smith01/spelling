@@ -116,7 +116,7 @@ describe('WordCardDeck', () => {
     await user.click(screen.getByRole('button', { name: 'Check' }));
     await user.click(screen.getByRole('button', { name: 'See results' }));
     await user.click(screen.getByRole('button', { name: 'Retake missed word (1)' }));
-    expect(screen.getByText('Word 1 of 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Word 1 of 1: current')).toBeInTheDocument();
     vi.restoreAllMocks();
   });
 
@@ -132,7 +132,7 @@ describe('WordCardDeck', () => {
     }
     expect(screen.queryByRole('button', { name: /Not yet mastered/ })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Retake all words (2)' }));
-    expect(screen.getByText('Word 1 of 2')).toBeInTheDocument();
+    expect(screen.getByLabelText('Word 1 of 2: current')).toBeInTheDocument();
     vi.restoreAllMocks();
   });
 

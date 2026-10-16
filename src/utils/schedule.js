@@ -116,6 +116,32 @@ export function alignSpelling(typed, answer) {
 }
 
 /**
+ * The student's spelling lined up against the answer, in reading order: each cell is a typed
+ * letter that is right ('ok') or wrong/extra ('extra'), or a letter they left out ('missing').
+ */
+export function alignCells(typed, answer) {
+  const t = (typed || '').trim();
+  const a = answer;
+  const tl = t.toLowerCase();
+  const al = a.toLowerCase();
+  const dp = Array.from({ length: a.length + 1 }, () => new Array(t.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= t.length; j++) {
+      dp[i][j] = al[i - 1] === tl[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  const cells = [];
+  let i = a.length;
+  let j = t.length;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && al[i - 1] === tl[j - 1]) { cells.push({ ch: t[j - 1], kind: 'ok' }); i--; j--; }
+    else if (i > 0 && (j === 0 || dp[i - 1][j] >= dp[i][j - 1])) { cells.push({ ch: a[i - 1], kind: 'missing' }); i--; }
+    else { cells.push({ ch: t[j - 1], kind: 'extra' }); j--; }
+  }
+  return cells.reverse();
+}
+
+/**
  * A word's recent form: the average of its last `n` attempts (earlier practice history plus
  * the attempt just made), as a whole percent.
  */

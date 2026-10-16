@@ -24,6 +24,17 @@ beforeEach(() => { vi.spyOn(Math, 'random').mockReturnValue(0.99); localStorage.
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('QuizView', () => {
+  it('shows a left-out letter as a missing box', async () => {
+    const user = userEvent.setup();
+    setup({ words: [{ id: 1, word: 'annoy', syllables: [['a', 'n', 'n', 'o', 'y']] }] });
+    await user.type(screen.getByLabelText('Type the word you heard'), 'anoy');
+    await user.click(screen.getByRole('button', { name: 'Check' }));
+    const row = screen.getByLabelText('You spelled anoy');
+    expect(row.children).toHaveLength(5);
+    expect(row.querySelectorAll('.quiz-letter-missing')).toHaveLength(1);
+    expect(row.querySelector('.quiz-letter-missing')).toHaveTextContent('n');
+  });
+
   it('restores progress after a refresh', async () => {
     const user = userEvent.setup();
     setup();
@@ -31,7 +42,7 @@ describe('QuizView', () => {
     await user.type(screen.getByLabelText('Type the word you heard'), 'bra');
     cleanup(); // simulate a refresh
     setup();
-    expect(screen.getByText('Word 2 of 5')).toBeInTheDocument();
+    expect(screen.getByLabelText('Word 2 of 5: current')).toBeInTheDocument();
     expect(screen.getByLabelText('Type the word you heard')).toHaveValue('bra');
   });
 
@@ -49,7 +60,7 @@ describe('QuizView', () => {
     expect(screen.queryByText(/Tested out! This word|back in practice/)).toBeNull();
     expect(screen.getByLabelText('The word is delta')).toHaveClass('quiz-wordbox');
     await user.click(screen.getByRole('button', { name: 'Test the 3 hardest words' }));
-    expect(screen.getByText('Word 1 of 3')).toBeInTheDocument();
+    expect(screen.getByLabelText('Word 1 of 3: current')).toBeInTheDocument();
   });
 
   it('ranks the hardest words by their last five attempts', async () => {
@@ -94,6 +105,6 @@ describe('QuizView', () => {
     for (const w of ['alpha', 'bravo', 'candy', 'delta', 'eagle']) await answer(user, w);
     expect(screen.queryByRole('button', { name: /Retake missed/ })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Retake all words (5)' }));
-    expect(screen.getByText('Word 1 of 5')).toBeInTheDocument();
+    expect(screen.getByLabelText('Word 1 of 5: current')).toBeInTheDocument();
   });
 });

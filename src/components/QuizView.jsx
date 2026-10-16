@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { alignSpelling, recentPct } from '../utils/schedule';
+import { alignSpelling, alignCells, recentPct } from '../utils/schedule';
 import { useTutorial } from '../hooks/useTutorial';
 import { QUIZ_STEPS, TUTORIAL_KEYS } from '../utils/tutorialSteps';
 import useCoarsePointer from '../hooks/useCoarsePointer';
@@ -20,10 +20,10 @@ const shuffle = (arr) => {
 };
 
 // A word's letters as boxes: green where the letter is right, red where it is wrong
-const LetterBoxes = ({ text, ok, label }) => (
+const LetterBoxes = ({ cells, label }) => (
   <div className="quiz-letters" role="img" aria-label={label}>
-    {text.split('').map((c, i) => (
-      <span key={i} className={`quiz-letter ${ok[i] ? 'quiz-letter-ok' : 'quiz-letter-bad'}`}>{c}</span>
+    {cells.map((c, i) => (
+      <span key={i} className={`quiz-letter ${c.kind === 'ok' ? 'quiz-letter-ok' : c.kind === 'missing' ? 'quiz-letter-bad quiz-letter-missing' : 'quiz-letter-bad'}`}>{c.ch}</span>
     ))}
   </div>
 );
@@ -172,7 +172,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
                     <div className="quiz-wordbox" aria-label={`The word is ${o.word}`}>{o.word}</div>
                     <div className="quiz-review-label">Your spelling</div>
                     {o.typed
-                      ? <LetterBoxes text={o.typed} ok={o.typedMatched} label={`You spelled ${o.typed}`} />
+                      ? <LetterBoxes cells={o.cells || alignCells(o.typed, o.word)} label={`You spelled ${o.typed}`} />
                       : <div className="quiz-review-empty">(nothing typed)</div>}
                   </li>
                 ))}
@@ -208,13 +208,14 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   const submit = () => {
     if (!text.trim() || result) return;
     const { matched, typedMatched, pct } = alignSpelling(text, word.word);
+    const cells = alignCells(text, word.word);
     const typed = text.trim().toLowerCase();
     onAttempts?.(word.word, matched.map((ok, i) => ({
       letter: word.word[i], position: i, correct: ok ? 1 : 0, typed: ok ? word.word[i] : (typed[i] || '')
     })));
     const r = commitQuiz(word.word, pct);
-    setResult({ pct, testedOut: r.testedOut, unlearned: !!r.unlearned, matched, typedMatched, typed: text.trim() });
-    setOutcomes(o => [...o, { word: word.word, testedOut: r.testedOut, pct, matched, typedMatched, typed: text.trim() }]);
+    setResult({ pct, testedOut: r.testedOut, unlearned: !!r.unlearned, matched, typedMatched, cells, typed: text.trim() });
+    setOutcomes(o => [...o, { word: word.word, testedOut: r.testedOut, pct, matched, typedMatched, cells, typed: text.trim() }]);
   };
 
   const next = () => {
@@ -235,7 +236,24 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   return (
     <div className="quiz-immersive" onKeyDown={onKeyDown}>
       <div className="quiz-top">
-        <div className="deck-badge">Word {idx + 1} of {order.length}</div>
+        <div className="deck-strip session" role="list" aria-label="Quiz words">
+          {order.map((w, i) => {
+            const o = outcomes[i];
+            const st = o ? (o.testedOut ? 'ok' : 'miss') : '';
+            const isCurrent = i === idx;
+            return (
+              <span
+                key={w.word + i}
+                role="listitem"
+                className={`sess-dot ${st} ${isCurrent ? 'current' : ''}`}
+                aria-label={`Word ${i + 1} of ${order.length}: ${isCurrent ? 'current' : o ? (o.testedOut ? 'tested out' : 'missed') : 'not reached yet'}`}
+                aria-current={isCurrent ? 'step' : undefined}
+              >
+                {st === 'ok' ? <CheckIcon /> : st === 'miss' ? <CloseIcon /> : null}
+              </span>
+            );
+          })}
+        </div>
         <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz"><CloseIcon /> Exit</button>
       </div>
       <div className="quiz-stage">
@@ -297,7 +315,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
                 Your spelling
               </legend>
               {typedWord
-                ? <LetterBoxes text={typedWord} ok={result.typedMatched} label={`You spelled ${typedWord}`} />
+                ? <LetterBoxes cells={result.cells || alignCells(typedWord, word.word)} label={`You spelled ${typedWord}`} />
                 : <div className="quiz-review-empty">(nothing typed)</div>}
             </fieldset>
             <fieldset className="quiz-box quiz-box-right">
