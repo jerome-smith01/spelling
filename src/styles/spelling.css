@@ -441,7 +441,10 @@
 .quiz-review-empty { font-style: italic; color: var(--muted-foreground); }
 .quiz-summary .quiz-stage { justify-content: flex-start; }
 .quiz-review { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 0.6rem; }
-.quiz-review-item { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.7rem; border: 1px solid var(--card-border); border-radius: var(--radius-lg); background: var(--card-bg); }
+.quiz-review-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.7rem; border: 1px solid var(--card-border); border-radius: var(--radius-lg); background: var(--card-bg); }
+.quiz-status { position: absolute; top: 0.6rem; right: 0.6rem; width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-size: 1.1rem; font-weight: 900; line-height: 1; }
+.quiz-status-ok { background: #16a34a; }
+.quiz-status-miss { background: #6b7280; }
 .quiz-review-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); }
 /* Bigger, easier-to-tap buttons throughout quiz mode */
 .quiz-immersive .btn-verify, .quiz-immersive .btn-secondary-sm { min-height: 3.5rem; padding: 0.8rem 1.5rem; font-size: 1.15rem; border-radius: var(--radius-lg); width: 100%; }

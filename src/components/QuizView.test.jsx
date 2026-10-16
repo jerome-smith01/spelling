@@ -44,6 +44,9 @@ describe('QuizView', () => {
     await answer(user, 'dlt');
     await answer(user, 'e');
     expect(screen.getByRole('status', { name: /Quiz grade/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: 'Tested out' })).toHaveLength(3);
+    expect(screen.getAllByRole('img', { name: 'Not tested out' })).toHaveLength(2);
+    expect(screen.queryByText(/Tested out! This word|back in practice/)).toBeNull();
     expect(screen.getByLabelText('The word is delta')).toHaveClass('quiz-wordbox');
     await user.click(screen.getByRole('button', { name: 'Test the 3 hardest words' }));
     expect(screen.getByText('Word 1 of 3')).toBeInTheDocument();

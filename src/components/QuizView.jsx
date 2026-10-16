@@ -165,6 +165,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
               <ul className="quiz-review" aria-label="Every word, with your spelling">
                 {outcomes.map((o, n) => (
                   <li key={n} className="quiz-review-item">
+                    <span className={`quiz-status ${o.testedOut ? 'quiz-status-ok' : 'quiz-status-miss'}`} role="img" aria-label={o.testedOut ? 'Tested out' : 'Not tested out'}>
+                      {o.testedOut ? '✓' : '✕'}
+                    </span>
                     <div className="quiz-review-label">Correct spelling</div>
                     <div className="quiz-wordbox" aria-label={`The word is ${o.word}`}>{o.word}</div>
                     <div className="quiz-review-label">Your spelling</div>
@@ -301,13 +304,6 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
               <legend><span className="quiz-icon quiz-icon-right" aria-hidden="true">✓</span>Correct spelling</legend>
               <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
             </fieldset>
-            {(result.testedOut || result.unlearned) && (
-              <p className="deck-message" style={{ margin: 0 }}>
-                {result.testedOut
-                  ? '✓ Tested out! This word is learned.'
-                  : 'Not quite. This word is no longer learned, so it is back in practice.'}
-              </p>
-            )}
           </div>
         )}
       </div>
