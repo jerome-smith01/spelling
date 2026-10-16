@@ -7,6 +7,7 @@ import { useSpeech } from '../hooks/useSpeech';
 import WordList from '../components/WordList';
 import WordTable from '../components/WordTable';
 import WordCardDeck from '../components/WordCardDeck';
+import { learnerKey } from '../services/activeLearner';
 import DeckSettings from '../components/DeckSettings';
 import { SpeedSlowestIcon, SpeedSlowIcon, SpeedNormalIcon } from '../components/SpeedIcons';
 import { PauseShortIcon, PauseMediumIcon, PauseLongIcon } from '../components/TimerIcons';
@@ -65,7 +66,7 @@ export default function PracticePage() {
 function PracticeView({ listId }) {
   const navigate = useNavigate();
   const { kidMode } = useLearner();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { rawList, words, list, importWords, resetToDefault } = useWordList(listId);
   const { createList, atListLimit, assignmentFor, refreshAssigned } = useLists();
   const assignment = assignmentFor?.(listId);   // this list was assigned to whoever is practicing
@@ -375,6 +376,12 @@ function PracticeView({ listId }) {
           hints={list?.hints ?? []}
           struggleByWord={struggleByWord}
           initialMode={searchParams.get('mode') === 'quiz' ? 'quiz' : 'practice'}
+          quizStorageKey={learnerKey(`spelling_tutor_quiz_v1:${listId}`)}
+          onModeChange={(m) => setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (m === 'quiz') next.set('mode', 'quiz'); else next.delete('mode');
+            return next;
+          }, { replace: true })}
           dueDate={assignment?.due_at || null}
           keyboardHidden={settingsOpen}
           settingsToggle={settingsToggle}

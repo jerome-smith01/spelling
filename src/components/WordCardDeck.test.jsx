@@ -109,13 +109,13 @@ describe('WordCardDeck', () => {
     await user.click(screen.getByRole('button', { name: 'Quiz' }));
     await user.type(screen.getByLabelText('Type the word you heard'), 'pupee');
     await user.click(screen.getByRole('button', { name: 'Check' }));
-    expect(screen.getByText('pupee')).toBeInTheDocument();
+    expect(screen.getByLabelText('You spelled pupee')).toBeInTheDocument();
     expect(screen.getByLabelText('The word is puppy')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next word' }));
     await user.type(screen.getByLabelText('Type the word you heard'), 'kitten');
     await user.click(screen.getByRole('button', { name: 'Check' }));
     await user.click(screen.getByRole('button', { name: 'See results' }));
-    await user.click(screen.getByRole('button', { name: 'Missed word (1)' }));
+    await user.click(screen.getByRole('button', { name: 'Retake missed word (1)' }));
     expect(screen.getByText('Word 1 of 1')).toBeInTheDocument();
     vi.restoreAllMocks();
   });
@@ -131,7 +131,7 @@ describe('WordCardDeck', () => {
       await user.click(screen.getByRole('button', { name: /Next word|See results/ }));
     }
     expect(screen.queryByRole('button', { name: /Not yet mastered/ })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'All words, including learned (2)' }));
+    await user.click(screen.getByRole('button', { name: 'Retake all words (2)' }));
     expect(screen.getByText('Word 1 of 2')).toBeInTheDocument();
     vi.restoreAllMocks();
   });

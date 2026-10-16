@@ -26,20 +26,48 @@ const LetterBoxes = ({ text, ok, label }) => (
   </div>
 );
 
+// Quiz progress survives a refresh: saved per list (and learner) under `storageKey`
+const loadSaved = (storageKey, words) => {
+  if (!storageKey) return null;
+  try {
+    const v = JSON.parse(localStorage.getItem(storageKey) || 'null');
+    if (!v || !Array.isArray(v.order) || !Array.isArray(v.outcomes)) return null;
+    const byWord = new Map(words.map(w => [w.word, w]));
+    const order = v.order.map(w => byWord.get(w));
+    if (order.some(w => !w) || v.idx > order.length) return null;
+    return { order, idx: v.idx | 0, text: typeof v.text === 'string' ? v.text : '', result: v.result || null, outcomes: v.outcomes };
+  } catch {
+    return null; // storage unavailable or corrupt: start fresh
+  }
+};
+
 /**
  * Quiz mode: the word is spoken, nothing is shown, the student types it.
  * 100% tests the word out (mastered). A miss changes nothing.
  */
-export default function QuizView({ words, isMastered = () => false, onSpeak, onSpeakSyllables, onSpeakBoth, onAttempts, commitQuiz, onExit, keyboardHidden = false }) {
-  const [order, setOrder] = useState(() => shuffle(words.filter(w => !isMastered(w.word)))); // fixed for each round
-  const [idx, setIdx] = useState(0);
-  const [text, setText] = useState('');
-  const [result, setResult] = useState(null);
-  const [outcomes, setOutcomes] = useState([]);
+export default function QuizView({ words, isMastered = () => false, onSpeak, onSpeakSyllables, onSpeakBoth, onAttempts, commitQuiz, onExit, keyboardHidden = false, storageKey = null }) {
+  const [saved] = useState(() => loadSaved(storageKey, words));
+  const [order, setOrder] = useState(() => saved?.order ?? shuffle(words.filter(w => !isMastered(w.word)))); // fixed for each round
+  const [idx, setIdx] = useState(saved?.idx ?? 0);
+  const [text, setText] = useState(saved?.text ?? '');
+  const [result, setResult] = useState(saved?.result ?? null);
+  const [outcomes, setOutcomes] = useState(saved?.outcomes ?? []);
   const inputRef = useRef(null);
   const mobile = useCoarsePointer();
   const word = order[idx];
   const tutorial = useTutorial();
+
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ order: order.map(w => w.word), idx, text, result, outcomes }));
+    } catch { /* storage unavailable */ }
+  }, [storageKey, order, idx, text, result, outcomes]);
+
+  const exit = () => {
+    if (storageKey) { try { localStorage.removeItem(storageKey); } catch { /* storage unavailable */ } }
+    onExit();
+  };
 
   // First quiz: explain listen-and-spell (only steps whose target is on screen)
   useEffect(() => {
@@ -77,16 +105,20 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     const missedSet = new Set(missed.map(o => o.word));
     const avg = done ? Math.round(outcomes.reduce((a, o) => a + o.pct, 0) / outcomes.length) : 0;
     const letter = letterFor(avg);
+    const hardSet = new Set([...outcomes].sort((a, b) => a.pct - b.pct).slice(0, 3).map(o => o.word));
     const choices = [
       { key: 'missed', label: 'Missed words', list: words.filter(w => missedSet.has(w.word)) },
+      { key: 'hardest', label: 'Test the 3 hardest words', list: outcomes.length > 3 ? words.filter(w => hardSet.has(w.word)) : [] },
       { key: 'open', label: 'Not yet learned', list: words.filter(w => !isMastered(w.word)) },
       { key: 'all', label: 'All words, including learned', list: words }
     ].filter(c => c.list.length > 0);
+    // With nothing missed, retaking everything is the main action
+    const primaryKey = missed.length > 0 ? 'missed' : 'all';
     return (
       <div className="quiz-immersive quiz-summary">
         <div className="quiz-top">
           <span />
-          <button type="button" className="btn-secondary-sm" onClick={onExit} aria-label="Exit quiz">✕ Exit</button>
+          <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz">✕ Exit</button>
         </div>
         <div className="quiz-stage">
           {done ? (
@@ -103,7 +135,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
                 {outcomes.map((o, n) => (
                   <li key={n} className="quiz-review-item">
                     <div className="quiz-review-label">Correct spelling</div>
-                    <LetterBoxes text={o.word} ok={o.matched} label={`The word is ${o.word}`} />
+                    <div className="quiz-wordbox" aria-label={`The word is ${o.word}`}>{o.word}</div>
                     <div className="quiz-review-label">Your spelling</div>
                     {o.typed
                       ? <LetterBoxes text={o.typed} ok={o.typedMatched} label={`You spelled ${o.typed}`} />
@@ -117,11 +149,14 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           )}
           <p className="quiz-label" style={{ margin: 0 }}>{done ? 'Quiz again' : 'Quiz anyway'}: what to focus on?</p>
           {choices.map(c => (
-            <button key={c.key} type="button" className={c.key === 'missed' ? 'btn-verify' : 'btn-verify btn-verify-alt'} onClick={() => start(c.list)}>
-              {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})` : `${c.label} (${c.list.length})`}
+            <button key={c.key} type="button" className={c.key === primaryKey ? 'btn-verify' : 'btn-verify btn-verify-alt'} onClick={() => start(c.list)}>
+              {c.key === 'missed' ? `Retake missed ${c.list.length === 1 ? 'word' : 'words'} (${c.list.length})`
+                : c.key === 'hardest' ? c.label
+                : c.key === 'all' && missed.length === 0 && done ? `Retake all words (${c.list.length})`
+                : `${c.label} (${c.list.length})`}
             </button>
           ))}
-          <button type="button" className="btn-secondary-sm" onClick={onExit}>Back to practice</button>
+          <button type="button" className="btn-secondary-sm" onClick={exit}>Back to practice</button>
         </div>
       </div>
     );
@@ -158,7 +193,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     <div className="quiz-immersive" onKeyDown={onKeyDown}>
       <div className="quiz-top">
         <div className="deck-badge">Word {idx + 1} of {order.length}</div>
-        <button type="button" className="btn-secondary-sm" onClick={onExit} aria-label="Exit quiz">✕ Exit</button>
+        <button type="button" className="btn-secondary-sm" onClick={exit} aria-label="Exit quiz">✕ Exit</button>
       </div>
       <div className="quiz-stage">
         {!result ? (
@@ -224,7 +259,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
             </fieldset>
             <fieldset className="quiz-box quiz-box-right">
               <legend><span className="quiz-icon quiz-icon-right" aria-hidden="true">✓</span>Correct spelling</legend>
-              <LetterBoxes text={word.word} ok={result.matched} label={`The word is ${word.word}`} />
+              <div className="quiz-answer quiz-right" aria-label={`The word is ${word.word}`}>{word.word}</div>
             </fieldset>
             <p className="deck-message" style={{ margin: 0 }}>
               {result.testedOut

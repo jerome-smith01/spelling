@@ -41,10 +41,11 @@ const fmtDay = (iso, today) => {
 /** One-card-at-a-time flip deck with progressive hiding and a quiz mode. */
 export default function WordCardDeck({
   words, schedule, onSpeak, onSpeakSyllables, onSpeakBoth, settingsToggle = null, settingsPanel = null, settingsOpen = false, listActions = null, activePlayback, onAttempts, frictionByWord = {},
-  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice', keyboardHidden = false, dueDate = null
+  focusGroups = [], struggleByWord = {}, hints = [], initialMode = 'practice', keyboardHidden = false, dueDate = null, quizStorageKey = null, onModeChange = null
 }) {
   const { queue, today, testDate, progress, stateFor, commit, practiceAnyway, commitQuiz, refreshQueue } = schedule;
   const [mode, setMode] = useState(initialMode);
+  useEffect(() => { onModeChange?.(mode); }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const [result, setResult] = useState(null); // set once Check flips the card
   const [cardKey, setCardKey] = useState(0);
   // The session's cards, in a fixed order: dot N is the Nth card (see utils/session.js)
@@ -226,6 +227,7 @@ export default function WordCardDeck({
           commitQuiz={commitQuiz}
           onExit={() => { refreshQueue(); restartSession(); setMode('practice'); }}
           keyboardHidden={keyboardHidden}
+          storageKey={quizStorageKey}
         />
       </div>
     );
