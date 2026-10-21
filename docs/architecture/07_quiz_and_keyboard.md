@@ -25,7 +25,7 @@ How the listen-and-spell quiz and the touch keyboard work, and the rules to foll
 
 * **Score** per word: `alignSpelling` (longest-common-subsequence) → `pct`. **Quiz grade** = average `pct` of the round, letter from `letterFor` (A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 60, else F), the same scale as the practice session grade.
 * **Boxes** use a different alignment, `alignCells(typed, answer)`: an edit-distance alignment returning `{ ch, kind }` cells with kind `ok`, `extra` (wrong or surplus letter) or `missing`. A wrong letter counts as a **swap** for the letter it replaced, and when a gap is ambiguous the blank goes at the end, so `bi` for `boy` shows `b i _` (not `b _ i`), and `anoy` for `annoy` shows `a _ n o y`.
-* The box row never wraps: the box grows with the word up to the screen width, and only then do the letter tiles shrink (`.quiz-letters` is `nowrap`; the quiz stage allows up to 60rem). Keep generous padding so letters stay easy to read.
+* **Responsive letter tiles & boxes:** Letter boxes use responsive design tokens (`--quiz-letter-w`, `--quiz-letter-h`, `--quiz-letter-font`, `--quiz-letter-gap` in `design-tokens.css`). Letter tiles scale down proportionally with viewport width so words fit cleanly on a single line. For exceptionally long words (12+ letters) or very compact viewports where shrinking further would compromise legibility or tap targets for children, tiles wrap cleanly centered (`.quiz-letters` has `flex-wrap: wrap`), preventing horizontal overflow across mobile PWA screens. Padding on `.quiz-box` scales responsively so containers never exceed the viewport.
 
 ## 4. Persistence
 

@@ -66,7 +66,7 @@ export default function WordListManager({ listId, wordCount = 0, importOpen = fa
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
       {!isDefault && (
         <button type="button" onClick={onRename} className="btn-secondary-sm" style={btnStyle}>
-          <Icon><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></Icon>
+          <Icon><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></Icon>
           Rename
         </button>
       )}
@@ -77,8 +77,8 @@ export default function WordListManager({ listId, wordCount = 0, importOpen = fa
       {onToggleImport && (
         <button type="button" onClick={onToggleImport} className="btn-secondary-sm" style={btnStyle}
           aria-expanded={importOpen}>
-          <Icon><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></Icon>
-          {importOpen ? 'Close import' : 'Import words'}
+          <Icon><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></Icon>
+          {importOpen ? 'Close editor' : 'Edit Words'}
         </button>
       )}
       <span style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', fontWeight: 600 }}>

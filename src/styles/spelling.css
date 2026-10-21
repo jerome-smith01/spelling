@@ -24,7 +24,7 @@
   background-color: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-xl);
-  padding: 1.25rem;
+  padding: clamp(0.75rem, 3vw, 1.25rem);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
@@ -100,7 +100,9 @@
 .syllables-wrapper {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
+  max-width: 100%;
   gap: 0.5rem;
   padding: 0.5rem 0;
 }
@@ -108,8 +110,11 @@
 .syllable-group {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 100%;
+  gap: clamp(0.15rem, 0.8vw, 0.25rem);
+  padding: 0.35rem clamp(0.25rem, 1.2vw, 0.5rem);
   background-color: var(--muted);
   border-radius: var(--radius-md);
   border: 1.5px solid transparent;
@@ -140,12 +145,12 @@
 
 /* Letter Boxes */
 .letter-box {
-  width: 2.25rem;
-  height: 2.75rem;
+  width: var(--letter-box-w, clamp(1.5rem, 5.5vw, 2.25rem));
+  height: var(--letter-box-h, clamp(2rem, 7vw, 2.75rem));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: var(--letter-box-font, clamp(0.95rem, 3.5vw, 1.4rem));
   font-weight: 700;
   border-radius: var(--radius-sm);
   background-color: var(--card-bg);
@@ -153,6 +158,8 @@
   color: var(--foreground);
   user-select: none;
   transition: all 0.2s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 /* Hidden Letter Input Box */
@@ -168,7 +175,7 @@
   width: 100%;
   height: 100%;
   text-align: center;
-  font-size: 1.4rem;
+  font-size: var(--letter-box-font, clamp(0.95rem, 3.5vw, 1.4rem));
   font-weight: 700;
   background: transparent;
   border: none;
@@ -418,8 +425,8 @@
 .quiz-top { display: flex; align-items: center; justify-content: space-between; }
 .quiz-stage { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; overflow-y: auto; }
 .quiz-actions { display: flex; justify-content: center; }
-.quiz-result { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; }
-.quiz-box { width: fit-content; min-width: min(22rem, 100%); max-width: 100%; box-sizing: border-box; margin: 0; padding: 0.75rem 1.75rem 1.25rem; border: 2px solid; border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; }
+.quiz-result { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; max-width: 100%; }
+.quiz-box { width: fit-content; min-width: 0; max-width: 100%; box-sizing: border-box; margin: 0; padding: 0.75rem clamp(0.6rem, 3vw, 1.75rem) 1.25rem; border: 2px solid; border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; }
 .quiz-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; margin-right: 0.4rem; border-radius: 50%; color: #fff; font-size: 0.75rem; font-weight: 900; line-height: 1; vertical-align: middle; }
 .quiz-icon-wrong { background: #dc2626; }
 .quiz-icon-right { background: #16a34a; }
@@ -429,20 +436,20 @@
 .quiz-box-right { border-color: #16a34a; background: rgba(22, 163, 74, 0.12); }
 .quiz-box-right legend { color: #16a34a; }
 .quiz-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); }
-.quiz-answer { font-size: 2.25rem; font-weight: 800; word-break: break-word; }
+.quiz-answer { font-size: clamp(1.3rem, 5.5vw, 2.25rem); font-weight: 800; word-break: break-word; max-width: 100%; text-align: center; }
 .quiz-right { color: #16a34a; }
 .quiz-wrong { color: #dc2626; }
 /* Letter boxes: green = right letter, red = wrong or missing letter */
-.quiz-letters { display: flex; flex-wrap: nowrap; max-width: 100%; justify-content: center; gap: 0.5rem; padding: 0.25rem 0; }
-.quiz-letter { flex: 0 1 auto; width: 2.7rem; min-width: 0; height: 3.4rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 2px solid; border-radius: var(--radius-sm); font-size: 1.6rem; font-weight: 800; color: var(--foreground); }
+.quiz-letters { display: flex; flex-wrap: wrap; max-width: 100%; justify-content: center; gap: var(--quiz-letter-gap, clamp(0.2rem, 1vw, 0.5rem)); padding: 0.25rem 0; }
+.quiz-letter { flex: 0 1 auto; width: var(--quiz-letter-w, clamp(1.55rem, 5.8vw, 2.7rem)); min-width: 0; height: var(--quiz-letter-h, clamp(2.1rem, 7.5vw, 3.4rem)); padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 2px solid; border-radius: var(--radius-sm); font-size: var(--quiz-letter-font, clamp(1rem, 3.8vw, 1.6rem)); font-weight: 800; color: var(--foreground); box-sizing: border-box; }
 .quiz-letter-ok { border-color: #16a34a; background: rgba(22, 163, 74, 0.18); }
 .quiz-letter-bad { border-color: #dc2626; background: rgba(220, 38, 38, 0.18); }
-.quiz-wordbox { padding: 0.3rem 1rem; border: 2px solid #16a34a; border-radius: var(--radius-md); background: rgba(22, 163, 74, 0.18); font-size: 1.6rem; font-weight: 800; color: var(--foreground); word-break: break-word; }
+.quiz-wordbox { padding: 0.3rem clamp(0.5rem, 2vw, 1rem); border: 2px solid #16a34a; border-radius: var(--radius-md); background: rgba(22, 163, 74, 0.18); font-size: clamp(1.15rem, 4.5vw, 1.6rem); font-weight: 800; color: var(--foreground); word-break: break-word; max-width: 100%; text-align: center; }
 .quiz-letter-missing { border-style: dashed; }
 .quiz-review-empty { font-style: italic; color: var(--muted-foreground); }
 .quiz-summary .quiz-stage { justify-content: flex-start; }
-.quiz-review { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 0.6rem; }
-.quiz-review-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.7rem; border: 1px solid var(--card-border); border-radius: var(--radius-lg); background: var(--card-bg); }
+.quiz-review { list-style: none; margin: 0; padding: 0; width: 100%; max-width: 100%; display: flex; flex-direction: column; gap: 0.6rem; }
+.quiz-review-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; padding: 0.7rem; border: 1px solid var(--card-border); border-radius: var(--radius-lg); background: var(--card-bg); max-width: 100%; box-sizing: border-box; }
 .quiz-status { position: absolute; top: 0.6rem; right: 0.6rem; width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-size: 1.1rem; font-weight: 900; line-height: 1; }
 .quiz-status-ok { background: #16a34a; }
 .quiz-status-miss { background: #6b7280; }
@@ -770,12 +777,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
    (z 950) so the keyboard is never covered; scrolls if tall */
 .review-backdrop { position: fixed; inset: 0; z-index: 940; display: flex; overflow-y: auto; padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem 0.75rem; background: rgba(0, 0, 0, 0.5); }
 .review-has-kb { padding-bottom: calc(var(--kb-h, 14rem) + 0.75rem); } /* centre in the space above the keyboard */
-.review-dialog { box-sizing: border-box; width: min(34rem, 100%); margin: auto; padding: 1.1rem 1.25rem 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; border-radius: var(--radius-xl); border: 2px solid var(--selected-color-border); background: var(--card-bg); color: var(--foreground); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); outline: none; }
+.review-dialog { box-sizing: border-box; width: min(34rem, 100%); margin: auto; padding: 1.1rem clamp(0.6rem, 3vw, 1.25rem) 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; border-radius: var(--radius-xl); border: 2px solid var(--selected-color-border); background: var(--card-bg); color: var(--foreground); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); outline: none; }
 .review-head { display: flex; align-items: center; gap: 0.7rem; color: var(--selected-color); }
 .review-msg { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--foreground); }
 .review-step { margin: 0; font-size: 1rem; font-weight: 700; color: var(--muted-foreground); }
 .review-row { padding: 0.25rem 0; }
-.review-tap { cursor: pointer; font-family: inherit; }
+.review-tap { cursor: pointer; font-family: inherit; min-width: 2rem; min-height: 2rem; }
 .review-active { box-shadow: 0 0 0 3px var(--selected-color); }
 .review-removed { opacity: 0.45; text-decoration: line-through; }
 .review-ok { width: 100%; max-width: 20rem; }

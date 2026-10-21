@@ -25,6 +25,14 @@
   --audio-purple: #7c3aed;
   --audio-purple-hover: #6d28d9;
   --on-audio-purple: #ffffff;
+  /* Responsive letter tiles & boxes (fluid on mobile, capped on larger screens) */
+  --letter-box-w: clamp(1.5rem, 5.5vw, 2.25rem);
+  --letter-box-h: clamp(2rem, 7vw, 2.75rem);
+  --letter-box-font: clamp(0.95rem, 3.5vw, 1.4rem);
+  --quiz-letter-w: clamp(1.55rem, 5.8vw, 2.7rem);
+  --quiz-letter-h: clamp(2.1rem, 7.5vw, 3.4rem);
+  --quiz-letter-font: clamp(1rem, 3.8vw, 1.6rem);
+  --quiz-letter-gap: clamp(0.2rem, 1vw, 0.5rem);
 }
 
 /* GPF Design Tokens — Dark Theme */

@@ -224,71 +224,74 @@ function PracticeView({ listId }) {
         gap: '0.9rem'
       }}>
         <div id="practice-settings" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <DeckSettings
-          prefs={schedule.prefs}
-          setPrefs={schedule.setPrefs}
-          testDate={schedule.testDate}
-          setTestDate={schedule.setTestDate}
-          onReset={schedule.resetProgress}
-          appearanceControls={<ColorPicker />}
-          deleteControl={<DeleteListButton listId={listId} />}
-          speechControls={(
-            <div className="settings-stack">
-              <div className="settings-field">
-                Syllable speed
-                <div className="view-toggle" role="group" aria-label="Syllable pronunciation speed">
-                  {[
-                    { value: 'slowest', label: 'Slowest', Icon: SpeedSlowestIcon },
-                    { value: 'slow', label: 'Slow', Icon: SpeedSlowIcon },
-                    { value: 'normal', label: 'Normal', Icon: SpeedNormalIcon }
-                  ].map(({ value, label, Icon }) => (
-                    <button key={value} type="button" className="view-toggle-btn"
-                      aria-pressed={ratePreset === value}
-                      onClick={() => handleRatePresetChange(value)}>
-                      <Icon />{label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="settings-field">
-                Pause between syllables
-                <div className="view-toggle" role="group" aria-label="Pause between syllables">
-                  {[
-                    { value: 'short', label: 'Short', hint: '0.4s', Icon: PauseShortIcon },
-                    { value: 'medium', label: 'Medium', hint: '0.65s', Icon: PauseMediumIcon },
-                    { value: 'long', label: 'Long', hint: '0.9s', Icon: PauseLongIcon }
-                  ].map(({ value, label, hint, Icon }) => (
-                    <button key={value} type="button" className="view-toggle-btn"
-                      aria-pressed={pausePreset === value} title={`${label} (${hint})`}
-                      onClick={() => handlePausePresetChange(value)}>
-                      <Icon />{label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        />
-
-        {isGrid && (
-          <HideControls
-            denominator={denominator}
-            onDenominatorChange={setDenominator}
-            onHideAll={hideAllWords}
-            onShowAll={showAllWords}
+        {isImportExpanded ? (
+          <ImportSection
+            isExpanded={isImportExpanded}
+            onClose={() => setIsImportExpanded(false)}
+            currentRaw={rawList}
+            currentFocus={list?.focusGroups ?? []}
+            onImport={handleImport}
+            onCreateList={handleCreateList}
+            onResetDefault={resetToDefault}
           />
-        )}
+        ) : (
+          <>
+            <DeckSettings
+              prefs={schedule.prefs}
+              setPrefs={schedule.setPrefs}
+              testDate={schedule.testDate}
+              setTestDate={schedule.setTestDate}
+              onReset={schedule.resetProgress}
+              appearanceControls={<ColorPicker />}
+              deleteControl={<DeleteListButton listId={listId} />}
+              speechControls={(
+                <div className="settings-stack">
+                  <div className="settings-field">
+                    Syllable speed
+                    <div className="view-toggle" role="group" aria-label="Syllable pronunciation speed">
+                      {[
+                        { value: 'slowest', label: 'Slowest', Icon: SpeedSlowestIcon },
+                        { value: 'slow', label: 'Slow', Icon: SpeedSlowIcon },
+                        { value: 'normal', label: 'Normal', Icon: SpeedNormalIcon }
+                      ].map(({ value, label, Icon }) => (
+                        <button key={value} type="button" className="view-toggle-btn"
+                          aria-pressed={ratePreset === value}
+                          onClick={() => handleRatePresetChange(value)}>
+                          <Icon />{label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="settings-field">
+                    Pause between syllables
+                    <div className="view-toggle" role="group" aria-label="Pause between syllables">
+                      {[
+                        { value: 'short', label: 'Short', hint: '0.4s', Icon: PauseShortIcon },
+                        { value: 'medium', label: 'Medium', hint: '0.65s', Icon: PauseMediumIcon },
+                        { value: 'long', label: 'Long', hint: '0.9s', Icon: PauseLongIcon }
+                      ].map(({ value, label, hint, Icon }) => (
+                        <button key={value} type="button" className="view-toggle-btn"
+                          aria-pressed={pausePreset === value} title={`${label} (${hint})`}
+                          onClick={() => handlePausePresetChange(value)}>
+                          <Icon />{label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
 
-        {/* Expandable Import Section */}
-        <ImportSection
-          isExpanded={isImportExpanded}
-          onClose={() => setIsImportExpanded(false)}
-          currentRaw={rawList}
-          currentFocus={list?.focusGroups ?? []}
-          onImport={handleImport}
-          onCreateList={handleCreateList}
-          onResetDefault={resetToDefault}
-        />
+            {isGrid && (
+              <HideControls
+                denominator={denominator}
+                onDenominatorChange={setDenominator}
+                onHideAll={hideAllWords}
+                onShowAll={showAllWords}
+              />
+            )}
+          </>
+        )}
         </div>
       </section>
     </>
