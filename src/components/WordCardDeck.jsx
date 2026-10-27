@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import WordCard from './WordCard';
 import QuizView from './QuizView';
 import VirtualKeyboard from './VirtualKeyboard';
@@ -183,8 +183,10 @@ export default function WordCardDeck({
 
   const handleResult = ({ pct, results, typed }) => {
     const missed = Object.keys(results).filter(i => results[i] !== 'correct').map(Number);
-    // A focus try only checks the tricky letters, so it never moves the word's level
-    const res = focusTry ? null : commit(current.word, pct);
+    // A focus try only checks the tricky letters; passing it skips the commit (waiting for confirm).
+    // Failing focus letters still records as a miss (pct=0) so the history ball regresses correctly.
+    const commitPct = focusTry ? 0 : pct;
+    const res = (focusTry && pct >= 100) ? null : commit(current.word, commitPct);
     setSession(sess => recordResult(sess, pct, missed));
     const cells = cellsFromPractice(current.word, typed, missed);
     setCardLog(l => (l[current.word] ? l : { ...l, [current.word]: { pct, cells } }));
@@ -346,7 +348,7 @@ export default function WordCardDeck({
       {tabs}
       <TutorialPrompt onAccept={() => tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, { isAvailable: targetExists })} />
       {strip}
-      <p className="deck-focus-note" role="status">{focusTry && !result ? '🎯 Focus on the tricky letter' : ''}</p>
+      <p className="deck-focus-note" role="status">{focusTry && !result ? 'ðŸŽ¯ Focus on the tricky letter' : ''}</p>
       <div className={`deck-flip ${result ? 'flipped' : ''}`}>
         <div className="deck-flip-inner">
           <div
@@ -456,7 +458,7 @@ export default function WordCardDeck({
                   <p className="deck-message">Next time, just the tricky letter.</p>
                 )}
                 {result.pct < 100 && hintsForWord(current.word, focusGroups, hints).slice(0, 1).map(h => (
-                  <p key={h} className="deck-hint">💡 {h}</p>
+                  <p key={h} className="deck-hint">ðŸ’¡ {h}</p>
                 ))}
                 <div className="deck-section-label">Progress History</div>
                 <ProgressBars attempts={progress.words[current.word]?.history || []} />
