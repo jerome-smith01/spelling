@@ -2,12 +2,25 @@ import React from 'react';
 import { TaskAltIcon } from './ActionIcons';
 
 /**
- * Stage Harvey ball: stage 1-4 fill 1-4 quarters (shade grows with the stage, see --stage-N
- * in spelling.css); stage 5 (the audio quiz, the last stage) is a check circle.
+ * Stage Harvey ball: stage 0 = empty dashed ring (new floor); stages 1-4 fill 1-4 quarters;
+ * stage 5 (the audio quiz, the last stage) is a check circle.
  */
 export default function StageBall({ level, size = 22, label, color }) {
-  const lv = Math.max(1, Math.min(5, Math.round(level)));
-  const resolvedColor = color || `var(--stage-${lv})`;
+  const lv = Math.max(0, Math.min(5, Math.round(level)));
+  const resolvedColor = color || (lv === 0 ? 'var(--progress-drop-2)' : `var(--stage-${lv})`);
+  const r = 7;
+  const c = 9;
+
+  // Level 0: empty circle with dashed ring — word is at the floor
+  if (lv === 0) {
+    return (
+      <svg className="stage-ball" width={size} height={size} viewBox="0 0 18 18" focusable="false"
+        role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+        <circle cx={c} cy={c} r={r} fill="var(--card-bg)" />
+        <circle cx={c} cy={c} r={r} fill="none" stroke={resolvedColor} strokeWidth="1.8" strokeDasharray="3 2" />
+      </svg>
+    );
+  }
   if (lv === 5) {
     return (
       <span className="stage-ball stage-ball-done" style={{ color: resolvedColor }}
@@ -16,8 +29,6 @@ export default function StageBall({ level, size = 22, label, color }) {
       </span>
     );
   }
-  const r = 7;
-  const c = 9;
   let fill;
   if (lv === 4) {
     fill = <circle cx={c} cy={c} r={r} fill={resolvedColor} />;

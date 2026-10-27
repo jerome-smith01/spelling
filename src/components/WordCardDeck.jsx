@@ -136,9 +136,9 @@ export default function WordCardDeck({
   // Level 1 is "pick the missing letters". With lesson letters (two or more groups to choose
   // from) the choices are the lesson's groups; any other word gets one or two blanks with
   // believable wrong letters (plainChoice.js).
-  const lessonPick = smartWord && level === 1 && focusGroups.length >= 2 && !focusTry;
+  const lessonPick = smartWord && level <= 1 && focusGroups.length >= 2 && !focusTry;
   const plainPick = useMemo(
-    () => (current && level === 1 && !lessonPick && !focusTry ? buildPlainPick(current.word) : []),
+    () => (current && level <= 1 && !lessonPick && !focusTry ? buildPlainPick(current.word) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [current?.word, level, lessonPick, focusTry]
   );
@@ -151,7 +151,7 @@ export default function WordCardDeck({
       if (!current) return new Set();
       if (focusTry) return new Set(focus.positions);
       if (plainPick.length) return new Set(plainPick.flatMap(t => Array.from({ length: t.end - t.start }, (_, i) => t.start + i)));
-      return hiddenIndicesForLevel(current.letterCount, level,
+      return hiddenIndicesForLevel(current.letterCount, Math.max(1, level),
         focusGroups.length ? { word: current.word, groups: focusGroups, struggle } : null);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

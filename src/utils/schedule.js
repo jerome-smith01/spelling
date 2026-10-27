@@ -171,6 +171,7 @@ export const getWordState = (progress, word, prefs, today) =>
 
 /** Days until the word's next showing after a pass at `level`; 0 means "again this session". */
 export function gapAfterPass(level, today, testDate) {
+  if (level <= 0) return 0;
   if (!testDate) return NO_DATE_GAPS[Math.min(level, NO_DATE_GAPS.length) - 1];
   const left = daysLeft(today, testDate);
   const passesAfter = MAX_LEVEL - level;
@@ -198,11 +199,11 @@ export function applyResult(progress, word, pct, { prefs = DEFAULT_PREFS, today,
   let next;
 
   if (outcome === 'drop') {
-    st.level = Math.max(1, cur.level - 1);
+    st.level = Math.max(0, cur.level - 1);
     st.mastered = false;
     st.due = today;
     requeue = true;
-    next = { kind: cur.level === 1 ? 'stay' : 'drop', level: st.level };
+    next = { kind: cur.level === 0 ? 'stay' : 'drop', level: st.level };
   } else if (outcome === 'stay') {
     st.due = today;
     requeue = true;

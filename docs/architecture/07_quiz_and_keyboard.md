@@ -91,7 +91,7 @@ One dot per card: **green check** = 100% on the first try; **gray check** = righ
 ## 12. Progress history (card back)
 
 The card back's "Progress History" (`components/ProgressBars.jsx`) shows the word's attempt history using **StageBall (Harvey ball) icons only** without bar charts.
-* **Stage mapping:** Stages 1-4 fill 1-4 quarters of the circle; stage 5 (mastered audio quiz) renders a checkmark.
+* **Stage mapping:** Stage 0 renders an empty dashed ring (floor level, uses pick/choice gameplay); stages 1-4 fill 1-4 quarters of the circle; stage 5 (mastered audio quiz) renders a checkmark.
 * **Trend coloring:**
   * **Green (`--progress-increase`):** Any increase in stage level, the very first attempt, or maintaining the same stage level (neutral/pass). Also resets any drop streak.
   * **Yellow (`--progress-drop-1`):** The first decrease in stage level.
