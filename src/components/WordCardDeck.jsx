@@ -459,7 +459,7 @@ export default function WordCardDeck({
                   <p key={h} className="deck-hint">💡 {h}</p>
                 ))}
                 <div className="deck-section-label">Progress History</div>
-                <ProgressBars attempts={progress.words[current.word]?.history || []} />
+                <ProgressBars attempts={progress.words[current.word]?.history || []} currentLevel={progress.words[current.word]?.level} />
                 <button type="button" className="btn-verify" onClick={nextCard}>Next card</button>
               </div>
             )}

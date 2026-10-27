@@ -6,82 +6,119 @@ import '@testing-library/jest-dom/vitest';
 import ProgressBars, { computeTrendColors } from './ProgressBars';
 import StageBall from './StageBall';
 
+// ---------------------------------------------------------------------------
+// computeTrendColors — uses look-forward comparison.
+// history[i].level is the stage *before* attempt i was graded.
+// The direction for entry i is determined by comparing attempts[i+1].level
+// (or currentLevel for the last entry) against attempts[i].level.
+// ---------------------------------------------------------------------------
 describe('computeTrendColors', () => {
   it('returns an empty array when attempts is empty', () => {
     expect(computeTrendColors([])).toEqual([]);
   });
 
-  it('marks the initial attempt as green', () => {
-    const colors = computeTrendColors([{ pct: 80, level: 2 }]);
-    expect(colors).toEqual(['var(--progress-increase)']);
+  it('shows green for a single entry when currentLevel is higher (advance)', () => {
+    // Attempted at level 1, now at level 2 → increase
+    expect(computeTrendColors([{ pct: 100, level: 1 }], 2)).toEqual(['var(--progress-increase)']);
   });
 
-  it('marks increases as green', () => {
+  it('shows yellow for a single entry when currentLevel is lower (drop)', () => {
+    // Attempted at level 2, now at level 1 → first drop
+    expect(computeTrendColors([{ pct: 50, level: 2 }], 1)).toEqual(['var(--progress-drop-1)']);
+  });
+
+  it('shows green for a single entry when currentLevel equals (same, no drop)', () => {
+    // Attempted at level 2, still at level 2
+    expect(computeTrendColors([{ pct: 80, level: 2 }], 2)).toEqual(['var(--progress-increase)']);
+  });
+
+  it('shows green for a single entry when currentLevel is unknown', () => {
+    // No currentLevel supplied — fall back to neutral/green
+    expect(computeTrendColors([{ pct: 100, level: 1 }], null)).toEqual(['var(--progress-increase)']);
+  });
+
+  it('marks a sequence of advances as green', () => {
+    // level sequence in history: 1→2→3. currentLevel = 3 (last was a pass at lv3 → advanced to 4 but capped).
+    // Actually: entry0 starts at 1, next entry starts at 2 → advance. 
+    //           entry1 starts at 2, next entry starts at 3 → advance.
+    //           entry2 starts at 3, currentLevel = 4 → advance.
     const attempts = [
       { pct: 100, level: 1 },
       { pct: 100, level: 2 },
       { pct: 100, level: 3 },
     ];
-    expect(computeTrendColors(attempts)).toEqual([
+    expect(computeTrendColors(attempts, 4)).toEqual([
       'var(--progress-increase)',
       'var(--progress-increase)',
       'var(--progress-increase)',
     ]);
   });
 
-  it('marks same level as green and resets drop streak', () => {
+  it('marks drops correctly: first drop yellow, second+ red', () => {
+    // Sequence: started lv3, dropped to lv2, dropped to lv1. currentLevel=1.
+    // entry0: level=3, next starts at 2 → decrease (1st drop) → yellow
+    // entry1: level=2, next starts at 1 → decrease (2nd drop) → red
+    // entry2: level=1, currentLevel=1 → same → green (reset!)
+    // Wait — if the user is STILL at lv1, the last attempt was a stay, not a drop.
+    // Let me model consecutive drops with currentLevel that is still dropping:
+    // entry0: lv4, next=lv3 → 1st drop → yellow
+    // entry1: lv3, next=lv2 → 2nd drop → red
+    // entry2: lv2, currentLevel=lv1 → 3rd drop → red
     const attempts = [
-      { pct: 100, level: 2 },
-      { pct: 100, level: 2 },
+      { pct: 50, level: 4 },
+      { pct: 40, level: 3 },
+      { pct: 30, level: 2 },
     ];
-    expect(computeTrendColors(attempts)).toEqual([
-      'var(--progress-increase)',
-      'var(--progress-increase)',
-    ]);
-  });
-
-  it('marks first decrease as yellow and two consecutive decreases as red', () => {
-    const attempts = [
-      { pct: 100, level: 4 }, // Initial: green
-      { pct: 50, level: 3 },  // 1st decrease: yellow
-      { pct: 40, level: 2 },  // 2nd consecutive decrease: red
-      { pct: 30, level: 1 },  // 3rd consecutive decrease: red
-    ];
-    expect(computeTrendColors(attempts)).toEqual([
-      'var(--progress-increase)',
+    expect(computeTrendColors(attempts, 1)).toEqual([
       'var(--progress-drop-1)',
       'var(--progress-drop-2)',
       'var(--progress-drop-2)',
     ]);
   });
 
-  it('turns green when an increase follows a red streak', () => {
+  it('resets to green on an increase after a drop streak', () => {
+    // entry0: lv3, next=lv2 → 1st drop → yellow
+    // entry1: lv2, next=lv1 → 2nd drop → red
+    // entry2: lv1, currentLevel=lv2 → increase → green (streak reset)
     const attempts = [
-      { pct: 100, level: 3 }, // green
-      { pct: 50, level: 2 },  // yellow (1st drop)
-      { pct: 40, level: 1 },  // red (2nd drop)
-      { pct: 100, level: 2 }, // green (increase after red)
+      { pct: 50, level: 3 },
+      { pct: 40, level: 2 },
+      { pct: 100, level: 1 },
     ];
-    expect(computeTrendColors(attempts)).toEqual([
-      'var(--progress-increase)',
+    expect(computeTrendColors(attempts, 2)).toEqual([
       'var(--progress-drop-1)',
       'var(--progress-drop-2)',
       'var(--progress-increase)',
     ]);
   });
 
-  it('resets drop streak when a decrease is followed by same level then another decrease', () => {
+  it('same level between entries resets drop streak', () => {
+    // entry0: lv3, next=lv2 → 1st drop → yellow
+    // entry1: lv2, next=lv2 (same) → neutral → green (streak reset)
+    // entry2: lv2, currentLevel=lv1 → 1st drop → yellow (not red, streak was reset)
     const attempts = [
-      { pct: 100, level: 3 }, // green
-      { pct: 50, level: 2 },  // yellow (1st drop)
-      { pct: 80, level: 2 },  // green (same level resets streak)
-      { pct: 50, level: 1 },  // yellow (1st drop after reset)
+      { pct: 50, level: 3 },
+      { pct: 80, level: 2 },
+      { pct: 50, level: 2 },
     ];
-    expect(computeTrendColors(attempts)).toEqual([
-      'var(--progress-increase)',
+    expect(computeTrendColors(attempts, 1)).toEqual([
       'var(--progress-drop-1)',
       'var(--progress-increase)',
       'var(--progress-drop-1)',
+    ]);
+  });
+
+  it('correctly shows green for a misspell that did not cause a level change (first attempt at lv1)', () => {
+    // User misspelled at level 1 — can't drop below 1, so still at 1.
+    // entry0: lv1, next=lv1 (stay) → neutral → green
+    // entry1: lv1, currentLevel=1 → neutral → green
+    const attempts = [
+      { pct: 100, level: 1 },
+      { pct: 40, level: 1 },
+    ];
+    expect(computeTrendColors(attempts, 1)).toEqual([
+      'var(--progress-increase)',
+      'var(--progress-increase)',
     ]);
   });
 });
@@ -99,68 +136,67 @@ describe('ProgressBars', () => {
       { pct: 100, level: 1 },
       { pct: 50, level: 2 },
     ];
-    const { container } = render(<ProgressBars attempts={attempts} />);
+    const { container } = render(<ProgressBars attempts={attempts} currentLevel={1} />);
 
     // No bars or bar slots
     expect(container.querySelector('.progress-slot')).toBeNull();
     expect(container.querySelector('i')).toBeNull();
 
-    // Renders container with aria-label
+    // Container has aria-label
     const root = screen.getByRole('img');
-    expect(root).toHaveAttribute('aria-label', 'Last 2 attempts, oldest to newest: 100% at stage 1, 50% at stage 2');
+    expect(root).toHaveAttribute(
+      'aria-label',
+      'Last 2 attempts, oldest to newest: 100% at stage 1, 50% at stage 2'
+    );
 
-    // Renders columns with stage balls
+    // Columns
     const cols = container.querySelectorAll('.progress-col');
     expect(cols).toHaveLength(2);
     expect(cols[0]).not.toHaveClass('is-latest');
     expect(cols[1]).toHaveClass('is-latest');
 
-    // Balls are rendered
-    const balls = container.querySelectorAll('.stage-ball');
-    expect(balls).toHaveLength(2);
+    // Stage balls rendered
+    expect(container.querySelectorAll('.stage-ball')).toHaveLength(2);
   });
 
-  it('passes trend colors to stage balls', () => {
+  it('passes correct trend colors to stage balls', () => {
+    // entry0: lv3, next starts at lv2 → 1st drop → yellow ring
+    // entry1: lv2, next starts at lv1 → 2nd drop → red ring
+    // entry2: lv1, currentLevel=lv2 → increase → green ring
     const attempts = [
-      { pct: 100, level: 3 },
-      { pct: 50, level: 2 },
-      { pct: 40, level: 1 },
+      { pct: 50, level: 3 },
+      { pct: 40, level: 2 },
+      { pct: 100, level: 1 },
     ];
-    const { container } = render(<ProgressBars attempts={attempts} />);
+    const { container } = render(<ProgressBars attempts={attempts} currentLevel={2} />);
     const balls = container.querySelectorAll('.stage-ball');
 
-    // 1st ball: green
-    const stroke1 = balls[0].querySelector('circle[stroke="var(--progress-increase)"]');
-    expect(stroke1).not.toBeNull();
-
-    // 2nd ball: yellow
-    const stroke2 = balls[1].querySelector('circle[stroke="var(--progress-drop-1)"]');
-    expect(stroke2).not.toBeNull();
-
-    // 3rd ball: red
-    const stroke3 = balls[2].querySelector('circle[stroke="var(--progress-drop-2)"]');
-    expect(stroke3).not.toBeNull();
+    // 1st ball: yellow (first drop)
+    expect(balls[0].querySelector('circle[stroke="var(--progress-drop-1)"]')).not.toBeNull();
+    // 2nd ball: red (2nd consecutive drop)
+    expect(balls[1].querySelector('circle[stroke="var(--progress-drop-2)"]')).not.toBeNull();
+    // 3rd ball: green (increase after drops)
+    expect(balls[2].querySelector('circle[stroke="var(--progress-increase)"]')).not.toBeNull();
   });
 });
 
-describe('StageBall', () => {
+describe('StageBall color prop', () => {
   afterEach(cleanup);
 
   it('uses default stage color when color prop is omitted', () => {
     const { container } = render(<StageBall level={2} />);
-    const stroke = container.querySelector('circle[stroke="var(--stage-2)"]');
-    expect(stroke).not.toBeNull();
+    expect(container.querySelector('circle[stroke="var(--stage-2)"]')).not.toBeNull();
   });
 
   it('uses custom color prop when provided', () => {
     const { container } = render(<StageBall level={2} color="var(--progress-drop-1)" />);
-    const stroke = container.querySelector('circle[stroke="var(--progress-drop-1)"]');
-    expect(stroke).not.toBeNull();
+    expect(container.querySelector('circle[stroke="var(--progress-drop-1)"]')).not.toBeNull();
   });
 
   it('uses custom color prop for stage 5 done checkmark', () => {
     const { container } = render(<StageBall level={5} color="var(--progress-increase)" />);
-    const span = container.querySelector('.stage-ball-done');
-    expect(span).toHaveStyle({ color: 'var(--progress-increase)' });
+    expect(container.querySelector('.stage-ball-done')).toHaveStyle({
+      color: 'var(--progress-increase)',
+    });
   });
 });

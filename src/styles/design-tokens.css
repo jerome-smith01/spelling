@@ -19,8 +19,8 @@
   --harvey-fill: #15803d;
   --harvey-ring: #475569;
   /* Progress history coloring */
-  --progress-increase: #15803d;
-  --progress-drop-1: #b45309;
+  --progress-increase: #16a34a;
+  --progress-drop-1: #ca8a04;
   --progress-drop-2: #dc2626;
   /* Action green: Check / Next card keys, Check buttons, on-state switches */
   --action-green: #1f9c63;
@@ -57,7 +57,7 @@
   --harvey-ring: #cbd5e1;
   /* Progress history coloring */
   --progress-increase: #4ade80;
-  --progress-drop-1: #facc15;
+  --progress-drop-1: #fde047;
   --progress-drop-2: #f87171;
   --action-green: #43b581;
   --on-action-green: #ffffff;
