@@ -19,7 +19,7 @@ export const MAX_LEVEL = LEVELS.length;
 // Most recent graded attempts kept per word (for the card's Progress bars)
 export const HISTORY_LIMIT = 10;
 export const LEVEL_SCHEME = 2; // 1 = the old ladder (1 in 2 ... none); 2 = pick, 1 in 2/3/4, audio quiz
-export const DEFAULT_PREFS = { startLevel: 1, advancePct: 100, dropPct: 60, autoSpeak: true, levelScheme: LEVEL_SCHEME };
+export const DEFAULT_PREFS = { startLevel: 1, advancePct: 100, dropPct: 100, autoSpeak: true, levelScheme: LEVEL_SCHEME };
 
 // Old level n is new level n + 1; the old "no letters" level (5) stays the last one
 const shiftLevel = (lv) => Math.min(5, Math.max(1, Math.round(Number(lv) || 1)) + 1);
