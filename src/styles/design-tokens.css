@@ -18,6 +18,10 @@
   /* Harvey-ball progress (traffic-light green, >= 3:1 against the card) */
   --harvey-fill: #15803d;
   --harvey-ring: #475569;
+  /* Progress history coloring */
+  --progress-increase: #15803d;
+  --progress-drop-1: #b45309;
+  --progress-drop-2: #dc2626;
   /* Action green: Check / Next card keys, Check buttons, on-state switches */
   --action-green: #1f9c63;
   --on-action-green: #ffffff;
@@ -51,6 +55,10 @@
   --glass-border: rgba(255, 255, 255, 0.1);
   --harvey-fill: #4ade80;
   --harvey-ring: #cbd5e1;
+  /* Progress history coloring */
+  --progress-increase: #4ade80;
+  --progress-drop-1: #facc15;
+  --progress-drop-2: #f87171;
   --action-green: #43b581;
   --on-action-green: #ffffff;
   --audio-purple: #a78bfa;

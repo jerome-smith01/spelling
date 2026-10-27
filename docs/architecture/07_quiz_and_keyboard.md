@@ -86,3 +86,14 @@ Children sometimes fly past a mistake without looking. The app notices and asks 
 
 One dot per card: **green check** = 100% on the first try; **gray check** = right, but only on a later try (or after a focus retry); gray ✕ = missed; `?` = skipped; ring = current. The first try is what the session grade counts (`session.firstPct`). The Legend (`DeckLegend.jsx`) lists every state and must be updated whenever a dot state is added. The quiz's dots are the same strip but a word is only attempted once, so they are green or gray ✕ only.
 
+
+
+## 12. Progress history (card back)
+
+The card back's "Progress History" (`components/ProgressBars.jsx`) shows the word's attempt history using **StageBall (Harvey ball) icons only** without bar charts.
+* **Stage mapping:** Stages 1-4 fill 1-4 quarters of the circle; stage 5 (mastered audio quiz) renders a checkmark.
+* **Trend coloring:**
+  * **Green (`--progress-increase`):** Any increase in stage level, the very first attempt, or maintaining the same stage level (neutral/pass). Also resets any drop streak.
+  * **Yellow (`--progress-drop-1`):** The first decrease in stage level.
+  * **Red (`--progress-drop-2`):** Two or more consecutive decreases in stage level. An increase immediately resets the streak back to green.
+* **Latest attempt:** Marked with a double-ring outline via `.progress-col.is-latest .stage-ball`.
