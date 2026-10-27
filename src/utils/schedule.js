@@ -192,10 +192,8 @@ function scheduleDue(today, gap, testDate) {
 export function applyResult(progress, word, pct, { prefs = DEFAULT_PREFS, today, testDate = null } = {}) {
   const cur = getWordState(progress, word, prefs, today);
   const outcome = outcomeFor(pct, prefs);
-  const st = {
-    ...cur, lastScore: pct, attempts: cur.attempts + 1, reviewedOn: today,
-    history: [...(cur.history || []), { pct, level: cur.level }].slice(-HISTORY_LIMIT)
-  };
+  // Build st without history first so we can include nextLevel after st.level is determined.
+  const st = { ...cur, lastScore: pct, attempts: cur.attempts + 1, reviewedOn: today };
   let requeue = false;
   let next;
 
@@ -228,6 +226,10 @@ export function applyResult(progress, word, pct, { prefs = DEFAULT_PREFS, today,
       next = { kind: 'advance', level: st.level, due: st.due };
     }
   }
+
+  // Now that st.level is final, append the history entry with both pre- and post-attempt levels.
+  // `nextLevel` lets ProgressBars display the correct ball shape without any external state.
+  st.history = [...(cur.history || []), { pct, level: cur.level, nextLevel: st.level }].slice(-HISTORY_LIMIT);
 
   return { progress: { ...progress, words: { ...progress.words, [word]: st } }, requeue, outcome, next };
 }
