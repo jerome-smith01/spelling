@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import WordCard from './WordCard';
 import QuizView from './QuizView';
 import VirtualKeyboard from './VirtualKeyboard';
@@ -348,7 +348,7 @@ export default function WordCardDeck({
       {tabs}
       <TutorialPrompt onAccept={() => tutorial.checkAndStart(TUTORIAL_KEYS.practice, PRACTICE_STEPS, { isAvailable: targetExists })} />
       {strip}
-      <p className="deck-focus-note" role="status">{focusTry && !result ? 'ðŸŽ¯ Focus on the tricky letter' : ''}</p>
+      <p className="deck-focus-note" role="status">{focusTry && !result ? '🎯 Focus on the tricky letter' : ''}</p>
       <div className={`deck-flip ${result ? 'flipped' : ''}`}>
         <div className="deck-flip-inner">
           <div
@@ -458,7 +458,7 @@ export default function WordCardDeck({
                   <p className="deck-message">Next time, just the tricky letter.</p>
                 )}
                 {result.pct < 100 && hintsForWord(current.word, focusGroups, hints).slice(0, 1).map(h => (
-                  <p key={h} className="deck-hint">ðŸ’¡ {h}</p>
+                  <p key={h} className="deck-hint">💡 {h}</p>
                 ))}
                 <div className="deck-section-label">Progress History</div>
                 <ProgressBars attempts={progress.words[current.word]?.history || []} />
