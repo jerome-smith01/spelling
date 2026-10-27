@@ -670,7 +670,7 @@ button.sess-dot { cursor: pointer; }
 .stage-ball { display: inline-flex; }
 .progress-bars { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.25rem; margin: 0.25rem 0; }
 .progress-col { display: inline-flex; align-items: center; justify-content: center; }
-.progress-col.is-latest .stage-ball { box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 2.5px var(--muted-foreground); border-radius: 50%; }
+.progress-col.is-latest .stage-ball { box-shadow: 0 0 0 2px var(--harvey-ring); border-radius: 50%; }
 
 .stage-reward { display: inline-flex; color: var(--stage-5); }
 .stage-reward { animation: stage-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
