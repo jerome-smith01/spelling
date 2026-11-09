@@ -183,6 +183,28 @@ describe('Class page', () => {
     await waitFor(() => expect(h.calls.assignToClass).toEqual([['g1', { list_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', due_at: '2026-10-30' }]]));
   });
 
+  it('lists the most recent deck first and selects it by default when assigning to the class', async () => {
+    const user = userEvent.setup();
+    const lists = [
+      { id: '11111111-1111-4111-8111-111111111111', name: 'Older deck', wordsRaw: 'sun', isDefault: 0, updatedAt: '2026-10-01T00:00:00Z', dirty: false, deleted: false, focusGroups: [], hints: [] },
+      { id: '22222222-2222-4222-8222-222222222222', name: 'Newer deck', wordsRaw: 'moon', isDefault: 0, updatedAt: '2026-10-25T12:00:00Z', dirty: false, deleted: false, focusGroups: [], hints: [] },
+      { id: '33333333-3333-4333-8333-333333333333', name: 'Middle deck', wordsRaw: 'star', isDefault: 0, updatedAt: '2026-10-15T00:00:00Z', dirty: false, deleted: false, focusGroups: [], hints: [] },
+    ];
+    localStorage.setItem(LISTS_KEY, JSON.stringify(lists));
+    globalThis.fetch.mockImplementation(async (url) => new Response(String(url).endsWith('/api/spelling/lists')
+      ? JSON.stringify(lists.map(l => ({
+        id: l.id, name: l.name, words_raw: l.wordsRaw, is_default: 0,
+        created_at: '2026-10-01 00:00:00', updated_at: l.updatedAt.replace('T', ' ').replace(/\..*$/, '').replace('Z', '')
+      }))) : '[]', { status: 200 }));
+    open('/classes/g1');
+    await user.click(await screen.findByRole('button', { name: 'Assign a list to the class' }));
+    const dialog = await screen.findByRole('dialog');
+    const select = within(dialog).getByLabelText('List');
+    expect(select).toHaveValue('22222222-2222-4222-8222-222222222222');
+    const options = within(select).getAllByRole('option');
+    expect(options.map(o => o.textContent)).toEqual(['Newer deck', 'Middle deck', 'Older deck']);
+  });
+
   it('renames and deletes the class, optionally with the student profiles', async () => {
     const user = userEvent.setup();
     open('/classes/g1');

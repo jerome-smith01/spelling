@@ -63,7 +63,7 @@ const saveLists = (lists, remote = lists.filter(l => !l.dirty)) => {
     if (String(url).endsWith('/api/spelling/lists') && (!init || init.method === undefined || init.method === 'GET')) {
       return new Response(JSON.stringify(remote.map(l => ({
         id: l.id, name: l.name, words_raw: l.wordsRaw, is_default: 0, focus_groups: null, hints: null,
-        created_at: '2026-10-01 00:00:00', updated_at: '2026-10-01 00:00:00'
+        created_at: '2026-10-01 00:00:00', updated_at: l.updatedAt ? l.updatedAt.replace('T', ' ').replace(/\..*$/, '').replace('Z', '') : '2026-10-01 00:00:00'
       }))), { status: 200 });
     }
     if (init?.method === 'PUT') return new Response(JSON.stringify({ error: 'down' }), { status: 500 });
@@ -156,6 +156,22 @@ describe('Assigning from the Family page', () => {
     open('/family');
     await user.click(await screen.findByRole('button', { name: 'Assign a list to Maya' }));
     expect(await screen.findByText(/no saved lists to assign yet/)).toBeInTheDocument();
+  });
+
+  it('lists the most recent deck first and selects it by default', async () => {
+    const user = userEvent.setup();
+    saveLists([
+      LIST({ id: '11111111-1111-4111-8111-111111111111', name: 'Older deck', updatedAt: '2026-10-01T00:00:00Z' }),
+      LIST({ id: '22222222-2222-4222-8222-222222222222', name: 'Newer deck', updatedAt: '2026-10-25T12:00:00Z' }),
+      LIST({ id: '33333333-3333-4333-8333-333333333333', name: 'Middle deck', updatedAt: '2026-10-15T00:00:00Z' }),
+    ]);
+    open('/family');
+    await user.click(await screen.findByRole('button', { name: 'Assign a list to Maya' }));
+    const dialog = await screen.findByRole('dialog');
+    const select = within(dialog).getByLabelText('List');
+    expect(select).toHaveValue('22222222-2222-4222-8222-222222222222');
+    const options = within(select).getAllByRole('option');
+    expect(options.map(o => o.textContent)).toEqual(['Newer deck', 'Middle deck', 'Older deck']);
   });
 
   it('shows each child\'s assignments with progress, and removes one', async () => {

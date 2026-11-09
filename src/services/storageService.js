@@ -151,3 +151,17 @@ export function saveLastListId(id) {
 
 /** Lists the user can see (excludes tombstones awaiting remote delete). */
 export const visibleLists = (lists) => lists.filter(l => !l.deleted);
+
+const toTime = (v) => {
+  if (!v) return 0;
+  const t = new Date(v).getTime();
+  return Number.isNaN(t) ? 0 : t;
+};
+
+/** Sort comparator placing the most recently updated lists first. */
+export function byMostRecent(a, b) {
+  const tb = toTime(b?.updatedAt);
+  const ta = toTime(a?.updatedAt);
+  if (tb !== ta) return tb - ta;
+  return (b?.updatedAt || '').localeCompare(a?.updatedAt || '');
+}

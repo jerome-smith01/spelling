@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLearner } from '../hooks/useLearner';
 import { useLists } from '../hooks/useLists';
+import { byMostRecent } from '../services/storageService';
 import { usePageTitle } from '../hooks/usePageTitle';
 import { buildLoginUrl } from '../services/apiService';
 import {
@@ -56,7 +57,7 @@ export default function ClassPage() {
   useEffect(() => { if (status === 'authenticated') load(); }, [status, load]);
 
   const shown = useMemo(() => (overview ? visibleStudents([...overview.students], filter, sort) : []), [overview, filter, sort]);
-  const assignable = lists.filter(l => !l.dirty && !l.deleted);
+  const assignable = useMemo(() => lists.filter(l => !l.dirty && !l.deleted).sort(byMostRecent), [lists]);
 
   if (status === 'loading') return <p role="status" style={{ color: 'var(--muted-foreground)' }}>Loading…</p>;
   if (status !== 'authenticated') {
@@ -280,7 +281,8 @@ function RenameButton({ name, onRename }) {
 }
 
 function AssignClass({ lists, onClose, onAssign }) {
-  const [listId, setListId] = useState(lists[0]?.id ?? '');
+  const sortedLists = useMemo(() => [...lists].sort(byMostRecent), [lists]);
+  const [listId, setListId] = useState(sortedLists[0]?.id ?? '');
   const [due, setDue] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -296,7 +298,7 @@ function AssignClass({ lists, onClose, onAssign }) {
   };
   return (
     <Modal title="Assign a list to the class" onClose={onClose}>
-      {lists.length === 0 ? (
+      {sortedLists.length === 0 ? (
         <>
           <p style={{ marginTop: 0 }}>You have no saved lists to assign yet. Make a deck first.</p>
           <button type="button" className="btn-secondary-sm" onClick={onClose}>Close</button>
@@ -304,7 +306,7 @@ function AssignClass({ lists, onClose, onAssign }) {
       ) : (
         <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <label className="settings-field">List
-            <select value={listId} onChange={(e) => setListId(e.target.value)}>{lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select>
+            <select value={listId} onChange={(e) => setListId(e.target.value)}>{sortedLists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select>
           </label>
           <label className="settings-field" style={{ maxWidth: '12rem' }}>Due date (optional)
             <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />

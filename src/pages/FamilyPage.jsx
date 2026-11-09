@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLearner, childrenOf, familyCardsOf, ownedChildrenOf } from '../hooks/useLearner';
@@ -9,6 +9,7 @@ import {
   createInvite, listInvites, revokeInvite, getAccess, removeAccess
 } from '../services/familyApi';
 import { useLists } from '../hooks/useLists';
+import { byMostRecent } from '../services/storageService';
 import { dueText } from '../utils/dueText';
 import { GRADES } from './ProfilePage';
 import Modal from '../components/Modal';
@@ -155,7 +156,8 @@ function SharingModal({ learner, mode, onClose, onChanged }) {
 
 /** Pick one of your saved lists, the children to give it to, and an optional due date. */
 function AssignModal({ kids, startId, lists, onClose, onAssigned }) {
-  const [listId, setListId] = useState(lists[0]?.id ?? '');
+  const sortedLists = useMemo(() => [...lists].sort(byMostRecent), [lists]);
+  const [listId, setListId] = useState(sortedLists[0]?.id ?? '');
   const [picked, setPicked] = useState(new Set([startId]));
   const [due, setDue] = useState('');
   const [error, setError] = useState('');
@@ -180,7 +182,7 @@ function AssignModal({ kids, startId, lists, onClose, onAssigned }) {
 
   return (
     <Modal title="Assign a list" onClose={onClose}>
-      {lists.length === 0 ? (
+      {sortedLists.length === 0 ? (
         <>
           <p style={{ marginTop: 0 }}>You have no saved lists to assign yet. Make a deck first (the built-in list cannot be assigned until you edit it).</p>
           <button type="button" className="btn-secondary-sm" onClick={onClose}>Close</button>
@@ -190,7 +192,7 @@ function AssignModal({ kids, startId, lists, onClose, onAssigned }) {
           <label className="settings-field">
             List
             <select value={listId} onChange={(e) => setListId(e.target.value)}>
-              {lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              {sortedLists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </label>
           <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
@@ -356,7 +358,7 @@ export default function FamilyPage() {
   const [reload, setReload] = useState(0);
   const [sharingTick, setSharingTick] = useState(0);
   const { lists } = useLists();
-  const assignable = lists.filter(l => !l.dirty && !l.deleted); // saved to the account (the built-in default is virtual)
+  const assignable = useMemo(() => lists.filter(l => !l.dirty && !l.deleted).sort(byMostRecent), [lists]); // saved to the account (the built-in default is virtual)
   const kidIds = kids.map(k => k.id).join(',');
 
   // This week's numbers for each child, in one call. The cards still work without them.

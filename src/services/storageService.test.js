@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  LISTS_KEY, isUuid, legacyWordsToMigrate, loadLists, migrateLegacy, saveLists
+  LISTS_KEY, byMostRecent, isUuid, legacyWordsToMigrate, loadLists, migrateLegacy, saveLists
 } from './storageService';
 import { DEFAULT_RAW_WORDS, parseWordList } from '../utils/wordParser';
 
@@ -70,5 +70,23 @@ describe('parseWordList ids', () => {
     const b = parseWordList('lov-ing\njoy-ful').map(w => w.id);
     expect(a).toEqual(b);
     expect(new Set(a).size).toBe(2);
+  });
+});
+
+describe('byMostRecent', () => {
+  it('sorts the most recently updated lists first', () => {
+    const older = { id: '1', name: 'Older', updatedAt: '2026-10-01T00:00:00.000Z' };
+    const newer = { id: '2', name: 'Newer', updatedAt: '2026-10-20T12:00:00.000Z' };
+    const middle = { id: '3', name: 'Middle', updatedAt: '2026-10-10T00:00:00.000Z' };
+    const sorted = [older, newer, middle].sort(byMostRecent);
+    expect(sorted.map(s => s.id)).toEqual(['2', '3', '1']);
+  });
+
+  it('handles missing, null, or invalid dates gracefully', () => {
+    const valid = { id: '1', name: 'Valid', updatedAt: '2026-10-01T00:00:00.000Z' };
+    const missing = { id: '2', name: 'Missing' };
+    const invalid = { id: '3', name: 'Invalid', updatedAt: 'not-a-date' };
+    const sorted = [missing, valid, invalid].sort(byMostRecent);
+    expect(sorted[0].id).toBe('1');
   });
 });
