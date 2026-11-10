@@ -28,6 +28,8 @@ const ONE_SOUND_VOWELS = new Set(['ai', 'ay', 'ea', 'ee', 'oa', 'oo', 'ou', 'ow'
  * cat, boy, cloud, make), so they never cost an AI call.
  */
 export function isOneSyllable(word) {
+  // Contractions always span two words: never one syllable, always need splitting.
+  if (String(word || '').includes("'")) return false;
   const w = String(word || '').toLowerCase().replace(/[^a-z]/g, '');
   const trimmed = /[^aeiouy]e$/.test(w) && !/[^aeiouy]le$/.test(w) ? w.slice(0, -1) : w; // silent final e
   const groups = trimmed.replace(/^y/, '').match(/[aeiouy]+/g) || [];

@@ -12,7 +12,7 @@ describe('parseFocusGroups', () => {
   it('splits on commas, spaces and slashes, lowercases and de-duplicates', () => {
     expect(parseFocusGroups('OU, ow / oi oy, ou')).toEqual(['ou', 'ow', 'oi', 'oy']);
   });
-  it('drops anything that is not 1-4 letters', () => {
+  it('drops anything not made of 1-4 lowercase letters or apostrophes', () => {
     expect(parseFocusGroups('ou, <b>, 12, abcde, o-u')).toEqual(['ou']);
   });
   it('accepts an array', () => {
@@ -83,6 +83,28 @@ describe('Harvey ball helpers', () => {
     expect(levelText(undefined)).toBe('Not started');
     expect(levelText({ level: 2 })).toBe('Level 2 of 4');
     expect(levelText({ level: 4, mastered: true })).toBe('Learned');
+  });
+});
+
+describe('contraction focus groups (n\'t, \'ve)', () => {
+  it('parseFocusGroups accepts apostrophe-containing groups', () => {
+    expect(parseFocusGroups("n't, 've")).toEqual(["n't", "'ve"]);
+  });
+  it('drops groups longer than 4 characters', () => {
+    expect(parseFocusGroups("n't, 'ould")).toEqual(["n't"]);
+  });
+  it('findTargets locates n\'t in wouldn\'t', () => {
+    expect(findTargets("wouldn't", ["n't"])).toEqual([{ group: "n't", start: 5, end: 8 }]);
+  });
+  it('findTargets locates \'ve in you\'ve', () => {
+    expect(findTargets("you've", ["'ve"])).toEqual([{ group: "'ve", start: 3, end: 6 }]);
+  });
+  it('L1 and L2 hide only n\'t in didn\'t', () => {
+    expect(mask("didn't", smartHiddenIndices("didn't", 1, ["n't"]))).toBe('did___');
+    expect(mask("didn't", smartHiddenIndices("didn't", 2, ["n't"]))).toBe('did___');
+  });
+  it('returns null for a word with no contraction target', () => {
+    expect(smartHiddenIndices('fountain', 1, ["n't"])).toBeNull();
   });
 });
 

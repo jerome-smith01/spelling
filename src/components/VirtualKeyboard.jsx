@@ -35,6 +35,9 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
             </button>
           ))}
           {r === 2 && (
+            <button type="button" className="vkb-key" onClick={() => press("'")} aria-label="Apostrophe">{"'"}</button>
+          )}
+          {r === 2 && (
             <button type="button" className="vkb-key vkb-wide" onClick={onBackspace} aria-label="Delete">⌫</button>
           )}
         </div>

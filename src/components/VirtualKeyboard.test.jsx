@@ -15,10 +15,17 @@ const setup = (props = {}) => {
 };
 
 describe('VirtualKeyboard', () => {
-  it('has letters only: no digits or symbols', () => {
+  it('has letters and apostrophe: no digits or other symbols', () => {
     setup();
     expect(screen.queryByRole('button', { name: /^[0-9]$/ })).toBeNull();
     expect(screen.getAllByRole('button', { name: /^[a-z]$/ })).toHaveLength(26);
+    expect(screen.getByRole('button', { name: 'Apostrophe' })).toBeInTheDocument();
+  });
+
+  it('apostrophe key sends the apostrophe character', async () => {
+    const { onChar } = setup();
+    await userEvent.click(screen.getByRole('button', { name: 'Apostrophe' }));
+    expect(onChar).toHaveBeenCalledWith("'");
   });
 
   it('types lowercase by default', async () => {

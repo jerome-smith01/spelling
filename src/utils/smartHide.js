@@ -11,7 +11,7 @@
  */
 
 export const MAX_FOCUS_GROUPS = 12;
-const GROUP_RE = /^[a-z]{1,4}$/;
+const GROUP_RE = /^[a-z']{1,4}$/;
 
 /** "ou, ow / oi oy" -> ['ou', 'ow', 'oi', 'oy'] (lowercase letters only, de-duplicated). */
 export function parseFocusGroups(input) {

@@ -20,6 +20,11 @@ describe('syllable dictionary', () => {
     // side-by-side vowels that are not one sound can hide a syllable break
     for (const w of ['lion', 'poem', 'quiet', 'idea']) expect(isOneSyllable(w)).toBe(false);
   });
+  it('treats contractions as multi-syllable so they are always sent to AI', () => {
+    // Stripping the apostrophe before counting vowels wrongly classified these as one syllable
+    for (const w of ["wouldn't", "couldn't", "didn't", "let's", "you've", "i've", "won't"])
+      expect(isOneSyllable(w)).toBe(false);
+  });
 });
 
 describe('wordsNeedingSplit / applySplits', () => {

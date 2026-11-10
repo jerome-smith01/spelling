@@ -30,8 +30,8 @@ export default function LetterInput({
     // Take the newest character typed
     const char = raw.slice(-1).toLowerCase();
 
-    // Only allow letters
-    if (char && !/^[a-z]$/.test(char)) {
+    // Only allow letters and apostrophe (for contractions)
+    if (char && !/^[a-z']$/.test(char)) {
       return;
     }
 

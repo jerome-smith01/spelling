@@ -24,6 +24,7 @@ interface Word {
 * Syllable boundaries are demarcated with hyphens (`-`).
 * Non-hyphenated words (e.g. `bounce`) form a single syllable group of length 1.
 * Leading bullets and numbers are stripped automatically during normalization.
+* **Contractions** (words containing `'`) are always sent to the AI syllable splitter — they are never treated as one-syllable, even though stripping the apostrophe before counting vowels would make them look like one (e.g. `wouldn't` → `wouldnt` → one vowel group `ou`).
 
 ---
 
