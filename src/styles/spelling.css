@@ -542,7 +542,7 @@
 .tut-prompt { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.9rem 1.1rem; border-radius: var(--radius-xl); border: 1px solid var(--selected-color-border); background: var(--selected-color-bg); }
 
 /* Virtual keyboard (quiz mode, touch devices only) */
-.vkb { container-type: inline-size; width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem 0.25rem; background: var(--muted); border-radius: var(--radius-lg); }
+.vkb { container-type: inline-size; width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: var(--vkb-row-gap, 5px); padding: 0.6rem 0.25rem; background: var(--muted); border-radius: var(--radius-lg); }
 .vkb-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 950; display: flex; justify-content: center; padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom)); background: var(--background); border-top: 1px solid var(--card-border); }
 .deck-has-dock { padding-bottom: calc(var(--kb-h, 17rem) + env(safe-area-inset-bottom)); }
 /* One complete dashed border around the focused square (no outline/shadow ring on top of it) */
@@ -566,7 +566,7 @@
 .kb-frame .vkb { max-width: none; padding: 0.3rem 0.25rem; }
 /* Everything inside scales with the keyboard's width, so resizing keeps its proportions */
 .kb-frame .vkb-row { gap: clamp(0.2rem, 1cqw, 0.9rem); }
-.kb-frame .vkb { gap: clamp(0.3rem, 1.2cqw, 1rem); }
+.kb-frame .vkb { gap: clamp(var(--vkb-row-gap, 5px), 1.2cqw, 1rem); }
 .kb-frame .vkb-key, .quiz-immersive .kb-frame .vkb-key { height: clamp(2.2rem, 6.2cqw, 6.5rem); font-size: clamp(1rem, 3cqw, 2.6rem); }
 
 /* ---------- Smart hiding ---------- */
