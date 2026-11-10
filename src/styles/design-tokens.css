@@ -37,8 +37,9 @@
   --quiz-letter-h: clamp(2.1rem, 7.5vw, 3.4rem);
   --quiz-letter-font: clamp(1rem, 3.8vw, 1.6rem);
   --quiz-letter-gap: clamp(0.2rem, 1vw, 0.5rem);
-  /* Virtual keyboard row separation */
-  --vkb-row-gap: 5px;
+  /* Virtual keyboard row separation and key dimensions (mimicking mobile Gboard) */
+  --vkb-row-gap: clamp(10px, 2.6vw, 12px);
+  --vkb-key-h: clamp(2.75rem, 6.5vh, 3rem);
 }
 
 /* GPF Design Tokens — Dark Theme */

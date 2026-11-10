@@ -55,8 +55,8 @@ Three buttons (also on the keyboard): normal, slow (syllable by syllable), both 
 ## 7. On-screen keyboard (`VirtualKeyboard`, `KeyboardFrame`)
 
 * Letters only, no digits or symbols, so the device keyboard and its spell check never appear.
-* **Phones** (< 600px wide): unchanged: bottom dock in practice, inline in the quiz, keys 3rem tall (3.5rem in the quiz). Row separation is controlled by `--vkb-row-gap: 5px` design token.
-* **Tablets** (≥ 600px): `KeyboardFrame` docks the keyboard at the bottom, centered, `width: calc(100% - 1rem)` capped at `max-width: 52rem`. Key height, font and gaps scale with the keyboard's own width using container units (`container-type: inline-size` on `.vkb`, `cqw` in `.kb-frame` rules, with vertical row gap scaling from `--vkb-row-gap: 5px`) so it stays proportional. There is no move, resize or pin control.
+* **Phones** (< 600px wide): bottom dock in practice, inline in the quiz. Key dimensions and row separation mimic mobile keyboard standards (Gboard): keys use `--vkb-key-h: clamp(2.75rem, 6.5vh, 3rem)` for balanced width-to-height proportions (~0.70 aspect ratio), and vertical row separation is controlled by `--vkb-row-gap: clamp(10px, 2.6vw, 12px)`. Letters display lowercase by default and dynamically toggle to uppercase when the Shift key is active (`aria-pressed`).
+* **Tablets** (≥ 600px): `KeyboardFrame` docks the keyboard at the bottom, centered, `width: calc(100% - 1rem)` capped at `max-width: 52rem`. Key height, font and gaps scale with the keyboard's own width using container units (`container-type: inline-size` on `.vkb`, `cqw` in `.kb-frame` rules, with vertical row gap scaling from `--vkb-row-gap`) so it stays proportional. There is no move, resize or pin control.
 * The frame publishes its measured height as the CSS variable `--kb-h` on `<html>`; `.deck-has-dock` and `.quiz-immersive` use it for bottom padding (falling back to the old fixed value when unset), so the page never sits under the keyboard.
 * Pointer-down on keyboard controls must not steal focus from the letter blanks.
 

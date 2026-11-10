@@ -461,7 +461,7 @@
 .quiz-immersive .btn-verify, .quiz-immersive .btn-secondary-sm { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; }
 .quiz-immersive .btn-verify-alt { background-color: var(--muted); border-color: var(--card-border); color: var(--foreground); box-shadow: none; }
 .quiz-immersive .quiz-actions { width: 100%; }
-.quiz-immersive .vkb-key { height: 3.5rem; }
+.quiz-immersive .vkb-key { height: var(--vkb-key-h, 2.9rem); }
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem 1rem; }
 /* List view: a plain table of words, their level, last score and next review */
 .word-table-wrap { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); overflow-x: auto; }
@@ -542,16 +542,16 @@
 .tut-prompt { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.9rem 1.1rem; border-radius: var(--radius-xl); border: 1px solid var(--selected-color-border); background: var(--selected-color-bg); }
 
 /* Virtual keyboard (quiz mode, touch devices only) */
-.vkb { container-type: inline-size; width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: var(--vkb-row-gap, 5px); padding: 0.6rem 0.25rem; background: var(--muted); border-radius: var(--radius-lg); }
+.vkb { container-type: inline-size; width: 100%; max-width: 30rem; display: flex; flex-direction: column; gap: var(--vkb-row-gap, 12px); padding: 0.5rem 0.2rem; background: var(--muted); border-radius: var(--radius-lg); }
 .vkb-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 950; display: flex; justify-content: center; padding: 0.4rem 0.4rem calc(0.4rem + env(safe-area-inset-bottom)); background: var(--background); border-top: 1px solid var(--card-border); }
 .deck-has-dock { padding-bottom: calc(var(--kb-h, 17rem) + env(safe-area-inset-bottom)); }
 /* One complete dashed border around the focused square (no outline/shadow ring on top of it) */
 .letter-box.input-mode:focus-within { border: 2px dashed var(--color-primary); box-shadow: none; }
 .letter-input:focus, .letter-input:focus-visible { outline: none; }.vkb-row { display: flex; gap: 0.35rem; justify-content: center; }
 .vkb-row-inset { padding: 0 4%; }
-.vkb-key { flex: 1 1 0; min-width: 0; height: 3rem; border: 0; border-radius: var(--radius-md); background: var(--card-bg); color: var(--foreground); font-size: 1.25rem; font-weight: 500; font-family: inherit; box-shadow: 0 1px 0 var(--card-border); cursor: pointer; touch-action: manipulation; }
+.vkb-key { flex: 1 1 0; min-width: 0; height: var(--vkb-key-h, 2.9rem); border: 0; border-radius: var(--radius-md); background: var(--card-bg); color: var(--foreground); font-size: 1.35rem; font-weight: 500; font-family: inherit; box-shadow: 0 1px 0 var(--card-border); cursor: pointer; touch-action: manipulation; }
 .vkb-key:active { filter: brightness(0.92); }
-.vkb-wide { flex: 1.5 1 0; background: var(--card-border); }
+.vkb-wide { flex: 1.25 1 0; background: var(--card-border); }
 .vkb-on { background: var(--color-primary); color: var(--primary-foreground); }
 .vkb-nav { flex: 1 1 0; display: flex; align-items: center; justify-content: center; background: var(--card-border); }
 .vkb-nav:disabled { opacity: 0.4; cursor: default; }
@@ -566,7 +566,7 @@
 .kb-frame .vkb { max-width: none; padding: 0.3rem 0.25rem; }
 /* Everything inside scales with the keyboard's width, so resizing keeps its proportions */
 .kb-frame .vkb-row { gap: clamp(0.2rem, 1cqw, 0.9rem); }
-.kb-frame .vkb { gap: clamp(var(--vkb-row-gap, 5px), 1.2cqw, 1rem); }
+.kb-frame .vkb { gap: clamp(var(--vkb-row-gap, 12px), 1.6cqw, 1.25rem); }
 .kb-frame .vkb-key, .quiz-immersive .kb-frame .vkb-key { height: clamp(2.2rem, 6.2cqw, 6.5rem); font-size: clamp(1rem, 3cqw, 2.6rem); }
 
 /* ---------- Smart hiding ---------- */

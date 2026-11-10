@@ -27,7 +27,7 @@ export default function VirtualKeyboard({ onChar, onBackspace, onEnter, enterDis
               onClick={() => setShift(s => !s)}
               aria-label="Shift"
               aria-pressed={shift}
-            >⇧</button>
+            >{shift ? '⬆' : '⇧'}</button>
           )}
           {row.split('').map(c => (
             <button key={c} type="button" className="vkb-key" onClick={() => press(c)}>
