@@ -24,8 +24,20 @@ const answer = async (user, typed) => {
   await user.click(screen.getByRole('button', { name: /Next word|See results/ }));
 };
 
-beforeEach(() => { vi.spyOn(Math, 'random').mockReturnValue(0.99); localStorage.clear(); }); // keeps word order
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+// jsdom defaults window.innerWidth to 1024, which triggers the tablet VirtualKeyboard path.
+// These tests exercise the desktop keyboard path (plain input + desktop Check button), so pin to phone width.
+let _origInnerWidth;
+beforeEach(() => {
+  vi.spyOn(Math, 'random').mockReturnValue(0.99);
+  localStorage.clear();
+  _origInnerWidth = window.innerWidth;
+  Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 375 });
+}); // keeps word order
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: _origInnerWidth });
+});
 
 describe('QuizView', () => {
   it('Enter checks the word, then Enter again moves to the next word', async () => {

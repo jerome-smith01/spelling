@@ -16,6 +16,18 @@ import { PlayIcon, SlowPlayIcon, BothSpeedIcon } from './AudioIcons';
 import { buildPronunciationSyllables } from '../utils/syllablePhonetics';
 import { letterFor } from '../utils/session';
 
+const TABLET_MIN_VIEWPORT = 600;
+const useViewport = () => {
+  const read = () => window.innerWidth;
+  const [vp, setVp] = React.useState(read);
+  React.useEffect(() => {
+    const on = () => setVp(read());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return vp;
+};
+
 const shuffle = (arr) => {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -68,7 +80,9 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
     setSpeedState(v);
     try { localStorage.setItem(SPEED_KEY, v); } catch { /* storage unavailable */ }
   };
-  const mobile = useCoarsePointer();
+  const coarse = useCoarsePointer();
+  const viewportWidth = useViewport();
+  const showVirtualKeyboard = coarse || viewportWidth >= TABLET_MIN_VIEWPORT;
   const word = order[idx];
   const listId = storageKey ? storageKey.split(':').pop() : null;
   const gate = useReviewGate({ context: 'quiz', listId });
@@ -112,7 +126,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
   useEffect(() => {
     if (!word) return undefined;
     const t = setTimeout(() => autoSpeak(), 350);
-    if (!mobile) inputRef.current?.focus();
+    if (!showVirtualKeyboard) inputRef.current?.focus();
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, order]);
@@ -281,8 +295,8 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
               autoCorrect="off"
               autoComplete="off"
               spellCheck="false"
-              readOnly={mobile}
-              inputMode={mobile ? 'none' : undefined}
+              readOnly={showVirtualKeyboard}
+              inputMode={showVirtualKeyboard ? 'none' : undefined}
               aria-label="Type the word you heard"
             />
           </>
@@ -290,7 +304,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           <SpellingResult cells={cellsOf(result.cells, typedWord, word.word)} word={word.word} typed={typedWord} correct={result.pct === 100} />
         )}
       </div>
-      {mobile && keyboardHidden ? null : mobile ? (
+      {showVirtualKeyboard && keyboardHidden ? null : showVirtualKeyboard ? (
         <KeyboardFrame>
         <VirtualKeyboard
           onChar={(c) => { if (gate.modal) gate.keyRef.current?.press(c); else if (!result) setText(t => t + c); }}
@@ -315,7 +329,7 @@ export default function QuizView({ words, isMastered = () => false, onSpeak, onS
           )}
         </div>
       )}
-      <ReviewModal gate={gate} hasKeyboard={mobile && !keyboardHidden} />
+      <ReviewModal gate={gate} hasKeyboard={showVirtualKeyboard && !keyboardHidden} />
     </div>
   );
 }
