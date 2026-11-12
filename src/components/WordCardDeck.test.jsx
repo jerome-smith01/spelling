@@ -31,11 +31,19 @@ const fill = async (user, letters) => {
 
 describe('WordCardDeck', () => {
   // New words start at level 2 here (1 in 2 letters visible, typed); level 1 is the pick-the-letters exercise
+  // jsdom defaults window.innerWidth to 1024, triggering the tablet VirtualKeyboard path.
+  // Pin to phone width so the desktop input + Check button path is exercised.
+  let _origInnerWidth;
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('spelling_tutor_deck_prefs_v1', JSON.stringify({ startLevel: 2, levelScheme: 2 }));
+    _origInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 375 });
   });
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: _origInnerWidth });
+  });
 
   const dots = () => within(screen.getByRole('list', { name: 'Session cards' })).getAllByRole('listitem');
 

@@ -420,7 +420,7 @@
 .deck-message { color: var(--muted-foreground); font-weight: 600; }
 .deck-card-center { text-align: center; padding: 2.5rem 1rem; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-xl); display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
 .quiz-input { font-size: 1.5rem; font-weight: 700; text-align: center; padding: 0.6rem 1rem; width: 100%; max-width: 22rem; border-radius: var(--radius-md); border: 2px solid var(--card-border); background: var(--card-bg); color: var(--foreground); }
-.quiz-immersive { position: fixed; inset: 0; height: 100dvh; z-index: 1000; display: flex; flex-direction: column; gap: 0.75rem; padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem calc(0.75rem + env(safe-area-inset-bottom) + var(--kb-h, 0px)); background: var(--background, var(--card-bg)); color: var(--foreground); overflow: hidden; align-items: center; }
+.quiz-immersive { position: fixed; inset: 0; height: 100svh; z-index: 1000; display: flex; flex-direction: column; gap: 0.75rem; padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem calc(0.75rem + env(safe-area-inset-bottom) + var(--kb-h, 0px)); background: var(--background, var(--card-bg)); color: var(--foreground); overflow: hidden; align-items: center; }
 .quiz-immersive > * { width: 100%; max-width: 30rem; }
 .quiz-top { display: flex; align-items: center; justify-content: space-between; }
 .quiz-stage { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; overflow-y: auto; }
